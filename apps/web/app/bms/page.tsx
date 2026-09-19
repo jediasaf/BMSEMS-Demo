@@ -31,8 +31,10 @@ export default function BmsOverviewPage() {
     window: replayWindow,
     cursor,
     status,
+    resetToken,
   } = useDemo();
   const [drawerNode, setDrawerNode] = useState<AssetNode | null>(null);
+  useEffect(() => setDrawerNode(null), [resetToken]);
 
   const sites = useAsync(() => api.bms.sites(), []);
   useEffect(() => {
@@ -94,7 +96,7 @@ export default function BmsOverviewPage() {
           { label: 'Source', value: status?.data_label ?? '…' },
           {
             label: 'Mode',
-            value: status?.data_mode === 'REAL_DATA' ? 'Real data' : 'Sample fixture',
+            value: status?.data_mode === 'REAL_DATA' ? 'Historical replay' : 'Sample fixture',
             tone: status?.data_mode === 'REAL_DATA' ? 'accent' : 'warning',
           },
           {
@@ -103,9 +105,7 @@ export default function BmsOverviewPage() {
             tone: data?.timeline.served_by === 'model' ? 'info' : 'warning',
             title: data?.timeline.gate_reason,
           },
-          ...(site
-            ? [{ label: 'Area', value: `${num(site.surface_m2 as number, 0)} m²` }]
-            : []),
+          ...(site ? [{ label: 'Area', value: `${num(site.surface_m2 as number, 0)} m²` }] : []),
         ]}
         actions={
           <>
@@ -223,7 +223,7 @@ export default function BmsOverviewPage() {
                 <div className="p-2.5">
                   <EmptyNote
                     title="No anomalies in this window"
-                    detail="The building is operating inside the model's expected envelope. Inject a scenario above to see the detector respond."
+                    detail="Conditions stayed inside the model's expected envelope. The detector is running over every step of this window and found nothing above the materiality floor. Inject a scenario above to see it respond."
                   />
                 </div>
               )}
@@ -297,8 +297,8 @@ function RecommendationPanel({
     return (
       <Panel title="AI recommendation">
         <EmptyNote
-          title="No action proposed"
-          detail="Recommendations follow a material over-consumption finding. With none in this window there is nothing to act on, and inventing one would be worse than an empty panel."
+          title="No operational intervention recommended"
+          detail="Conditions are within expected operating ranges and monitoring remains active. A recommendation follows a material over-consumption finding; with none in this window there is nothing to act on, and inventing one would be worse than an empty panel."
         />
       </Panel>
     );

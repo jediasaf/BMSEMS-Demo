@@ -1,157 +1,212 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronLeft, RotateCcw, X } from 'lucide-react';
 import { useDemo } from '@/lib/store';
+import { cn } from '@/lib/format';
 import { Button } from './Primitives';
+import { ArchitectureDrawer } from './ArchitectureDrawer';
+
+/**
+ * The four-to-six minute walkthrough.
+ *
+ * Each step owns its route and its scenario, so a stray click cannot knock the
+ * demo off course: stepping forward or back re-applies both. The step list
+ * mirrors `/interview/plan` on the backend, which is what the smoke test
+ * drives and what `/interview/verify` checks the claims of.
+ */
 
 interface TourStep {
   title: string;
   body: string;
-  href?: string;
-  action?: () => void;
+  href: string;
+  /** Applied on entry, every time, so back and forward are symmetric. */
+  bmsScenario?: string;
+  emsScenario?: string;
+  /** Opens the architecture drawer instead of navigating away. */
+  architecture?: boolean;
 }
 
-/**
- * The four-to-six minute walkthrough. Each step navigates and, where useful,
- * sets the scenario — so the demo cannot be knocked off course by a stray click.
- */
+const STEPS: TourStep[] = [
+  {
+    title: 'The building as recorded',
+    body: 'Real 15-minute metered demand from the Schneider / DrivenData public competition dataset, replayed against its own clock, with the nearest published weather station. Every value carries a provenance badge: the load reads DERIVED because the publisher never states a unit for its energy counter, outdoor air reads MEASURED.',
+    href: '/bms',
+    bmsScenario: 'bms_normal_day',
+  },
+  {
+    title: 'Inject the hot day',
+    body: 'A seeded disturbance, added on top of the measurement and never replacing it — both series stay charted and the banner says INJECTED SCENARIO. Outdoor air is raised 7 K with a mid-afternoon emphasis, and the load follows through this building’s own fitted cooling sensitivity.',
+    href: '/bms',
+    bmsScenario: 'bms_hot_day',
+  },
+  {
+    title: 'Detection, and why it is believable',
+    body: 'The detector scores the forecast residual against an hour-of-day baseline calibrated on history that ends where this window begins — so a fault lasting the whole window cannot quietly become the new normal. Observed against expected, the robust z-score, the sustain requirement and the possible causes are all on screen.',
+    href: '/bms/ai-operations',
+    bmsScenario: 'bms_hot_day',
+  },
+  {
+    title: 'The recommendation',
+    body: 'A constrained setpoint proposal with its contributing factors, the constraints it was checked against, and a safety gate you can run. It claims no saving at this point — nothing is asserted before the simulator has run.',
+    href: '/bms/ai-operations',
+    bmsScenario: 'bms_hot_day',
+  },
+  {
+    title: 'Simulate it, then let the simulator judge',
+    body: 'The optimiser solves a linear program over the same two-node zone model the simulator integrates, with installed plant capacity as a constraint. The proposal then goes back through the full nonlinear simulator, and is rejected if it does not beat doing nothing. Energy, peak and comfort are the simulator’s answer, not the optimiser’s.',
+    href: '/bms/control-lab',
+    bmsScenario: 'bms_hot_day',
+  },
+  {
+    title: 'EcoTwin EMS — the portfolio',
+    body: 'The same metered facilities seen as an electrical estate. Transformer ratings are DERIVED from observed peaks by standard sizing practice, because the dataset publishes no nameplate data — and the badge says so. Capacity is calibrated by bisection on the load flow, not by kVA × power factor.',
+    href: '/ems',
+    emsScenario: 'ems_normal_day',
+  },
+  {
+    title: 'Start the EV charging surge',
+    body: 'A seeded 120 kW charging session lands on the flexible feeder each afternoon, additive to the measured demand. This is load the transformer was never sized for — unlike a peak day, which a correctly sized transformer survives.',
+    href: '/ems/scenario-lab',
+    emsScenario: 'ems_ev_surge',
+  },
+  {
+    title: 'What it does to the network',
+    body: 'pandapower solves a balanced AC load flow over a six-bus LV model with catalogue cable impedances. The transformer goes past nameplate and the LV bus sags. Nothing here is hard-coded — every number is a solve, and all of it is labelled SIMULATED.',
+    href: '/ems/network',
+    emsScenario: 'ems_ev_surge',
+  },
+  {
+    title: 'Optimise: shift the energy, do not shed it',
+    body: 'A linear program defers EV charging and buys HVAC flexibility within a comfort budget. EV energy is conserved as a hard equality and recovery can never precede curtailment, or the optimiser would charge vehicles that have not arrived.',
+    href: '/ems/scenario-lab',
+    emsScenario: 'ems_ev_surge',
+  },
+  {
+    title: 'Verify with a second load flow',
+    body: 'The before and after transformer figures are two independent pandapower solves at the worst instant — not the optimiser marking its own homework. The transformer comes back inside nameplate and every bus returns to the EN 50160 band.',
+    href: '/ems/scenario-lab',
+    emsScenario: 'ems_ev_surge',
+  },
+  {
+    title: 'Provenance: click any badge',
+    body: 'Six categories, one closed vocabulary, enforced in the backend: a value cannot be tagged MEASURED unless its registered source is a real measurement, and cannot be tagged SIMULATED without naming the engine that produced it. A mislabelled number fails at construction rather than reaching a chart.',
+    href: '/bms',
+    bmsScenario: 'bms_hot_day',
+  },
+  {
+    title: 'Both pipelines, end to end',
+    body: 'Two workflows over one provenance model, one replay clock and one adapter layer — which is what makes the source swappable for EcoStruxure Building Operation or Power Monitoring Expert without touching the analytics. This is a portfolio prototype, not a Schneider Electric product.',
+    href: '/bms',
+    architecture: true,
+  },
+];
+
 export function DemoTour() {
   const router = useRouter();
-  const { tourStep, nextTourStep, endTour, setBmsScenario, setEmsScenario, setCursor, window: replayWindow } =
-    useDemo();
+  const {
+    tourStep,
+    nextTourStep,
+    prevTourStep,
+    endTour,
+    resetDemo,
+    setBmsScenario,
+    setEmsScenario,
+  } = useDemo();
+  const [architecture, setArchitecture] = useState(false);
 
-  const steps: TourStep[] = [
-    {
-      title: 'The building as recorded',
-      body: 'Real 15-minute metered demand from the Schneider / DrivenData public dataset, with the nearest published weather station. Every number carries a provenance badge: the load is DERIVED because the publisher never states a unit for its energy counter, and outdoor air is MEASURED.',
-      href: '/bms',
-      action: () => setBmsScenario('bms_normal_day'),
-    },
-    {
-      title: 'Run the historical replay',
-      body: 'Press play. The whole platform reads one clock, so the building view and the power view stay on the same instant. The forecast band is a conformalised 80% interval, and the model was trained only on data from before this window.',
-      href: '/bms',
-    },
-    {
-      title: 'Inject a hot day and watch detection fire',
-      body: 'The disturbance is seeded and additive; the measured series is kept alongside it. The detector scores the forecast residual against an hour-of-day baseline calibrated on history that ends where this window starts — so a fault lasting all window cannot quietly become the new normal.',
-      href: '/bms/ai-operations',
-      action: () => setBmsScenario('bms_hot_day'),
-    },
-    {
-      title: 'Open the AI recommendation',
-      body: 'A constrained setpoint proposal with its contributing factors, the constraints it was checked against, and a safety gate you can run. Note that it claims no saving yet — nothing is asserted before the simulator has run.',
-      href: '/bms/ai-operations',
-    },
-    {
-      title: 'Simulate it: baseline versus AI control',
-      body: 'The optimiser solves a convex program over a linearised zone model, then the proposal goes back through the full nonlinear simulator. Both columns come from the same engine over identical weather and occupancy, so the delta means something.',
-      href: '/bms/control-lab',
-    },
-    {
-      title: 'EcoTwin EMS — the portfolio',
-      body: 'The same metered facilities seen as an electrical estate. Transformer ratings are DERIVED from observed peaks by standard sizing practice, because the dataset publishes no nameplate data — and the badge says so.',
-      href: '/ems',
-      action: () => setEmsScenario('ems_normal_day'),
-    },
-    {
-      title: 'Map the load onto a real network',
-      body: 'pandapower solves a balanced AC load flow over a six-bus LV model with catalogue cable impedances. Bus voltages, feeder loading and losses are all SIMULATED and labelled as such.',
-      href: '/ems/network',
-    },
-    {
-      title: 'Run the EV charging surge',
-      body: 'A seeded 120 kW charging session lands on the flexible feeder. The transformer goes past its nameplate and LV voltage sags. Nothing here is hard-coded — the numbers are a load flow.',
-      href: '/ems/scenario-lab',
-      action: () => setEmsScenario('ems_ev_surge'),
-    },
-    {
-      title: 'Optimise, then verify',
-      body: 'A linear program shifts EV charging and buys HVAC flexibility, with EV energy conserved as a hard equality. The before/after transformer figures are two independent load flows at the worst instant — not the optimiser marking its own homework.',
-      href: '/ems/scenario-lab',
-    },
-    {
-      title: 'Close the loop: power risk → building → power impact',
-      body: 'The flagship chain. EMS names the flexible contributors, BMS answers with a simulated HVAC action, and EMS re-solves the network with that reduction applied. A thermal simulation feeding an electrical simulation, end to end.',
-      href: '/ems/scenario-lab',
-    },
-    {
-      title: 'Measured, predicted, simulated, optimised, injected',
-      body: 'Click any provenance badge. Five categories, one closed vocabulary, enforced in the backend: a value cannot be tagged MEASURED unless its registered source is a real measurement, and cannot be tagged SIMULATED without naming the engine that produced it.',
-      href: '/bms',
-    },
-  ];
-
-  const step = tourStep !== null ? steps[tourStep] : undefined;
+  const step = tourStep !== null ? STEPS[tourStep] : undefined;
 
   useEffect(() => {
-    if (!step) return;
-    step.action?.();
-    if (step.href) router.push(step.href);
+    if (!step) {
+      setArchitecture(false);
+      return;
+    }
+    if (step.bmsScenario) setBmsScenario(step.bmsScenario);
+    if (step.emsScenario) setEmsScenario(step.emsScenario);
+    setArchitecture(Boolean(step.architecture));
+    router.push(step.href);
   }, [tourStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (tourStep !== null && replayWindow?.available && tourStep === 1) {
-      setCursor(Math.floor(replayWindow.n_steps / 2));
-    }
-  }, [tourStep, replayWindow, setCursor]);
-
   if (tourStep === null || !step) return null;
-  const isLast = tourStep === steps.length - 1;
+  const isLast = tourStep === STEPS.length - 1;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-3">
-      <div className="animate-fade-up pointer-events-auto w-full max-w-3xl rounded-panel border border-accent/40 bg-base-850/[0.97] shadow-raised backdrop-blur">
-        <div className="flex items-center justify-between gap-2 border-b border-base-700 px-2.5 py-1.5">
-          <span className="label text-accent">Guided demo</span>
-          <div className="flex items-center gap-2">
-            <span className="tabular font-mono text-3xs text-ink-500">
-              step {tourStep + 1} of {steps.length}
+    <>
+      {architecture && <ArchitectureDrawer onClose={() => setArchitecture(false)} />}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-3">
+        <div className="pointer-events-auto w-full max-w-3xl animate-fade-up rounded-panel border border-accent/40 bg-base-850/[0.97] shadow-raised backdrop-blur">
+          <div className="flex items-center justify-between gap-2 border-b border-base-700 px-2.5 py-1.5">
+            <span className="label text-accent">Guided demo</span>
+            <div className="flex items-center gap-2">
+              <span className="tabular font-mono text-3xs text-ink-500">
+                step {tourStep + 1} of {STEPS.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  resetDemo();
+                  router.push('/bms');
+                }}
+                title="Reset the demo to its opening position"
+                className="focus-ring flex items-center gap-1 rounded-panel p-0.5 text-3xs uppercase tracking-[0.08em] text-ink-500 hover:text-ink-100"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={endTour}
+                aria-label="End guided demo"
+                className="focus-ring rounded-panel p-0.5 text-ink-500 hover:text-ink-100"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 px-2.5 py-2.5">
+            <span className="bg-accent/12 mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-panel border border-accent/40 font-mono text-3xs font-bold text-accent">
+              {tourStep + 1}
             </span>
-            <button
-              type="button"
-              onClick={endTour}
-              aria-label="End guided demo"
-              className="focus-ring rounded-panel p-0.5 text-ink-500 hover:text-ink-100"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-2xs font-semibold uppercase tracking-[0.08em] text-ink-100">
+                {step.title}
+              </h3>
+              <p className="mt-1 text-2xs leading-relaxed text-ink-300">{step.body}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Button
+                onClick={prevTourStep}
+                disabled={tourStep === 0}
+                title="Previous demo step"
+                aria-label="Previous demo step"
+              >
+                <ChevronLeft className="h-3 w-3" />
+                Back
+              </Button>
+              <Button variant="primary" onClick={isLast ? endTour : nextTourStep}>
+                {isLast ? 'Finish' : 'Next demo step'}
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-start gap-3 px-2.5 py-2.5">
-          <span className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-panel border border-accent/40 bg-accent/12 font-mono text-3xs font-bold text-accent">
-            {tourStep + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-2xs font-semibold uppercase tracking-[0.08em] text-ink-100">
-              {step.title}
-            </h3>
-            <p className="mt-1 text-2xs leading-relaxed text-ink-300">{step.body}</p>
+          <div className="flex gap-[2px] px-2.5 pb-2">
+            {STEPS.map((_, index) => (
+              <span
+                key={index}
+                className={cn(
+                  'h-[2px] flex-1 rounded-full',
+                  index <= tourStep ? 'bg-accent' : 'bg-base-700',
+                )}
+              />
+            ))}
           </div>
-          <Button
-            size="md"
-            variant="primary"
-            onClick={isLast ? endTour : nextTourStep}
-            className="shrink-0"
-          >
-            {isLast ? 'Finish' : 'Next demo step'}
-          </Button>
-        </div>
-
-        <div className="flex gap-[2px] px-2.5 pb-2">
-          {steps.map((_, index) => (
-            <span
-              key={index}
-              className={`h-[2px] flex-1 rounded-full ${
-                index <= tourStep ? 'bg-accent' : 'bg-base-700'
-              }`}
-            />
-          ))}
         </div>
       </div>
-    </div>
+    </>
   );
 }
+
+export const DEMO_STEP_COUNT = STEPS.length;

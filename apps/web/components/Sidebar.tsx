@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
-  Activity,
   Building2,
   ChevronsLeft,
   ChevronsRight,
@@ -12,8 +12,11 @@ import {
   Gauge,
   Info,
   LayoutGrid,
+  Network,
+  PlayCircle,
   Presentation,
   Radar,
+  RotateCcw,
   SlidersHorizontal,
   Zap,
 } from 'lucide-react';
@@ -21,6 +24,7 @@ import { api } from '@/lib/api';
 import { useDemo } from '@/lib/store';
 import { cn } from '@/lib/format';
 import { StatusDot } from './Primitives';
+import { ArchitectureDrawer } from './ArchitectureDrawer';
 
 const SECTIONS = [
   {
@@ -51,16 +55,48 @@ const SECTIONS = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { status, compactNav, toggleCompactNav, interviewMode, setInterviewMode, startTour } =
-    useDemo();
+  const router = useRouter();
+  const {
+    status,
+    compactNav,
+    toggleCompactNav,
+    interviewMode,
+    setInterviewMode,
+    setPreload,
+    startTour,
+    resetDemo,
+    tourStep,
+  } = useDemo();
+  const [architecture, setArchitecture] = useState(false);
 
-  const onReset = async () => {
+  // Turning Interview Mode on warms every curated computation, so no step in
+  // the demo is the one that waits on a cold cache.
+  const enterInterviewMode = async () => {
+    setInterviewMode(true);
+    setPreload({ state: 'loading' });
     try {
-      await api.resetDemo();
+      const result = await api.interview.preload();
+      setPreload(
+        result.preloaded
+          ? { state: 'ready', ms: result.total_ms }
+          : { state: 'failed', failed: result.failed },
+      );
     } catch {
-      /* a failed cache reset is not worth breaking the demo over */
+      // A failed preload costs speed, not correctness: the demo still works,
+      // it just computes on demand. Saying so is better than a silent retry.
+      setPreload({ state: 'failed', failed: ['preload request failed'] });
     }
-    window.location.reload();
+  };
+
+  const onStartDemo = async () => {
+    resetDemo();
+    if (!interviewMode) await enterInterviewMode();
+    startTour();
+  };
+
+  const onResetDemo = () => {
+    resetDemo();
+    router.push('/bms');
   };
 
   return (
@@ -163,31 +199,45 @@ export function Sidebar() {
           </div>
         )}
 
-        <div className={cn('flex gap-1 px-2 py-2', compactNav && 'flex-col items-center')}>
+        <div className={cn('space-y-1 px-2 py-2', compactNav && 'flex flex-col items-center')}>
           <button
             type="button"
-            onClick={() => setInterviewMode(!interviewMode)}
-            title="Interview mode: curated data, stable scenarios, no experimental surface"
+            onClick={() => (interviewMode ? setInterviewMode(false) : enterInterviewMode())}
+            title="Interview mode: curated scenarios, everything preloaded, no experimental surface"
             className={cn(
-              'focus-ring flex items-center gap-1.5 rounded-panel border px-1.5 py-1 text-3xs uppercase tracking-[0.08em] transition-colors',
+              'focus-ring flex w-full items-center gap-1.5 rounded-panel border px-1.5 py-1 text-3xs uppercase tracking-[0.08em] transition-colors',
               interviewMode
                 ? 'border-accent/40 bg-accent/10 text-accent'
                 : 'border-base-600 text-ink-400 hover:text-ink-200',
             )}
           >
             <Presentation className="h-3 w-3 shrink-0" />
-            {!compactNav && (interviewMode ? 'Interview' : 'Standard')}
+            {!compactNav && (interviewMode ? 'Interview mode' : 'Standard mode')}
           </button>
           {!compactNav && (
-            <button
-              type="button"
-              onClick={startTour}
-              title="Guided walkthrough"
-              className="focus-ring flex items-center gap-1.5 rounded-panel border border-base-600 px-1.5 py-1 text-3xs uppercase tracking-[0.08em] text-ink-400 transition-colors hover:text-ink-200"
-            >
-              <Activity className="h-3 w-3" />
-              Demo
-            </button>
+            <div className="flex gap-1">
+              <DemoButton
+                onClick={onStartDemo}
+                icon={PlayCircle}
+                label={tourStep === null ? 'Start demo' : 'Restart'}
+                primary
+                title="Reset, preload and open the guided walkthrough"
+              />
+              <DemoButton
+                onClick={onResetDemo}
+                icon={RotateCcw}
+                label="Reset demo"
+                title="Return the whole product to its opening position"
+              />
+            </div>
+          )}
+          {!compactNav && (
+            <DemoButton
+              onClick={() => setArchitecture(true)}
+              icon={Network}
+              label="Architecture"
+              title="Both pipelines, and the provenance legend"
+            />
           )}
         </div>
 
@@ -221,17 +271,56 @@ export function Sidebar() {
               </Link>
               <button
                 type="button"
-                onClick={onReset}
+                onClick={async () => {
+                  try {
+                    await api.resetDemo();
+                  } catch {
+                    /* a failed cache clear is not worth breaking the demo over */
+                  }
+                  window.location.reload();
+                }}
                 className="focus-ring ml-auto text-3xs uppercase tracking-[0.08em] text-ink-500 hover:text-ink-200"
-                title="Clear every server-side cache and restore defaults"
+                title="Clear every server-side cache and reload from disk"
               >
-                Reset
+                Clear cache
               </button>
             </>
           )}
         </div>
       </div>
+      {architecture && <ArchitectureDrawer onClose={() => setArchitecture(false)} />}
     </aside>
+  );
+}
+
+function DemoButton({
+  onClick,
+  icon: Icon,
+  label,
+  title,
+  primary,
+}: {
+  onClick: () => void;
+  icon: typeof Network;
+  label: string;
+  title: string;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        'focus-ring flex w-full items-center justify-center gap-1.5 rounded-panel border px-1.5 py-1 text-3xs uppercase tracking-[0.08em] transition-colors',
+        primary
+          ? 'bg-accent/12 border-accent/45 text-accent hover:bg-accent/20'
+          : 'border-base-600 text-ink-400 hover:text-ink-200',
+      )}
+    >
+      <Icon className="h-3 w-3 shrink-0" />
+      {label}
+    </button>
   );
 }
 

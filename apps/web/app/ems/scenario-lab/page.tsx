@@ -25,7 +25,8 @@ import { PROVENANCE_STYLE, cn, fullTimestamp, num, pct } from '@/lib/format';
 import type { CrossModuleResult, OptimiseResponse, Provenance, Series } from '@/lib/types';
 
 export default function ScenarioLabPage() {
-  const { facilityId, setFacilityId, emsScenario, setEmsScenario, scenarios } = useDemo();
+  const { facilityId, setFacilityId, emsScenario, setEmsScenario, scenarios, resetToken } =
+    useDemo();
   const [optimisation, setOptimisation] = useState<OptimiseResponse | null>(null);
   const [optimising, setOptimising] = useState(false);
   const [optimiseError, setOptimiseError] = useState<string | null>(null);
@@ -44,13 +45,15 @@ export default function ScenarioLabPage() {
     [facilityId, emsScenario],
   );
 
-  // A scenario change invalidates anything computed under the previous one.
+  // A scenario change invalidates anything computed under the previous one,
+  // and so does a demo reset: an optimisation left on screen from the last
+  // run is the difference between a reset and a partial reset.
   useEffect(() => {
     setOptimisation(null);
     setChain(null);
     setOptimiseError(null);
     setChainError(null);
-  }, [emsScenario, facilityId]);
+  }, [emsScenario, facilityId, resetToken]);
 
   const emsScenarios = scenarios.filter((s) => s.module === 'EMS');
   const active = emsScenarios.find((s) => s.scenario_id === emsScenario);
@@ -94,11 +97,33 @@ export default function ScenarioLabPage() {
       provenance: prov,
     });
     return [
-      { series: mk('baseline', 'Demand before dispatch', optimisation.baseline_kw, base), colour: '#ff5a5f', width: 1.6 },
-      { series: mk('optimised', 'Demand after dispatch', optimisation.optimised_kw, opt), colour: '#3ddc97', width: 1.9 },
-      { series: mk('ev_red', 'EV curtailment', optimisation.ev_reduction_kw, opt), colour: '#f472b6', width: 1.1, area: true },
-      { series: mk('ev_rec', 'EV recovery', optimisation.ev_recovery_kw, opt), colour: '#a98bfa', width: 1.1, area: true },
-      { series: mk('hvac_red', 'HVAC reduction', optimisation.hvac_reduction_kw, opt), colour: '#f2b544', width: 1.1 },
+      {
+        series: mk('baseline', 'Demand before dispatch', optimisation.baseline_kw, base),
+        colour: '#ff5a5f',
+        width: 1.6,
+      },
+      {
+        series: mk('optimised', 'Demand after dispatch', optimisation.optimised_kw, opt),
+        colour: '#3ddc97',
+        width: 1.9,
+      },
+      {
+        series: mk('ev_red', 'EV curtailment', optimisation.ev_reduction_kw, opt),
+        colour: '#f472b6',
+        width: 1.1,
+        area: true,
+      },
+      {
+        series: mk('ev_rec', 'EV recovery', optimisation.ev_recovery_kw, opt),
+        colour: '#a98bfa',
+        width: 1.1,
+        area: true,
+      },
+      {
+        series: mk('hvac_red', 'HVAC reduction', optimisation.hvac_reduction_kw, opt),
+        colour: '#f2b544',
+        width: 1.1,
+      },
     ];
   }, [optimisation]);
 
@@ -162,6 +187,7 @@ export default function ScenarioLabPage() {
                 <button
                   key={scenario.scenario_id}
                   type="button"
+                  data-active={isActive}
                   onClick={() => setEmsScenario(scenario.scenario_id)}
                   className={cn(
                     'focus-ring rounded-panel border px-2.5 py-2 text-left transition-colors',
@@ -316,7 +342,11 @@ export default function ScenarioLabPage() {
                       value={`${num(optimisation.summary.peak_reduction_kw)} kW`}
                       mono
                     />
-                    <Field label="Target" value={`${num(optimisation.summary.target_kw)} kW`} mono />
+                    <Field
+                      label="Target"
+                      value={`${num(optimisation.summary.target_kw)} kW`}
+                      mono
+                    />
                     <Field
                       label="EV energy shifted"
                       value={`${num(optimisation.summary.ev_energy_shifted_kwh)} kWh`}
@@ -362,6 +392,7 @@ export default function ScenarioLabPage() {
                     after={optimisation.network_after.transformer_loading_pct ?? 0}
                     unit="%"
                     criticalAbove={100}
+                    testId="loading"
                   />
                   <TransitionStat
                     label="LV bus voltage"
@@ -521,7 +552,9 @@ function Stage({
     <div className={cn(highlight && 'rounded-panel bg-accent/[0.06] px-1.5 py-1')}>
       <div className="flex items-baseline justify-between gap-2">
         <span className="truncate text-2xs text-ink-400">{label}</span>
-        <span className={cn('tabular shrink-0 text-base font-semibold', text)}>{pct(value, 1)}</span>
+        <span className={cn('tabular shrink-0 text-base font-semibold', text)}>
+          {pct(value, 1)}
+        </span>
       </div>
       <Meter value={value} max={scaleMax} mark={100} tone={tone} className="mt-1" />
     </div>

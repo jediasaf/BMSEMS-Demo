@@ -168,7 +168,12 @@ export interface Scenario {
   description: string;
   teaches: string;
   is_baseline: boolean;
+  is_flagship: boolean;
   parameters: Record<string, number>;
+  injected_parameter: string;
+  magnitude: string;
+  duration: string;
+  expected_impact: string;
 }
 
 export interface ScenarioInjection {
@@ -181,7 +186,61 @@ export interface ScenarioInjection {
   total_injection: number;
   affected_steps: number;
   seed: number;
+  affected_asset?: string;
+  injection_start?: string | null;
+  injection_end?: string | null;
+  duration_hours?: number;
   detail: Record<string, number>;
+}
+
+export interface InterviewStep {
+  step: number;
+  route: string;
+  scenario: string;
+  title: string;
+  demonstrates: string;
+}
+
+export interface ScenarioBrief {
+  scenario_id: string;
+  name: string;
+  subtitle: string;
+  is_baseline: boolean;
+  is_flagship: boolean;
+  injected_parameter: string;
+  magnitude: string;
+  duration: string;
+  expected_impact: string;
+  parameters: Record<string, number>;
+}
+
+export interface InterviewPlan {
+  bms: { site_id: string; scenario: ScenarioBrief; baseline: ScenarioBrief; chain: string[] };
+  ems: { facility_id: string; scenario: ScenarioBrief; baseline: ScenarioBrief; chain: string[] };
+  steps: InterviewStep[];
+  simulation_engine: string;
+  simulation_mode: 'live' | 'local';
+  checks: string[];
+}
+
+export interface PreloadResult {
+  preloaded: boolean;
+  total_ms: number;
+  failed: string[];
+  stages: { stage: string; ok: boolean; ms: number; error?: string }[];
+  bms_scenario: string;
+  ems_scenario: string;
+  site_id: string;
+  facility_id: string;
+}
+
+export interface AcceptanceVerdict {
+  accepted: boolean;
+  verdict: 'accepted' | 'rejected';
+  reason: string;
+  note: string;
+  failed: string[];
+  criteria: { criterion: string; passed: boolean; detail: string }[];
 }
 
 export interface BmsOverview {
@@ -254,6 +313,7 @@ export interface ControlLabResult {
     max_step_change_k: number;
     comfort_slack_kh: number;
   };
+  acceptance: AcceptanceVerdict;
   parameters: Record<string, unknown>;
   provenance: Provenance;
   comparison_note: string;

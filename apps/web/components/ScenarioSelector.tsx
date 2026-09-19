@@ -27,11 +27,12 @@ export function ScenarioSelector({
           <button
             key={scenario.scenario_id}
             type="button"
+            data-active={selected === scenario.scenario_id}
             onClick={() => onSelect(scenario.scenario_id)}
             className={cn(
               'focus-ring inline-flex items-center gap-1.5 rounded-panel border px-2 py-[3px] text-2xs font-medium transition-colors',
               selected === scenario.scenario_id
-                ? 'border-accent/50 bg-accent/12 text-accent'
+                ? 'bg-accent/12 border-accent/50 text-accent'
                 : 'border-base-600 bg-base-800/60 text-ink-300 hover:border-base-500 hover:text-ink-100',
             )}
           >
@@ -55,7 +56,10 @@ export function ScenarioSelector({
             Injected scenario
           </Pill>
           <span className="tabular text-3xs text-ink-200">
-            peak <span className="font-semibold text-prov-injected">+{injection.peak_injection.toFixed(1)} {injection.unit}</span>
+            peak{' '}
+            <span className="font-semibold text-prov-injected">
+              +{injection.peak_injection.toFixed(1)} {injection.unit}
+            </span>
             {' · '}
             {injection.total_injection.toFixed(0)} kWh over {injection.affected_steps} intervals
           </span>

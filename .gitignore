@@ -31,3 +31,7 @@ data/processed/_*.json
 # ---- artefacts ----
 *.log
 .DS_Store
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/

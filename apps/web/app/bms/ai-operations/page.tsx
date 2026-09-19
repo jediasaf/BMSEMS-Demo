@@ -31,8 +31,10 @@ export default function AiOperationsPage() {
     selectedInsight,
     setSelectedInsight,
     status,
+    resetToken,
   } = useDemo();
   const [dismissed, setDismissed] = useState<string[]>([]);
+  useEffect(() => setDismissed([]), [resetToken]);
 
   const sites = useAsync(() => api.bms.sites(), []);
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function AiOperationsPage() {
                 <div className="p-2.5">
                   <EmptyNote
                     title="Nothing exceeded the threshold"
-                    detail="Measured demand stayed inside the model's expected envelope. Inject a scenario to see the detector respond."
+                    detail="Metered demand stayed inside the model's expected envelope over this window. AI monitoring is running; there is simply nothing above the materiality floor to report. Inject a scenario to see the detector respond."
                   />
                 </div>
               )}
@@ -229,8 +231,8 @@ export default function AiOperationsPage() {
               {recommendations.data?.length === 0 && (
                 <Panel title="AI recommendation">
                   <EmptyNote
-                    title="No action proposed"
-                    detail="Recommendations follow a material over-consumption finding. Inventing one to fill the panel would be worse than leaving it empty."
+                    title="No operational intervention recommended"
+                    detail="Conditions are within expected operating ranges and monitoring remains active. A recommendation follows a material over-consumption finding; inventing one to fill the panel would be worse than leaving it empty."
                   />
                 </Panel>
               )}

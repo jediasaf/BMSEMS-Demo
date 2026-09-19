@@ -38,9 +38,13 @@ function toSeries(
   return { series_id: id, label, unit, timestamps, values, provenance };
 }
 
+/** The Control Lab's default horizon, restored by a demo reset. */
+const DEFAULT_HORIZON_HOURS = 24;
+
 export default function ControlLabPage() {
-  const { siteId, setSiteId, bmsScenario } = useDemo();
-  const [hours, setHours] = useState(24);
+  const { siteId, setSiteId, bmsScenario, resetToken } = useDemo();
+  const [hours, setHours] = useState(DEFAULT_HORIZON_HOURS);
+  useEffect(() => setHours(DEFAULT_HORIZON_HOURS), [resetToken]);
 
   const sites = useAsync(() => api.bms.sites(), []);
   useEffect(() => {
@@ -71,23 +75,51 @@ export default function ControlLabPage() {
     result && provenance && optimisedProvenance
       ? [
           {
-            series: toSeries('t_base', 'Zone temp — baseline', result.timestamps, result.baseline.zone_temp_c, provenance, '°C'),
+            series: toSeries(
+              't_base',
+              'Zone temp — baseline',
+              result.timestamps,
+              result.baseline.zone_temp_c,
+              provenance,
+              '°C',
+            ),
             colour: '#8ba39f',
             width: 1.4,
           },
           {
-            series: toSeries('t_ai', 'Zone temp — AI control', result.timestamps, result.ai_control.zone_temp_c, provenance, '°C'),
+            series: toSeries(
+              't_ai',
+              'Zone temp — AI control',
+              result.timestamps,
+              result.ai_control.zone_temp_c,
+              provenance,
+              '°C',
+            ),
             colour: '#a98bfa',
             width: 1.8,
           },
           {
-            series: toSeries('sp_base', 'Setpoint — baseline', result.timestamps, result.baseline.setpoint_c, provenance, '°C'),
+            series: toSeries(
+              'sp_base',
+              'Setpoint — baseline',
+              result.timestamps,
+              result.baseline.setpoint_c,
+              provenance,
+              '°C',
+            ),
             colour: '#4a615e',
             width: 1,
             dashed: true,
           },
           {
-            series: toSeries('sp_ai', 'Setpoint — AI control', result.timestamps, result.ai_control.setpoint_c, optimisedProvenance, '°C'),
+            series: toSeries(
+              'sp_ai',
+              'Setpoint — AI control',
+              result.timestamps,
+              result.ai_control.setpoint_c,
+              optimisedProvenance,
+              '°C',
+            ),
             colour: '#3ddc97',
             width: 1.4,
             dashed: true,
@@ -120,13 +152,27 @@ export default function ControlLabPage() {
     result && provenance
       ? [
           {
-            series: toSeries('p_base', 'HVAC power — baseline', result.timestamps, result.baseline.hvac_kw, provenance, 'kW'),
+            series: toSeries(
+              'p_base',
+              'HVAC power — baseline',
+              result.timestamps,
+              result.baseline.hvac_kw,
+              provenance,
+              'kW',
+            ),
             colour: '#8ba39f',
             width: 1.4,
             area: true,
           },
           {
-            series: toSeries('p_ai', 'HVAC power — AI control', result.timestamps, result.ai_control.hvac_kw, provenance, 'kW'),
+            series: toSeries(
+              'p_ai',
+              'HVAC power — AI control',
+              result.timestamps,
+              result.ai_control.hvac_kw,
+              provenance,
+              'kW',
+            ),
             colour: '#3ddc97',
             width: 1.8,
             area: true,
@@ -136,12 +182,60 @@ export default function ControlLabPage() {
 
   const rows: ComparisonRow[] = result
     ? [
-        { key: 'energy', label: 'HVAC electrical energy', before: result.baseline.kpis.energy_kwh, after: result.ai_control.kpis.energy_kwh, unit: 'kWh', better: 'lower' },
-        { key: 'peak', label: 'HVAC peak power', before: result.baseline.kpis.peak_kw, after: result.ai_control.kpis.peak_kw, unit: 'kW', digits: 2, better: 'lower' },
-        { key: 'comfort', label: 'Comfort violation', before: result.baseline.kpis.comfort_violation_kh, after: result.ai_control.kpis.comfort_violation_kh, unit: 'K·h', digits: 3, better: 'lower', hint: 'Degree-hours outside the active comfort band.' },
-        { key: 'steps', label: 'Intervals out of band', before: result.baseline.kpis.comfort_violation_steps, after: result.ai_control.kpis.comfort_violation_steps, unit: '', digits: 0, better: 'lower' },
-        { key: 'temp', label: 'Mean zone temperature', before: result.baseline.kpis.mean_zone_temp_c, after: result.ai_control.kpis.mean_zone_temp_c, unit: '°C', digits: 2, better: 'neutral' },
-        { key: 'cop', label: 'Mean plant COP', before: result.baseline.kpis.cop_mean, after: result.ai_control.kpis.cop_mean, unit: '', digits: 3, better: 'higher' },
+        {
+          key: 'energy',
+          label: 'HVAC electrical energy',
+          before: result.baseline.kpis.energy_kwh,
+          after: result.ai_control.kpis.energy_kwh,
+          unit: 'kWh',
+          better: 'lower',
+        },
+        {
+          key: 'peak',
+          label: 'HVAC peak power',
+          before: result.baseline.kpis.peak_kw,
+          after: result.ai_control.kpis.peak_kw,
+          unit: 'kW',
+          digits: 2,
+          better: 'lower',
+        },
+        {
+          key: 'comfort',
+          label: 'Comfort violation',
+          before: result.baseline.kpis.comfort_violation_kh,
+          after: result.ai_control.kpis.comfort_violation_kh,
+          unit: 'K·h',
+          digits: 3,
+          better: 'lower',
+          hint: 'Degree-hours outside the active comfort band.',
+        },
+        {
+          key: 'steps',
+          label: 'Intervals out of band',
+          before: result.baseline.kpis.comfort_violation_steps,
+          after: result.ai_control.kpis.comfort_violation_steps,
+          unit: '',
+          digits: 0,
+          better: 'lower',
+        },
+        {
+          key: 'temp',
+          label: 'Mean zone temperature',
+          before: result.baseline.kpis.mean_zone_temp_c,
+          after: result.ai_control.kpis.mean_zone_temp_c,
+          unit: '°C',
+          digits: 2,
+          better: 'neutral',
+        },
+        {
+          key: 'cop',
+          label: 'Mean plant COP',
+          before: result.baseline.kpis.cop_mean,
+          after: result.ai_control.kpis.cop_mean,
+          unit: '',
+          digits: 3,
+          better: 'higher',
+        },
       ]
     : [];
 
@@ -234,8 +328,16 @@ export default function ControlLabPage() {
                     value={`${num(result.calibration.conditioned_share * 100, 0)}%`}
                     mono
                   />
-                  <Field label="τ air" value={`${num(result.calibration.time_constants_hours.air, 2)} h`} mono />
-                  <Field label="τ mass" value={`${num(result.calibration.time_constants_hours.mass, 1)} h`} mono />
+                  <Field
+                    label="τ air"
+                    value={`${num(result.calibration.time_constants_hours.air, 2)} h`}
+                    mono
+                  />
+                  <Field
+                    label="τ mass"
+                    value={`${num(result.calibration.time_constants_hours.mass, 1)} h`}
+                    mono
+                  />
                   <p className="mt-1.5 border-t border-base-700 pt-1.5 text-3xs leading-relaxed text-ink-600">
                     {result.calibration.method}
                   </p>
@@ -263,7 +365,10 @@ export default function ControlLabPage() {
                   <div className="label mb-1">Constraints</div>
                   <ul className="space-y-0.5">
                     {result.optimisation.constraints.map((constraint) => (
-                      <li key={constraint} className="flex gap-1.5 text-3xs leading-relaxed text-ink-400">
+                      <li
+                        key={constraint}
+                        className="flex gap-1.5 text-3xs leading-relaxed text-ink-400"
+                      >
                         <span className="shrink-0 text-accent">·</span>
                         {constraint}
                       </li>
@@ -285,25 +390,82 @@ export default function ControlLabPage() {
 
             {/* RIGHT — comparison */}
             <div className="flex min-w-0 flex-col gap-2.5">
-              <Panel
-                title="Baseline vs AI control"
-                subtitle="same engine, same inputs"
-                flush
-              >
+              <Panel title="Baseline vs AI control" subtitle="same engine, same inputs" flush>
                 <BeforeAfterPanel rows={rows} />
               </Panel>
 
-              <Panel title="Headline" bodyClassName="grid grid-cols-2 gap-2">
+              <Panel
+                title="Simulator verdict"
+                subtitle={result.acceptance.accepted ? 'proposal accepted' : 'proposal rejected'}
+                actions={
+                  <Pill tone={result.acceptance.accepted ? 'accent' : 'critical'}>
+                    {result.acceptance.verdict}
+                  </Pill>
+                }
+              >
+                <p
+                  className={cn(
+                    'text-2xs leading-relaxed',
+                    result.acceptance.accepted ? 'text-ink-300' : 'text-status-critical',
+                  )}
+                >
+                  {result.acceptance.reason}
+                </p>
+                <ul className="mt-2 space-y-1 border-t border-base-700 pt-2">
+                  {result.acceptance.criteria.map((criterion) => (
+                    <li
+                      key={criterion.criterion}
+                      className="flex items-baseline justify-between gap-2 text-3xs"
+                    >
+                      <span className="flex min-w-0 items-baseline gap-1.5">
+                        <span
+                          className={cn(
+                            'shrink-0 font-mono',
+                            criterion.passed ? 'text-accent' : 'text-status-critical',
+                          )}
+                        >
+                          {criterion.passed ? '✓' : '✗'}
+                        </span>
+                        <span className="text-ink-400">{criterion.criterion}</span>
+                      </span>
+                      <span className="tabular shrink-0 font-mono text-ink-200">
+                        {criterion.detail}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 border-t border-base-700 pt-2 text-3xs leading-relaxed text-ink-600">
+                  {result.acceptance.note}
+                </p>
+              </Panel>
+
+              <Panel
+                title="Headline"
+                subtitle={result.acceptance.accepted ? undefined : 'not claimed as a saving'}
+                bodyClassName="grid grid-cols-2 gap-2"
+              >
                 <Headline
                   label="HVAC energy"
                   value={`${num(result.delta_pct.energy_kwh ?? 0, 1)}%`}
-                  tone={(result.delta_pct.energy_kwh ?? 0) < 0 ? 'text-accent' : 'text-status-warning'}
+                  tone={
+                    !result.acceptance.accepted
+                      ? 'text-ink-400'
+                      : (result.delta_pct.energy_kwh ?? 0) < 0
+                        ? 'text-accent'
+                        : 'text-status-warning'
+                  }
                   sub={`${num(result.delta.energy_kwh ?? 0, 1)} kWh`}
                 />
                 <Headline
                   label="Peak power"
                   value={`${num(result.delta_pct.peak_kw ?? 0, 1)}%`}
-                  tone={(result.delta_pct.peak_kw ?? 0) < 0 ? 'text-accent' : 'text-status-warning'}
+                  tone={
+                    !result.acceptance.accepted
+                      ? 'text-ink-400'
+                      : (result.delta_pct.peak_kw ?? 0) < 0
+                        ? 'text-accent'
+                        : 'text-status-warning'
+                  }
                   sub={`${num(result.delta.peak_kw ?? 0, 2)} kW`}
                 />
               </Panel>
