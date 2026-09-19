@@ -12,7 +12,7 @@ is re-derived by `make check`, `make audit`, `make demo` and `make e2e`._
 | | |
 |---|---|
 | Branch | `claude/zen-ptolemy-5hf381` |
-| Commit | _filled in by the release commit_ |
+| Commit | `ab1d485` |
 | Frontend | https://ecotwin-ai-zeta.vercel.app — deployed, publicly reachable |
 | Backend | **not deployed** — no container-host credential has been available |
 | Dataset | Power Laws: Forecasting Energy Consumption, 1.03 M records |
