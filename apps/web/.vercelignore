@@ -1,0 +1,12 @@
+# Vercel builds from source; none of this needs to be uploaded.
+node_modules
+.next
+out
+
+# Local test output
+test-results
+playwright-report
+
+# The browser suite runs against a deployed URL, not inside the build
+e2e
+playwright.config.ts
