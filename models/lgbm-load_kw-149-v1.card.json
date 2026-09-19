@@ -1,0 +1,91 @@
+{
+  "model_id": "lgbm-load_kw-149-v1",
+  "asset_id": "149",
+  "target": "load_kw",
+  "unit": "kW",
+  "family": "LightGBM gradient-boosted trees",
+  "trained_at": "2026-09-19T08:45:21Z",
+  "n_features": 33,
+  "metrics": {
+    "n_train": 13761,
+    "n_valid": 4588,
+    "train_start": "2015-12-07 02:30:00",
+    "train_end": "2017-02-09 12:30:00",
+    "valid_start": "2017-07-02 20:00:00",
+    "valid_end": "2017-11-18 14:15:00",
+    "calib_start": "2017-02-09 12:45:00",
+    "calib_end": "2017-07-02 19:45:00",
+    "n_calib": 4587,
+    "mae_kw": 1.7995,
+    "rmse_kw": 2.4391,
+    "mape_pct": 5.276,
+    "wape_pct": 5.078,
+    "r2": 0.2915,
+    "baseline_mae_kw": 0.5075,
+    "skill_vs_baseline_pct": -254.58,
+    "interval_coverage_pct": 94.14,
+    "raw_interval_coverage_pct": 93.05,
+    "conformal_offset_kw": 0.1954,
+    "interval_target_pct": 80.0,
+    "mean_interval_width_kw": 9.897
+  },
+  "top_features": [
+    {
+      "feature": "lag_96",
+      "label": "Load at this time yesterday",
+      "importance": 0.6147
+    },
+    {
+      "feature": "lag_672",
+      "label": "Load at this time last week",
+      "importance": 0.1602
+    },
+    {
+      "feature": "lag_97",
+      "label": "Load yesterday, +15 min",
+      "importance": 0.0618
+    },
+    {
+      "feature": "lag_288",
+      "label": "Load at this time 3 days ago",
+      "importance": 0.0442
+    },
+    {
+      "feature": "lag_192",
+      "label": "Load at this time 2 days ago",
+      "importance": 0.0268
+    },
+    {
+      "feature": "lag_768",
+      "label": "Load last week, +1 day",
+      "importance": 0.0107
+    },
+    {
+      "feature": "temp_roll_24h",
+      "label": "Outdoor temperature, 24 h mean",
+      "importance": 0.0096
+    },
+    {
+      "feature": "dayofweek",
+      "label": "Day of week",
+      "importance": 0.0078
+    },
+    {
+      "feature": "cdh_roll_24h",
+      "label": "Cooling degree-hours, 24 h mean",
+      "importance": 0.0072
+    },
+    {
+      "feature": "tod_sin",
+      "label": "Time of day",
+      "importance": 0.0062
+    }
+  ],
+  "notes": [
+    "Source adapter: power_laws_building.",
+    "Outdoor temperature is used as a forecast input; on historical replay the recorded observation stands in for the vendor weather forecast.",
+    "Target is load_kw, itself DERIVED from the published energy counter under the unit hypothesis in docs/data_provenance.md."
+  ],
+  "interval_method": "LightGBM pinball loss at q=0.1 and q=0.9, conformalised on a held-out calibration split (offset 0.20 kW); coverage reported on a further unseen test split",
+  "leakage_control": "every feature is calendar, weather, or a lag of at least 24 h of the target; split is by time, never shuffled"
+}

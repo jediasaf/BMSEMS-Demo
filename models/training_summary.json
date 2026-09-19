@@ -1,0 +1,192 @@
+{
+  "generated_at": "2026-09-19T08:53:56.018025+00:00",
+  "n_models": 6,
+  "models": [
+    {
+      "asset_id": "62",
+      "name": "Site 062",
+      "model_id": "lgbm-load_kw-62-v1",
+      "artifact": "models/lgbm-load_kw-62-v1.joblib",
+      "training_cutoff": "2017-08-24 00:00:00",
+      "backtest": {
+        "n": 4518,
+        "mae_kw": 3.0413,
+        "wape_pct": 11.829,
+        "r2": 0.7291,
+        "baseline_name": "lag_96",
+        "baseline_mae_kw": 4.3303,
+        "skill_vs_baseline_pct": 29.77,
+        "interval_coverage_pct": 68.11
+      },
+      "live": {
+        "n": 3210,
+        "mae_kw": 1.6106,
+        "wape_pct": 7.497,
+        "interval_coverage_pct": 88.07
+      },
+      "n_train": 13553,
+      "top_features": [
+        "Load at this time yesterday",
+        "Load at this time 4 days ago",
+        "Load at this time 5 days ago",
+        "Load at this time 3 days ago",
+        "Load at this time 2 days ago"
+      ]
+    },
+    {
+      "asset_id": "143",
+      "name": "Site 143",
+      "model_id": "lgbm-load_kw-143-v1",
+      "artifact": "models/lgbm-load_kw-143-v1.joblib",
+      "training_cutoff": "2017-08-24 00:00:00",
+      "backtest": {
+        "n": 3511,
+        "mae_kw": 285.4004,
+        "wape_pct": 9.247,
+        "r2": 0.9105,
+        "baseline_name": "lag_96",
+        "baseline_mae_kw": 806.9214,
+        "skill_vs_baseline_pct": 64.63,
+        "interval_coverage_pct": 73.11
+      },
+      "live": {
+        "n": 3722,
+        "mae_kw": 235.9865,
+        "wape_pct": 9.194,
+        "interval_coverage_pct": 77.73
+      },
+      "n_train": 10532,
+      "top_features": [
+        "Building closed",
+        "Time of day",
+        "Load yesterday, +15 min",
+        "Hour of day",
+        "Season"
+      ]
+    },
+    {
+      "asset_id": "162",
+      "name": "Site 162",
+      "model_id": "lgbm-load_kw-162-v1",
+      "artifact": "models/lgbm-load_kw-162-v1.joblib",
+      "training_cutoff": "2017-08-24 00:00:00",
+      "backtest": {
+        "n": 3452,
+        "mae_kw": 6.863,
+        "wape_pct": 10.487,
+        "r2": 0.8353,
+        "baseline_name": "lag_96",
+        "baseline_mae_kw": 8.7196,
+        "skill_vs_baseline_pct": 21.29,
+        "interval_coverage_pct": 71.12
+      },
+      "live": {
+        "n": 3270,
+        "mae_kw": 5.3983,
+        "wape_pct": 9.85,
+        "interval_coverage_pct": 73.06
+      },
+      "n_train": 10354,
+      "top_features": [
+        "Load at this time yesterday",
+        "Day of week",
+        "Mean load, previous 5 days",
+        "Load at this time 2 days ago",
+        "Time of day"
+      ]
+    },
+    {
+      "asset_id": "227",
+      "name": "Site 227",
+      "model_id": "lgbm-load_kw-227-v1",
+      "artifact": "models/lgbm-load_kw-227-v1.joblib",
+      "training_cutoff": "2017-08-24 00:00:00",
+      "backtest": {
+        "n": 4057,
+        "mae_kw": 3.9948,
+        "wape_pct": 7.54,
+        "r2": 0.891,
+        "baseline_name": "lag_96",
+        "baseline_mae_kw": 4.136,
+        "skill_vs_baseline_pct": 3.41,
+        "interval_coverage_pct": 96.3
+      },
+      "live": {
+        "n": 3858,
+        "mae_kw": 7.2545,
+        "wape_pct": 14.017,
+        "interval_coverage_pct": 80.12
+      },
+      "n_train": 12169,
+      "top_features": [
+        "Load at this time 5 days ago",
+        "Yesterday's shape at this hour",
+        "Load at this time yesterday",
+        "Load yesterday, +15 min",
+        "Load at this time 3 days ago"
+      ]
+    },
+    {
+      "asset_id": "269",
+      "name": "Site 269",
+      "model_id": "lgbm-load_kw-269-v1",
+      "artifact": "models/lgbm-load_kw-269-v1.joblib",
+      "training_cutoff": "2017-08-24 00:00:00",
+      "backtest": {
+        "n": 12314,
+        "mae_kw": 8.0797,
+        "wape_pct": 36.731,
+        "r2": 0.7239,
+        "baseline_name": "lag_96",
+        "baseline_mae_kw": 11.0709,
+        "skill_vs_baseline_pct": 27.02,
+        "interval_coverage_pct": 82.23
+      },
+      "live": {
+        "n": 1921,
+        "mae_kw": 6.6267,
+        "wape_pct": 24.626,
+        "interval_coverage_pct": 88.08
+      },
+      "n_train": 36942,
+      "top_features": [
+        "Load at this time yesterday",
+        "Day of week",
+        "Load at this time 3 days ago",
+        "Load at this time 2 days ago",
+        "Load yesterday, +15 min"
+      ]
+    },
+    {
+      "asset_id": "284",
+      "name": "Site 284",
+      "model_id": "lgbm-load_kw-284-v1",
+      "artifact": "models/lgbm-load_kw-284-v1.joblib",
+      "training_cutoff": "2017-08-24 00:00:00",
+      "backtest": {
+        "n": 5329,
+        "mae_kw": 72.9506,
+        "wape_pct": 22.367,
+        "r2": 0.6187,
+        "baseline_name": "lag_96",
+        "baseline_mae_kw": 116.2426,
+        "skill_vs_baseline_pct": 37.24,
+        "interval_coverage_pct": 82.68
+      },
+      "live": {
+        "n": 3286,
+        "mae_kw": 69.194,
+        "wape_pct": 20.899,
+        "interval_coverage_pct": 84.75
+      },
+      "n_train": 15986,
+      "top_features": [
+        "Building closed",
+        "Day of week",
+        "Day of week",
+        "Load at this time yesterday",
+        "Season"
+      ]
+    }
+  ]
+}

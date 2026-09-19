@@ -55,8 +55,18 @@ MAX_GAP_FILL = 4  # interpolate gaps up to 1 hour; longer gaps stay NaN
 DENSE_DAY_COVERAGE = 0.98
 MIN_DEMO_SITES = 6
 MAX_PORTFOLIO = 8
-DEMO_WINDOW_CANDIDATES = (10, 9, 8, 7, 6, 5)
-WINDOW_LENGTH_PREFERENCE = 0.45
+DEMO_WINDOW_CANDIDATES = (3, 2)
+WINDOW_LENGTH_PREFERENCE = 1.0
+#: A site only qualifies for the demo window if it has at least this many
+#: dense days *before* it. The forecaster is trained strictly on that prior
+#: history, so the replay shows genuinely out-of-sample predictions.
+MIN_PRIOR_DENSE_DAYS = 90
+#: The forecaster's deepest feature reaches back 5 days, so those days must be
+#: dense too or the replay opens with a wall of blank predictions. Every usable
+#: stretch of this source is a contiguous 10-day block, which is the whole
+#: budget: 5 days of lookback leaves a 3-day replay window with enough sites
+#: simultaneously complete to fill a portfolio.
+FEATURE_LOOKBACK_DAYS = 5
 
 #: A BMS story needs a building with a real base load, not a mostly-dark shell.
 MIN_BMS_MEDIAN_KW = 25.0
@@ -231,19 +241,30 @@ def _select_demo_window(day_quality: pd.DataFrame) -> dict[str, Any]:
         .reindex(columns=present.columns, fill_value=0.0)
     )
 
+    # A site qualifies for a window only if enough dense history precedes it.
+    prior = present.cumsum().shift(1).fillna(0.0)
+
     best: dict[str, Any] | None = None
     for n_days in DEMO_WINDOW_CANDIDATES:
         if n_days > len(present):
             continue
-        complete = present.rolling(n_days, min_periods=n_days).sum() == n_days
+        # Density must hold across the window *and* the feature lookback that
+        # precedes it, contiguously.
+        span = n_days + FEATURE_LOOKBACK_DAYS
+        complete = present.rolling(span, min_periods=span).sum() == span
+        has_history = prior.shift(span - 1) >= MIN_PRIOR_DENSE_DAYS
+        complete = complete & has_history.reindex_like(complete).fillna(False)
         mean_swing = swing.rolling(n_days, min_periods=n_days).mean()
         n_sites = complete.sum(axis=1)
-        # Score = quality of the sites we could show, capped at the portfolio size.
+        # Score = *average* quality of the sites we would show, capped at the
+        # portfolio size. Summing instead would simply reward short windows,
+        # since more sites stay complete the shorter the window gets -- and the
+        # site count is already floored by MIN_DEMO_SITES.
         score = (mean_swing.where(complete, 0.0)).apply(
-            lambda row: float(np.sort(row.to_numpy())[::-1][:MAX_PORTFOLIO].sum()), axis=1
+            lambda row: float(np.mean(np.sort(row.to_numpy())[::-1][:MAX_PORTFOLIO])), axis=1
         )
-        # A longer replay is worth something, but not at any price: the mild
-        # exponent keeps a much better short window from being discarded.
+        # Replay length is worth roughly its weight in quality: a window twice
+        # as long is worth a proportionally less interesting portfolio.
         utility = score * (float(n_days) ** WINDOW_LENGTH_PREFERENCE)
         eligible = utility[n_sites >= MIN_DEMO_SITES]
         if eligible.empty:
@@ -538,11 +559,15 @@ def main() -> int:
             "start": w0.isoformat(),
             "end": w1.isoformat(),
             "days": int(window["n_days"]),
+            "min_prior_dense_days": MIN_PRIOR_DENSE_DAYS,
+            "feature_lookback_days": FEATURE_LOOKBACK_DAYS,
             "rule": (
                 f"longest window of {DEMO_WINDOW_CANDIDATES[0]}.."
                 f"{DEMO_WINDOW_CANDIDATES[-1]} days keeping >= {MIN_DEMO_SITES} sites "
-                f"at >= {DENSE_DAY_COVERAGE:.0%} daily completeness, maximising the "
-                "summed daily load swing of the portfolio"
+                f"at >= {DENSE_DAY_COVERAGE:.0%} joint load+weather completeness and "
+                f">= {MIN_PRIOR_DENSE_DAYS} dense days of prior history and a "
+                f"contiguous {FEATURE_LOOKBACK_DAYS}-day dense feature lookback, "
+                "maximising the summed daily load swing of the portfolio"
             ),
         },
         "bms_site": bms_site,
