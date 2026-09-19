@@ -17,10 +17,10 @@ flexible load.
 > and electrical control experiments are performed using simulation
 > environments.
 
-| | |
-|---|---|
-| **EcoTwin BMS** — AI Building Operator | Measured → Detect → Predict → Recommend → Simulate → Compare |
-| **EcoTwin EMS** — AI Power Operator | Measured → Forecast → Detect Risk → Optimise → Simulate → Resolve |
+|                                        |                                                                   |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| **EcoTwin BMS** — AI Building Operator | Measured → Detect → Predict → Recommend → Simulate → Compare      |
+| **EcoTwin EMS** — AI Power Operator    | Measured → Forecast → Detect Risk → Optimise → Simulate → Resolve |
 
 ---
 
@@ -177,6 +177,43 @@ Full diagrams in [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
+## Where it runs
+
+### Public demo
+
+|                        |                                                                                                                                                |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend               | https://ecotwin-ai-zeta.vercel.app — Vercel, **behind SSO Deployment Protection**                                                              |
+| Backend                | **not deployed yet**                                                                                                                           |
+| BMS zone simulation    | EcoTwin RC engine in-process (BOPTEST is not reachable from a hosted deployment). Labelled `ECOTWIN-RC-1.0` on every result, never as BOPTEST. |
+| EMS network            | pandapower, solved live on each request, labelled `SIMULATED`                                                                                  |
+| If a heavy solve fails | a recording for the _same_ scenario, banner-marked `SIMULATION REPLAY`                                                                         |
+
+Until a backend URL is set in `NEXT_PUBLIC_API_BASE`, the deployed frontend
+shows an explicit **Not configured** state. It does not fall back to
+`localhost` — a production build that did would point every visitor's page at
+their own machine and look healthy while nothing worked.
+
+### Local engineering mode
+
+```bash
+docker compose up --build              # web :3000 · api :8000
+make up-boptest                        # ... with a live BOPTEST instance
+```
+
+Here BOPTEST runs live where it is reachable, and pandapower is live as it is
+everywhere. This is the only mode that runs the external building emulator.
+
+### Health endpoints
+
+|                         |                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| `GET /healthz`          | liveness. Touches nothing, ~4 ms. This is what a platform health check should poll. |
+| `GET /health`           | component state: api, data, models, pandapower, boptest                             |
+| `GET /interview/verify` | the eight claims the guided demo makes, checked against real computation            |
+
+---
+
 ## Running it
 
 ### Local engineering mode
@@ -270,7 +307,7 @@ setpoint. That single bug had inflated the apparent AI saving from 10.8% to 39%.
 Dual setpoints now come from the comfort band.
 
 **The optimiser charged cars that had not arrived.** The dispatch chart showed
-EV energy being recovered hours *before* any was curtailed. Energy balance does
+EV energy being recovered hours _before_ any was curtailed. Energy balance does
 not imply causality. Added a cumulative constraint — and that immediately
 exposed a second bug, an 8-hour horizon ending before the charging session did,
 which made a feasible problem report as infeasible.
@@ -300,14 +337,14 @@ came after.
 
 ## Future EcoStruxure integration
 
-| Today | Production |
-|---|---|
-| `PowerLawsBuildingAdapter` | `EcoStruxureBuildingOperationAdapter` |
-| `FacilityPowerAdapter` | `PowerMonitoringExpertAdapter` |
-| `BoptestEngine` / `RcThermalEngine` | Live plant, via the same interface |
-| parquet + SQLite | PostgreSQL / TimescaleDB, behind the same adapter contract |
-| joblib artefacts + JSON cards | Model registry with scheduled retraining |
-| docker compose | Kubernetes: a Deployment per service, HPA on the API |
+| Today                               | Production                                                 |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `PowerLawsBuildingAdapter`          | `EcoStruxureBuildingOperationAdapter`                      |
+| `FacilityPowerAdapter`              | `PowerMonitoringExpertAdapter`                             |
+| `BoptestEngine` / `RcThermalEngine` | Live plant, via the same interface                         |
+| parquet + SQLite                    | PostgreSQL / TimescaleDB, behind the same adapter contract |
+| joblib artefacts + JSON cards       | Model registry with scheduled retraining                   |
+| docker compose                      | Kubernetes: a Deployment per service, HPA on the API       |
 
 The AI, optimisation and simulation layers already depend on nothing
 source-specific, so each row above is an adapter, not a rewrite.

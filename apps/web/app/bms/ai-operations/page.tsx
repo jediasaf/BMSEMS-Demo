@@ -200,6 +200,10 @@ export default function AiOperationsPage() {
                       flag it.
                     </p>
                   </>
+                ) : overview.error ? (
+                  <div className="p-2.5">
+                    <ErrorNote message={overview.error} onRetry={overview.reload} />
+                  </div>
                 ) : (
                   <Skeleton className="m-2.5 h-[140px]" />
                 )}

@@ -3,6 +3,11 @@
 A five-minute run through both workflows. Everything below is produced by the
 running system; no slide, no recording, nothing hard-coded.
 
+**Where to run it**
+
+The public frontend is https://ecotwin-ai-zeta.vercel.app (SSO-protected).
+It has no backend yet, so **run the demo locally** until one is deployed:
+
 **Before you start**
 
 ```bash
