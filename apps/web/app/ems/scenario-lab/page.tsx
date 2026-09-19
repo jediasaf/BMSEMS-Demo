@@ -9,6 +9,7 @@ import { Workspace } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { TimeSeriesChart, type ChartSeriesConfig } from '@/components/TimeSeriesChart';
 import { TransitionStat } from '@/components/BeforeAfterPanel';
+import { AcceptanceCriteria } from '@/components/AcceptanceCriteria';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import { ReplayNotice } from '@/components/ReplayNotice';
 import {
@@ -416,6 +417,22 @@ export default function ScenarioLabPage() {
                     {optimisation.verification_note}
                   </p>
                 </Panel>
+
+                {optimisation.acceptance && (
+                  <Panel
+                    title="Network verdict"
+                    subtitle={
+                      optimisation.acceptance.accepted ? 'dispatch accepted' : 'dispatch rejected'
+                    }
+                    actions={
+                      <Pill tone={optimisation.acceptance.accepted ? 'accent' : 'critical'}>
+                        {optimisation.acceptance.verdict}
+                      </Pill>
+                    }
+                  >
+                    <AcceptanceCriteria verdict={optimisation.acceptance} />
+                  </Panel>
+                )}
               </div>
             </div>
           )}

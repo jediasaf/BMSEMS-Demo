@@ -2,15 +2,30 @@
 
 ## Current production state
 
-|                    |                                                                             |
-| ------------------ | --------------------------------------------------------------------------- |
-| Frontend           | https://ecotwin-ai-zeta.vercel.app — deployed, SSO Deployment Protection on |
-| Backend            | **not deployed** — no Fly.io or Render credential has been available        |
-| Frontend → backend | `NEXT_PUBLIC_API_BASE` unset, so the site shows **Not configured**          |
+|                    |                                                                       |
+| ------------------ | --------------------------------------------------------------------- |
+| Frontend           | https://ecotwin-ai-zeta.vercel.app — deployed and publicly reachable  |
+| Backend            | **not deployed** — no Fly.io or Render credential has been available  |
+| Frontend → backend | `NEXT_PUBLIC_API_BASE` unset, so the site shows **Not configured**    |
 
 The frontend is correct and complete; it is waiting on a backend URL. Nothing
 below is aspirational — the image builds, runs and passes `/interview/verify`
 locally, and the manifests are sized from measurements of that run.
+
+### One command, once a credential exists
+
+Everything except the credential is committed. With a token in the
+environment, this deploys, waits for the service, checks all three health
+endpoints and prints the exact command to wire the frontend:
+
+```bash
+FLY_API_TOKEN=... bash scripts/deploy_backend.sh
+# or
+RENDER_API_KEY=... bash scripts/deploy_backend.sh --render
+```
+
+Without a credential it exits immediately and says which one it needs. It
+never reports a deployment it did not make.
 
 ## The shape of it
 

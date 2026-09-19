@@ -101,11 +101,19 @@ test.describe('interview demo path', () => {
     await expect(page.getByText(/Flexible-load dispatch/i)).toBeVisible({ timeout: 90_000 });
     await expect(page.getByText(/Constraint satisfied/i)).toBeVisible();
 
-    // 10 — verified by an independent load flow, back under the limit.
+    // 10 — verified by an independent load flow, back under the limit, and
+    // the post-action network gate says so rather than the solver.
     await nextStep(page);
     await expect(page.getByText(/Verified by load flow/i)).toBeVisible();
     const after = await page.getByTestId('loading-after').first().textContent();
     expect(Number.parseFloat((after ?? '').replace('%', ''))).toBeLessThan(100);
+    // By role, not by text: the guided-demo caption mentions the panel by name
+    // too, and a locator that matches the narration as well as the thing it
+    // narrates is not testing the thing.
+    await expect(page.getByRole('heading', { name: 'Network verdict' })).toBeVisible();
+    await expect(page.getByText(/transformer loading stays at or below/i)).toBeVisible();
+    await expect(page.getByText(/EV energy is conserved, not shed/i)).toBeVisible();
+    await expect(page.getByText(/second pandapower solve/i).first()).toBeVisible();
 
     // 11 — provenance.
     await nextStep(page);

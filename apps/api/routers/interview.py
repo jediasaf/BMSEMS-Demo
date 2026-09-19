@@ -22,6 +22,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 
 from apps.api.config import Settings, get_settings
+from apps.api.errors import public_detail
 from core.adapters.building.simulation import get_simulation_engine
 from core.enums import SimulationEngine
 from core.scenarios import get_scenario, list_scenarios
@@ -230,7 +231,7 @@ def preload() -> dict[str, Any]:
                     "stage": name,
                     "ok": False,
                     "ms": round((time.perf_counter() - start) * 1000, 1),
-                    "error": str(exc),
+                    "error": public_detail(exc),
                 }
             )
             return None
@@ -293,7 +294,9 @@ def verify() -> dict[str, Any]:
         try:
             passed, detail = fn()
         except Exception as exc:  # pragma: no cover - a failed check, not a 500
-            results.append({"check": name, "passed": False, "detail": f"raised: {exc}"})
+            results.append(
+                {"check": name, "passed": False, "detail": f"raised: {public_detail(exc)}"}
+            )
             return
         results.append({"check": name, "passed": bool(passed), "detail": detail})
 
@@ -353,6 +356,15 @@ def verify() -> dict[str, Any]:
         stated = result["constraints"]
         return bool(stated), f"{len(stated)} constraints stated, {shifted} kWh EV shifted"
 
+    def ems_network_accepted() -> tuple[bool, str]:
+        """The post-action load flow's verdict, not the solver's status."""
+        result = ems.optimise(facility, scenario_id=ems_scenario)
+        acceptance = result["acceptance"]
+        return bool(acceptance["accepted"]), (
+            f"{acceptance['verdict']}, {len(acceptance['criteria'])} criteria"
+            + ("" if acceptance["accepted"] else ": " + "; ".join(acceptance["failed"]))
+        )
+
     def ems_quiet_baseline() -> tuple[bool, str]:
         state, _split, stamp = ems.network_state(facility, scenario_id="ems_normal_day")
         return not state.violations, (
@@ -367,6 +379,7 @@ def verify() -> dict[str, Any]:
     check("ems_scenario_exceeds_transformer_capacity", ems_overload)
     check("ems_optimiser_returns_below_capacity", ems_resolved)
     check("ems_optimiser_conserves_ev_energy", ems_conserves)
+    check("ems_post_action_network_accepted", ems_network_accepted)
     check("ems_baseline_has_no_violation", ems_quiet_baseline)
 
     failed = [r["check"] for r in results if not r["passed"]]

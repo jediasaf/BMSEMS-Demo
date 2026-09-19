@@ -147,6 +147,8 @@ flowchart TB
     F1 -.-> C1
     F2 -.-> C2
     C1 & C2 --> AI["AI · optimisation · simulation · UI<br/><i>unchanged</i>"]
+    AI --> O1["Constrained setpoint recommendation<br/>validated, simulated, advisory"]
+    AI --> O2["Flexible-load dispatch<br/>verified by a second load flow"]
 ```
 
 Four methods each. The contract is deliberately narrow: metadata, a rectangular
@@ -166,18 +168,29 @@ no idea where the numbers came from.
 
 ## Performance, measured
 
-| Endpoint | Cold | Warm |
-|---|---|---|
-| `/bms/overview` | ~0.7 s | ~0.1 s |
-| `/bms/control-lab` (2 simulations + a convex solve) | ~0.5 s | ~0.4 s |
-| `/ems/portfolio` (6 facilities, capacity calibration) | ~11 s | ~1.4 s |
-| `/ems/risk` | ~0.03 s | ~0.03 s |
-| `/ems/optimise` (LP + 2 load flows) | ~0.5 s | ~0.12 s |
-| `/link/simulate-hvac-action` (full chain) | ~1.7 s | ~0.6 s |
+Warm, median of three, against the local production build:
 
-The portfolio's cold cost is the per-facility transformer capacity bisection —
-about forty load flows. Start-up warms it, so the first click of a demo is not
-the slow one.
+| Endpoint | Warm |
+|---|---|
+| `/healthz` (liveness; touches nothing) | 2 ms |
+| `/health` (every component, including a real load flow) | 64 ms |
+| `/bms/overview` | 184 ms |
+| `/bms/insights` | 2 ms |
+| `/bms/assets` | 27 ms |
+| `/bms/control-lab` (2 simulations + a convex solve) | 838 ms |
+| `/ems/portfolio` (6 facilities) | 48 ms |
+| `/ems/network` (load flow) | 68 ms |
+| `/ems/risk` | 29 ms |
+| `/ems/optimise` (LP + 2 load flows) | 139 ms |
+| `/interview/verify` (re-runs every demo claim) | 2.0 s |
+
+Two caches earn most of that. The per-facility transformer capacity is found by
+bisection on the load flow — about forty solves — and the anomaly detection
+behind the overview and portfolio screens runs its classifier once per
+anomalous step. Both are deterministic in their inputs, both are cached, and
+both are warmed at start-up, so the first click of a demo is not the slow one.
+Before the detection was cached the EMS portfolio cost 1.45 s on **every**
+request; it is 48 ms now, and the answer is identical.
 
 ## What is deliberately not here
 

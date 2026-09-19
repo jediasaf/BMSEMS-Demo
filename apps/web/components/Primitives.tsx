@@ -11,6 +11,7 @@ export function Panel({
   className,
   bodyClassName,
   flush,
+  scrollable,
 }: {
   title?: string;
   subtitle?: ReactNode;
@@ -20,6 +21,11 @@ export function Panel({
   bodyClassName?: string;
   /** Remove body padding — for tables and charts that manage their own. */
   flush?: boolean;
+  /**
+   * Set when the body scrolls. It becomes a focusable, named region, so the
+   * content is reachable without a pointer.
+   */
+  scrollable?: boolean;
 }) {
   return (
     <section className={cn('panel', className)}>
@@ -32,7 +38,18 @@ export function Panel({
           {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
         </header>
       )}
-      <div className={cn(flush ? 'min-w-0 flex-1' : 'panel-body', bodyClassName)}>{children}</div>
+      <div
+        className={cn(
+          flush ? 'min-w-0 flex-1' : 'panel-body',
+          scrollable && 'focus-ring',
+          bodyClassName,
+        )}
+        {...(scrollable
+          ? { tabIndex: 0, role: 'region', 'aria-label': title ?? 'Panel content' }
+          : {})}
+      >
+        {children}
+      </div>
     </section>
   );
 }

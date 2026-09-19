@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-19T16:40:08.440362+00:00",
+  "generated_at": "2026-09-19T18:49:30.676257+00:00",
   "bms_site": "227",
   "ems_facility": "227",
   "note": "Produced by the same code paths the live API uses. Replayed simulation results keep their originating engine in provenance and are marked SIMULATION REPLAY.",
@@ -7,100 +7,100 @@
     {
       "key": "bms/bms_normal_day",
       "file": "demo/bms/overview_bms_normal_day.json",
-      "compute_seconds": 1.768,
+      "compute_seconds": 1.966,
       "bytes": 99826
     },
     {
       "key": "bms/bms_hot_day",
       "file": "demo/bms/overview_bms_hot_day.json",
-      "compute_seconds": 1.273,
+      "compute_seconds": 1.402,
       "bytes": 106872
     },
     {
       "key": "bms/bms_sensor_drift",
       "file": "demo/bms/overview_bms_sensor_drift.json",
-      "compute_seconds": 1.304,
+      "compute_seconds": 1.385,
       "bytes": 112588
     },
     {
       "key": "bms/control-lab/bms_normal_day",
       "file": "demo/bms/control_lab_bms_normal_day.json",
-      "compute_seconds": 0.744,
+      "compute_seconds": 0.758,
       "bytes": 18107
     },
     {
       "key": "bms/control-lab/bms_hot_day",
       "file": "demo/bms/control_lab_bms_hot_day.json",
-      "compute_seconds": 0.866,
+      "compute_seconds": 0.885,
       "bytes": 19088
     },
     {
       "key": "bms/control-lab/bms_sensor_drift",
       "file": "demo/bms/control_lab_bms_sensor_drift.json",
-      "compute_seconds": 0.735,
+      "compute_seconds": 0.752,
       "bytes": 18057
     },
     {
       "key": "bms/assets",
       "file": "demo/bms/assets.json",
-      "compute_seconds": 0.248,
+      "compute_seconds": 0.253,
       "bytes": 15740
     },
     {
       "key": "ems/portfolio/ems_normal_day",
       "file": "demo/ems/portfolio_ems_normal_day.json",
-      "compute_seconds": 6.419,
+      "compute_seconds": 7.022,
       "bytes": 10902
     },
     {
       "key": "ems/network/ems_normal_day",
       "file": "demo/ems/network_ems_normal_day.json",
-      "compute_seconds": 0.04,
+      "compute_seconds": 0.042,
       "bytes": 9474
     },
     {
       "key": "ems/portfolio/ems_peak_demand",
       "file": "demo/ems/portfolio_ems_peak_demand.json",
-      "compute_seconds": 3.282,
+      "compute_seconds": 4.288,
       "bytes": 10946
     },
     {
       "key": "ems/network/ems_peak_demand",
       "file": "demo/ems/network_ems_peak_demand.json",
-      "compute_seconds": 0.042,
+      "compute_seconds": 0.041,
       "bytes": 10285
     },
     {
       "key": "ems/portfolio/ems_ev_surge",
       "file": "demo/ems/portfolio_ems_ev_surge.json",
-      "compute_seconds": 3.322,
+      "compute_seconds": 3.901,
       "bytes": 10964
     },
     {
       "key": "ems/network/ems_ev_surge",
       "file": "demo/ems/network_ems_ev_surge.json",
-      "compute_seconds": 0.045,
+      "compute_seconds": 0.042,
       "bytes": 10264
     },
     {
       "key": "ems/optimise/ems_ev_surge",
       "file": "demo/ems/optimise_ems_ev_surge.json",
-      "compute_seconds": 0.105,
-      "bytes": 16280
+      "compute_seconds": 0.113,
+      "bytes": 17743
     },
     {
       "key": "ems/optimise/ems_peak_demand",
       "file": "demo/ems/optimise_ems_peak_demand.json",
-      "compute_seconds": 0.104,
-      "bytes": 16090
+      "compute_seconds": 0.112,
+      "bytes": 17549
     },
     {
       "key": "link/cross-module",
       "file": "demo/ems/crossmodule_ev_surge.json",
-      "compute_seconds": 0.951,
+      "compute_seconds": 1.031,
       "bytes": 6828
     }
   ],
-  "total_compute_seconds": 21.25,
-  "total_kilobytes": 480.8
+  "total_compute_seconds": 23.99,
+  "total_kilobytes": 483.6
 }

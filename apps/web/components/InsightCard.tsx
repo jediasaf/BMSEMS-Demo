@@ -190,7 +190,7 @@ function Cell({
       <div className={cn('tabular mt-1 truncate text-sm font-semibold', tone ?? 'text-ink-100')}>
         {value}
       </div>
-      {sub && <div className="tabular text-3xs text-ink-500">{sub}</div>}
+      {sub && <div className="tabular text-3xs text-ink-400">{sub}</div>}
     </div>
   );
 }

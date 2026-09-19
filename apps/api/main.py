@@ -15,8 +15,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
+from apps.api import errors
 from apps.api.config import get_settings
 from apps.api.routers import bms, crossmodule, ems, interview, system
 
@@ -102,9 +102,11 @@ async def add_timing(request: Request, call_next):  # type: ignore[no-untyped-de
     return response
 
 
-@app.exception_handler(KeyError)
-async def key_error_handler(request: Request, exc: KeyError) -> JSONResponse:
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
+app.add_exception_handler(KeyError, errors.key_error_handler)
+# FastAPI re-raises anything it has no handler for, which in a hosted
+# deployment means whatever the ASGI server decides to print. Owning the
+# handler means owning what reaches the browser: an id, never a traceback.
+app.add_exception_handler(Exception, errors.unhandled_error_handler)
 
 
 app.include_router(system.router)

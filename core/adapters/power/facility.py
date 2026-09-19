@@ -21,6 +21,7 @@ from core.adapters.building.power_laws import (
     site_name,
 )
 from core.adapters.power.base import FacilityDescriptor, PowerSourceAdapter
+from core.common.ids import as_numeric_id
 from core.enums import DataMode
 
 #: Standard IEC 60076 distribution-transformer ratings, in kVA.
@@ -97,7 +98,7 @@ class FacilityPowerAdapter(PowerSourceAdapter):
         end: datetime | None = None,
     ) -> pd.DataFrame:
         load, weather, _ = _load_tables()
-        sid = int(facility_id)
+        sid = as_numeric_id(facility_id, kind="facility")
         frame = load[load["site_id"] == sid].set_index("timestamp").sort_index()
         if frame.empty:
             raise KeyError(f"no processed data for facility {facility_id}")

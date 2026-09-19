@@ -81,7 +81,7 @@
       "status": "optimal",
       "solved": true,
       "solver": "CLARABEL",
-      "solve_time_s": 0.0367,
+      "solve_time_s": 0.0374,
       "constraints": [
         "setpoint within [20.0, 26.0] \u00b0C",
         "step change \u2264 1.0 K per 15 min",

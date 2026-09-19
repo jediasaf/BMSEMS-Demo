@@ -262,6 +262,17 @@ def test_ev_surge_creates_a_risk_the_optimiser_resolves(client) -> None:
         sum(body["ev_recovery_kw"]), rel=1e-3, abs=1e-3
     )
 
+    # And the network -- not the solver -- has the last word on whether the
+    # dispatch worked. Every criterion is read off the post-action load flow.
+    acceptance = body["acceptance"]
+    assert acceptance["accepted"] is True
+    assert acceptance["failed"] == []
+    checked = " ".join(c["criterion"] for c in acceptance["criteria"])
+    assert "transformer loading" in checked
+    assert "EN 50160" in checked
+    assert "conserved" in checked
+    assert "second pandapower solve" in acceptance["note"]
+
 
 # -- cross-module ---------------------------------------------------------
 @requires_real_data

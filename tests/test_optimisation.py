@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from core.adapters.building.simulation import ComfortBand, ZoneThermalParams
+from core.adapters.power.pandapower_adapter import NetworkState
 from core.common.schemas import Recommendation
 from core.optimisation.bms import SetpointOptimiser, SetpointProblem
 from core.optimisation.ems import FlexibleResource, LoadShiftProblem, PeakOptimiser
@@ -304,3 +305,97 @@ def test_an_unsolved_optimisation_is_never_accepted() -> None:
 
 def test_the_gate_never_claims_it_actuated_anything() -> None:
     assert "no code path to a real actuator" in _verdict()["note"]
+
+
+# -- the post-action network gate -----------------------------------------
+#
+# The EMS equivalent of the simulator's veto. A solver that returns "optimal"
+# has confirmed its own linear program, not the network; these assertions are
+# about the second load flow being allowed to disagree with it.
+def _state(
+    *,
+    loading_pct: float = 96.0,
+    min_v: float = 0.964,
+    converged: bool = True,
+    violations: list[str] | None = None,
+) -> NetworkState:
+    return NetworkState(
+        converged=converged,
+        total_load_kw=140.0,
+        transformer_loading_pct=loading_pct,
+        transformer_kva=160.0,
+        lv_bus_voltage_pu=min_v,
+        min_bus_voltage_pu=min_v,
+        losses_kw=1.2,
+        feeder_loading_pct={},
+        feeder_load_kw={},
+        bus_voltages_pu={},
+        line_loading_pct={},
+        status="ok",
+        violations=list(violations or []),
+    )
+
+
+def _network_verdict(**kwargs: object) -> dict:
+    from apps.api.services.ems import network_acceptance
+
+    defaults: dict = {
+        "solved": True,
+        "before": _state(loading_pct=139.4, min_v=0.948),
+        "after": _state(),
+        "ev_reduction_kw": [40.0] * 4,
+        "ev_recovery_kw": [40.0] * 4,
+    }
+    defaults.update(kwargs)
+    return network_acceptance(**defaults)  # type: ignore[arg-type]
+
+
+def test_a_dispatch_that_resolves_the_overload_is_accepted() -> None:
+    verdict = _network_verdict()
+    assert verdict["accepted"]
+    assert verdict["failed"] == []
+
+
+def test_a_transformer_left_over_nameplate_is_rejected() -> None:
+    verdict = _network_verdict(after=_state(loading_pct=104.2))
+    assert not verdict["accepted"]
+    assert any("transformer loading" in reason for reason in verdict["failed"])
+
+
+def test_a_bus_outside_the_statutory_band_is_rejected() -> None:
+    verdict = _network_verdict(after=_state(min_v=0.88))
+    assert not verdict["accepted"]
+    assert any("EN 50160" in reason for reason in verdict["failed"])
+
+
+def test_a_reported_violation_is_never_waved_through() -> None:
+    verdict = _network_verdict(after=_state(violations=["L-02 loading 118.0% exceeds rating"]))
+    assert not verdict["accepted"]
+    assert any("violations" in reason for reason in verdict["failed"])
+
+
+def test_a_diverged_post_action_load_flow_is_rejected() -> None:
+    verdict = _network_verdict(after=_state(converged=False))
+    assert not verdict["accepted"]
+    assert any("converged" in reason for reason in verdict["failed"])
+
+
+def test_shedding_ev_energy_instead_of_deferring_it_is_rejected() -> None:
+    """Curtail 40 kWh, recover 10: the vehicles did not get their charge."""
+    verdict = _network_verdict(ev_reduction_kw=[40.0] * 4, ev_recovery_kw=[10.0] * 4)
+    assert not verdict["accepted"]
+    assert any("conserved" in reason for reason in verdict["failed"])
+
+
+def test_a_dispatch_that_makes_loading_worse_is_rejected() -> None:
+    verdict = _network_verdict(before=_state(loading_pct=92.0), after=_state(loading_pct=97.0))
+    assert not verdict["accepted"]
+    assert any("lower than before" in reason for reason in verdict["failed"])
+
+
+def test_an_unsolved_dispatch_is_never_accepted() -> None:
+    assert not _network_verdict(solved=False)["accepted"]
+
+
+def test_the_network_gate_names_its_evidence() -> None:
+    assert "second pandapower solve" in _network_verdict()["note"]

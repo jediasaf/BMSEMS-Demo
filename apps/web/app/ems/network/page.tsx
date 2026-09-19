@@ -142,13 +142,19 @@ export default function PowerNetworkPage() {
                 )}
               </Panel>
 
-              {/* Bus / line tables */}
+              {/* Bus / line tables.
+                  Full width rather than side by side: in the left-hand column
+                  of this page each half is ~300 px, and these tables need 335
+                  and 411. Side by side they clipped the status and cable
+                  columns at 1280, which is the width this is most likely to be
+                  shown at. */}
               {data && (
-                <div className="grid gap-2.5 lg:grid-cols-2">
+                <div className="grid gap-2.5">
                   <Panel
                     title="Bus voltages"
                     subtitle="EN 50160 band 0.90 – 1.10 pu"
                     flush
+                    scrollable
                     bodyClassName="overflow-x-auto"
                   >
                     <table className="tech-table">
@@ -187,7 +193,7 @@ export default function PowerNetworkPage() {
                     </table>
                   </Panel>
 
-                  <Panel title="Feeder loading" flush bodyClassName="overflow-x-auto">
+                  <Panel title="Feeder loading" flush scrollable bodyClassName="overflow-x-auto">
                     <table className="tech-table">
                       <thead>
                         <tr>

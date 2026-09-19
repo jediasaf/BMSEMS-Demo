@@ -5,8 +5,10 @@ running system; no slide, no recording, nothing hard-coded.
 
 **Where to run it**
 
-The public frontend is https://ecotwin-ai-zeta.vercel.app (SSO-protected).
-It has no backend yet, so **run the demo locally** until one is deployed:
+The public frontend is https://ecotwin-ai-zeta.vercel.app. It is reachable,
+and with no backend deployed it says so: the system bar reads **Not
+configured** and every panel offers a retry rather than inventing a number.
+So **run the demo locally** until a backend is deployed.
 
 **Before you start**
 
@@ -160,7 +162,18 @@ the contributors at the peak.
 
 > "The before and after transformer figures are **two independent pandapower
 > solves** at the worst instant, not the optimiser's own estimate.
-> **139.4% → 96.0%**, and every bus back inside the EN 50160 band."
+> **139.4% → 96.0%**, and every bus back inside the EN 50160 band.
+>
+> Underneath is the network verdict, which is the EMS twin of the simulator's
+> veto on the building side. Seven criteria, all read off the *post-action*
+> load flow: it converged, the transformer is at or under nameplate, every bus
+> is inside EN 50160, the solver reported no violations, loading actually
+> fell, and — re-checked outside the solver, against the arrays served to this
+> page — the EV energy was **deferred, not shed**: 168.3 kWh out, 168.3 kWh
+> back. A solver that returns `optimal` has confirmed its own program. It has
+> not confirmed the network."
+
+**Point at:** the seven criteria with their measured margins.
 
 ---
 

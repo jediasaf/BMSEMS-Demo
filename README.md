@@ -248,8 +248,8 @@ make demo       # build, restart, and verify the interview path
 make e2e        # drive the twelve demo steps in a browser
 ```
 
-170 Python tests plus a four-test browser suite. They assert properties rather
-than restating the implementation:
+204 Python tests plus an eight-test browser suite. They assert properties
+rather than restating the implementation:
 
 - no feature can read the present (perturb the last sample; no earlier feature
   row may move);
@@ -261,6 +261,13 @@ than restating the implementation:
 - a value cannot be tagged `MEASURED` from a source that is not a measurement;
 - a re-simulated proposal that is worse than doing nothing is rejected, and no
   saving is claimed for it;
+- a dispatch that leaves the transformer over nameplate, a bus outside
+  EN 50160, or EV energy shed rather than deferred, is rejected by the
+  **post-action load flow** — each of those rejections has its own test;
+- a malformed identifier is a 422 before any handler runs, an unknown one is a
+  404, and an unhandled error returns an id rather than a stack trace;
+- CORS answers the production origin and localhost, and gives a look-alike
+  origin nothing;
 - a recorded result is never served for a scenario it was not recorded for.
 
 ---
@@ -374,7 +381,7 @@ data/         raw (not vendored) · processed · fixtures
 models/       trained artefacts + model cards
 demo/         precomputed results for the hosted demo
 scripts/      inspect · prepare · train · cache · download
-tests/        137 tests
+tests/        204 tests
 docs/         architecture · data provenance · modelling · deployment · demo
 ```
 
@@ -390,4 +397,6 @@ docs/         architecture · data provenance · modelling · deployment · demo
 - [Technical questions](docs/interview_questions.md) — why LightGBM, why
   BOPTEST, why pandapower, how EBO and PME integration would work, and what
   each choice cost
+- [Release readiness](docs/RELEASE_READINESS.md) — what was verified, the
+  measured numbers, the security posture and what is still open
 - [Schema report](docs/schema_report.md) — generated from the raw files
