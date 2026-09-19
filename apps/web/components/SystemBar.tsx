@@ -14,7 +14,7 @@ import { StatusDot } from './Primitives';
  * when something degrades it says so here first.
  */
 export function SystemBar() {
-  const { status, setStatus, window: replayWindow, cursor, interviewMode } = useDemo();
+  const { status, setStatus, window: replayWindow, cursor, interviewMode, preload } = useDemo();
 
   useEffect(() => {
     let cancelled = false;
@@ -57,25 +57,60 @@ export function SystemBar() {
         </>
       )}
 
-      <div className="ml-auto flex items-center gap-2.5">
+      <div className="ml-auto flex min-w-0 items-center gap-2.5">
         {status?.notes.length ? (
           <span
-            className="hidden max-w-[40rem] truncate text-ink-600 xl:inline"
+            className="hidden min-w-0 max-w-[34rem] truncate text-ink-600 xl:inline"
             title={status.notes.join('\n')}
           >
             {status.notes[0]}
           </span>
         ) : null}
         {interviewMode && (
-          <span className="inline-flex items-center gap-1 rounded-pill border border-accent/40 bg-accent/10 px-1.5 py-[1px] text-3xs font-semibold uppercase tracking-[0.1em] text-accent">
-            <StatusDot tone="normal" pulse />
-            Interview mode
+          <span
+            title={PRELOAD_TITLE[preload.state]}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill border px-1.5 py-[1px] text-3xs font-semibold uppercase tracking-[0.1em]',
+              preload.state === 'failed'
+                ? 'border-status-warning/45 bg-status-warning/10 text-status-warning'
+                : 'border-accent/40 bg-accent/10 text-accent',
+            )}
+          >
+            <StatusDot
+              tone={preload.state === 'failed' ? 'warning' : 'normal'}
+              pulse={preload.state !== 'loading'}
+            />
+            Interview
+            {preload.state === 'ready' && (
+              <span className="tabular font-mono font-normal normal-case tracking-normal opacity-70">
+                · warm {(preload.ms / 1000).toFixed(1)}s
+              </span>
+            )}
+            {preload.state === 'loading' && (
+              <span className="font-normal normal-case tracking-normal opacity-70">
+                · preloading
+              </span>
+            )}
+            {preload.state === 'failed' && (
+              <span className="font-normal normal-case tracking-normal opacity-80">
+                · on demand
+              </span>
+            )}
           </span>
         )}
       </div>
     </div>
   );
 }
+
+const PRELOAD_TITLE: Record<string, string> = {
+  idle: 'Interview mode is on. Nothing has been preloaded yet.',
+  loading: 'Computing every curated step so none of them waits during the demo.',
+  ready: 'Every curated step is served from a warm cache.',
+  failed:
+    'Preload did not complete, so curated steps compute on demand. Nothing is wrong with the ' +
+    'results; they just arrive slower.',
+};
 
 function Segment({
   label,

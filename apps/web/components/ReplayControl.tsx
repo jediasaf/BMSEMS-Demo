@@ -13,8 +13,16 @@ import { cn, fullTimestamp } from '@/lib/format';
  * replay window, and every panel reads the same cursor.
  */
 export function ReplayControl({ compact = false }: { compact?: boolean }) {
-  const { window: replayWindow, cursor, setCursor, playing, toggle, speed, setSpeed, tick } =
-    useDemo();
+  const {
+    window: replayWindow,
+    cursor,
+    setCursor,
+    playing,
+    toggle,
+    speed,
+    setSpeed,
+    tick,
+  } = useDemo();
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {

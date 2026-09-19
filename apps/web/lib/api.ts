@@ -22,6 +22,8 @@ import type {
   ReplayWindow,
   RiskResponse,
   DatasetInfo,
+  InterviewPlan,
+  PreloadResult,
   Scenario,
   SystemStatus,
 } from './types';
@@ -56,7 +58,11 @@ function withQuery(path: string, query?: Query): string {
 
 async function request<T>(
   path: string,
-  { query, method = 'GET', timeoutMs = DEFAULT_TIMEOUT_MS }: {
+  {
+    query,
+    method = 'GET',
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  }: {
     query?: Query;
     method?: 'GET' | 'POST';
     timeoutMs?: number;
@@ -88,11 +94,7 @@ async function request<T>(
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new ApiError(`Request timed out after ${timeoutMs / 1000}s`, 408, path);
     }
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Network error',
-      0,
-      path,
-    );
+    throw new ApiError(error instanceof Error ? error.message : 'Network error', 0, path);
   } finally {
     clearTimeout(timer);
   }
@@ -106,6 +108,20 @@ export const api = {
   sources: () => request<Record<string, unknown>>('/sources'),
   dataset: () => request<DatasetInfo>('/dataset'),
   resetDemo: () => request<{ reset: boolean; at: string }>('/demo/reset', { method: 'POST' }),
+
+  interview: {
+    plan: () => request<InterviewPlan>('/interview/plan'),
+    // The preload does every expensive computation the curated path needs, so
+    // it is allowed to take longer than an ordinary request.
+    preload: () =>
+      request<PreloadResult>('/interview/preload', { method: 'POST', timeoutMs: 120_000 }),
+    verify: () =>
+      request<{
+        ready: boolean;
+        failed: string[];
+        checks: { check: string; passed: boolean; detail: string }[];
+      }>('/interview/verify', { timeoutMs: 120_000 }),
+  },
 
   bms: {
     sites: () =>

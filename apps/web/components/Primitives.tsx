@@ -120,8 +120,7 @@ export function Button({
   const variants = {
     default:
       'border-base-500 bg-base-750 text-ink-200 hover:border-base-400 hover:bg-base-700 hover:text-ink-100',
-    primary:
-      'border-accent/50 bg-accent/14 text-accent hover:border-accent/80 hover:bg-accent/22',
+    primary: 'border-accent/50 bg-accent/14 text-accent hover:border-accent/80 hover:bg-accent/22',
     ghost: 'border-transparent text-ink-400 hover:bg-base-800 hover:text-ink-100',
     danger:
       'border-status-critical/50 bg-status-critical/10 text-status-critical hover:bg-status-critical/20',
@@ -134,7 +133,9 @@ export function Button({
       disabled={disabled}
       className={cn(
         'focus-ring inline-flex items-center justify-center gap-1.5 rounded-panel border font-medium transition-colors',
-        size === 'sm' ? 'px-2 py-[3px] text-3xs uppercase tracking-[0.08em]' : 'px-2.5 py-1.5 text-2xs',
+        size === 'sm'
+          ? 'px-2 py-[3px] text-3xs uppercase tracking-[0.08em]'
+          : 'px-2.5 py-1.5 text-2xs',
         variants[variant],
         disabled && 'cursor-not-allowed opacity-40 hover:bg-transparent',
         className,
@@ -241,8 +242,13 @@ export function Meter({
   const scale = (v: number) => Math.max(0, Math.min((v / Math.max(max, 1e-9)) * 100, 100));
   const pct = scale(value);
   return (
-    <div className={cn('relative h-[3px] w-full overflow-hidden rounded-full bg-base-700', className)}>
-      <div className={cn('h-full transition-[width] duration-300', tones[tone])} style={{ width: `${pct}%` }} />
+    <div
+      className={cn('relative h-[3px] w-full overflow-hidden rounded-full bg-base-700', className)}
+    >
+      <div
+        className={cn('h-full transition-[width] duration-300', tones[tone])}
+        style={{ width: `${pct}%` }}
+      />
       {mark !== undefined && mark < max && (
         <span
           aria-hidden
@@ -271,7 +277,9 @@ export function Field({
   return (
     <div className="flex items-baseline justify-between gap-3 py-[3px]" title={title}>
       <span className="shrink-0 text-2xs text-ink-500">{label}</span>
-      <span className={cn('tabular truncate text-2xs', mono && 'font-mono', tone ?? 'text-ink-100')}>
+      <span
+        className={cn('tabular truncate text-2xs', mono && 'font-mono', tone ?? 'text-ink-100')}
+      >
         {value}
       </span>
     </div>

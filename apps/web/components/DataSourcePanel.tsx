@@ -22,7 +22,7 @@ export function DataSourcePanel({ className }: { className?: string }) {
       actions={
         data ? (
           <Pill tone={data.data_mode === 'REAL_DATA' ? 'accent' : 'warning'}>
-            {data.data_mode === 'REAL_DATA' ? 'Real data' : 'Sample fixture'}
+            {data.data_mode === 'REAL_DATA' ? 'Historical replay' : 'Sample fixture'}
           </Pill>
         ) : undefined
       }

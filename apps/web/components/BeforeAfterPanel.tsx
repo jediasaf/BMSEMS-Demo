@@ -39,11 +39,7 @@ export function BeforeAfterPanel({
       {rows.map((row) => {
         const delta = row.after - row.before;
         const improved =
-          row.better === 'neutral'
-            ? null
-            : row.better === 'lower'
-              ? delta < -1e-9
-              : delta > 1e-9;
+          row.better === 'neutral' ? null : row.better === 'lower' ? delta < -1e-9 : delta > 1e-9;
         const pctChange = Math.abs(row.before) > 1e-9 ? (delta / row.before) * 100 : null;
         const digits = row.digits ?? 1;
         return (
@@ -90,6 +86,7 @@ export function TransitionStat({
   unit,
   digits = 1,
   criticalAbove,
+  testId,
 }: {
   label: string;
   before: number;
@@ -97,21 +94,27 @@ export function TransitionStat({
   unit: string;
   digits?: number;
   criticalAbove?: number;
+  /** Prefix for the before/after test hooks the e2e demo test reads. */
+  testId?: string;
 }) {
   const tone = (value: number) =>
-    criticalAbove !== undefined && value >= criticalAbove
-      ? 'text-status-critical'
-      : 'text-ink-100';
+    criticalAbove !== undefined && value >= criticalAbove ? 'text-status-critical' : 'text-ink-100';
   return (
     <div className="rounded-panel border border-base-600 bg-base-800/60 px-2.5 py-2">
       <div className="label">{label}</div>
       <div className="mt-1 flex items-center gap-2">
-        <span className={cn('tabular text-base font-semibold', tone(before))}>
+        <span
+          data-testid={testId && `${testId}-before`}
+          className={cn('tabular text-base font-semibold', tone(before))}
+        >
           {num(before, digits)}
           <span className="ml-0.5 text-3xs font-normal text-ink-600">{unit}</span>
         </span>
         <ArrowRight className="h-3 w-3 shrink-0 text-accent" />
-        <span className={cn('tabular text-base font-semibold', tone(after))}>
+        <span
+          data-testid={testId && `${testId}-after`}
+          className={cn('tabular text-base font-semibold', tone(after))}
+        >
           {num(after, digits)}
           <span className="ml-0.5 text-3xs font-normal text-ink-600">{unit}</span>
         </span>

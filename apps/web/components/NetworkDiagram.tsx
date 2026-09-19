@@ -74,10 +74,7 @@ export function NetworkDiagram({
       </g>
 
       {/* Transformer */}
-      <g
-        onClick={() => onSelect?.('TR-01')}
-        style={{ cursor: onSelect ? 'pointer' : 'default' }}
-      >
+      <g onClick={() => onSelect?.('TR-01')} style={{ cursor: onSelect ? 'pointer' : 'default' }}>
         <circle cx={40} cy={90} r={12} fill="none" stroke={loadingTone} strokeWidth={1.6} />
         <circle cx={40} cy={104} r={12} fill="none" stroke={loadingTone} strokeWidth={1.6} />
         <text x={60} y={90} fill="#e6f0ee" fontSize={10} fontWeight={600}>
@@ -87,7 +84,14 @@ export function NetworkDiagram({
           {num(topology.transformer.kva, 0)} kVA · {topology.transformer.vector_group} · vk{' '}
           {num(topology.transformer.vk_percent, 1)}%
         </text>
-        <text x={60} y={116} fill={loadingTone} fontSize={13} fontWeight={700} fontFamily="monospace">
+        <text
+          x={60}
+          y={116}
+          fill={loadingTone}
+          fontSize={13}
+          fontWeight={700}
+          fontFamily="monospace"
+        >
           {pct(state.transformer_loading_pct)}
         </text>
         <text x={118} y={116} fill="#65807c" fontSize={9}>
@@ -99,7 +103,14 @@ export function NetworkDiagram({
 
       {/* Busbar */}
       <g>
-        <rect x={busLeft} y={busY - 2.5} width={busRight - busLeft} height={5} fill="url(#busGrad)" rx={1} />
+        <rect
+          x={busLeft}
+          y={busY - 2.5}
+          width={busRight - busLeft}
+          height={5}
+          fill="url(#busGrad)"
+          rx={1}
+        />
         <text x={busLeft} y={busY - 10} fill="#8ba39f" fontSize={9}>
           LV main busbar · {num(topology.transformer.lv_kv * 1000, 0)} V
         </text>
@@ -146,9 +157,7 @@ export function NetworkDiagram({
               height={56}
               rx={3}
               fill="#0c1a19"
-              stroke={
-                isSelected ? '#3ddc97' : feeder.flexible ? 'rgba(61,220,151,0.4)' : '#1e3d39'
-              }
+              stroke={isSelected ? '#3ddc97' : feeder.flexible ? 'rgba(61,220,151,0.4)' : '#1e3d39'}
               strokeWidth={isSelected ? 1.4 : 1}
             />
             <text x={x} y={busY + 68} fill="#bdcecb" fontSize={9} textAnchor="middle">
@@ -181,7 +190,14 @@ export function NetworkDiagram({
       })}
 
       {/* Losses */}
-      <text x={busRight} y={busY + 16} fill="#65807c" fontSize={9} textAnchor="end" fontFamily="monospace">
+      <text
+        x={busRight}
+        y={busY + 16}
+        fill="#65807c"
+        fontSize={9}
+        textAnchor="end"
+        fontFamily="monospace"
+      >
         losses {num(state.losses_kw, 2)} kW
       </text>
     </svg>
@@ -192,8 +208,8 @@ export function NetworkViolations({ violations }: { violations: string[] }) {
   if (violations.length === 0) {
     return (
       <div className="rounded-panel border border-status-normal/30 bg-status-normal/[0.06] px-2.5 py-1.5 text-2xs text-status-normal">
-        No limit violations at this instant. Transformer inside nameplate, all buses inside the
-        EN 50160 band. This is the solved present state, not the forward risk above.
+        No limit violations at this instant. Transformer inside nameplate, all buses inside the EN
+        50160 band. This is the solved present state, not the forward risk above.
       </div>
     );
   }

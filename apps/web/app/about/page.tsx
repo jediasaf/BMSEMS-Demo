@@ -144,7 +144,9 @@ export default function AboutPage() {
                   Building Operation and Power Monitoring Expert.
                 </li>
                 <li>
-                  <span className="text-ink-200">Not connected to a live customer environment.</span>{' '}
+                  <span className="text-ink-200">
+                    Not connected to a live customer environment.
+                  </span>{' '}
                   Public Schneider data are used for analytics; every control experiment runs in
                   simulation.
                 </li>

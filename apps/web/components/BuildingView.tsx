@@ -80,7 +80,9 @@ export function BuildingView({
                   </span>
                 )}
               </div>
-              <div className="mt-1 text-3xs text-ink-600">Whole-site meter · the only measured node</div>
+              <div className="mt-1 text-3xs text-ink-600">
+                Whole-site meter · the only measured node
+              </div>
             </button>
 
             {floors.map((floor) => (
@@ -90,9 +92,7 @@ export function BuildingView({
                   <span className="tabular font-mono text-3xs text-ink-600">
                     {num(floor.metrics.floor_area_m2, 0)} m²
                   </span>
-                  <span className="ml-auto text-3xs text-prov-derived/80">
-                    pro-rata allocation
-                  </span>
+                  <span className="ml-auto text-3xs text-prov-derived/80">pro-rata allocation</span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                   {floor.children.map((zone) => (
@@ -283,7 +283,7 @@ export function AssetDrawer({ node, onClose }: { node: AssetNode; onClose: () =>
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
       <aside
-        className="animate-fade-up h-full w-full max-w-sm overflow-y-auto border-l border-base-600 bg-base-850"
+        className="h-full w-full max-w-sm animate-fade-up overflow-y-auto border-l border-base-600 bg-base-850"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex items-center justify-between gap-2 border-b border-base-600 px-3 py-2">
@@ -303,11 +303,7 @@ export function AssetDrawer({ node, onClose }: { node: AssetNode; onClose: () =>
 
         <div className="space-y-3 p-3">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Pill
-              tone="neutral"
-              className={cn(style.border, style.text)}
-              title={style.blurb}
-            >
+            <Pill tone="neutral" className={cn(style.border, style.text)} title={style.blurb}>
               {node.source_type}
             </Pill>
             {node.has_anomaly && <Pill tone="warning">Anomaly in window</Pill>}

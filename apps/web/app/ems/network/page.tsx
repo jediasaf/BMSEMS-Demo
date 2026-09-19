@@ -30,8 +30,10 @@ export default function PowerNetworkPage() {
     scenarios,
     window: replayWindow,
     cursor,
+    resetToken,
   } = useDemo();
   const [selectedAsset, setSelectedAsset] = useState<string | null>('TR-01');
+  useEffect(() => setSelectedAsset('TR-01'), [resetToken]);
   const stamp = cursorTimestamp(replayWindow, cursor);
 
   const facilities = useAsync(() => api.ems.facilities(), []);
@@ -256,7 +258,7 @@ export default function PowerNetworkPage() {
                 >
                   <div className="grid grid-cols-2 gap-2.5">
                     <Readout
-                      label="Current loading"
+                      label="Loading at replay instant"
                       value={pct(loading)}
                       tone={
                         loading >= 100

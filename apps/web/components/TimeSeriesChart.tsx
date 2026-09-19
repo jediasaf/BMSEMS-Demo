@@ -74,7 +74,8 @@ export function TimeSeriesChart({
     const series: Record<string, unknown>[] = [];
 
     configs.forEach((config, index) => {
-      const colour = config.colour ?? PROV_COLOUR[config.series.provenance.source_type] ?? '#94a3b8';
+      const colour =
+        config.colour ?? PROV_COLOUR[config.series.provenance.source_type] ?? '#94a3b8';
       const data = config.series.timestamps.map((timestamp, i) => [
         timestamp,
         config.series.values[i] ?? null,
@@ -107,7 +108,12 @@ export function TimeSeriesChart({
           data: config.series.timestamps.map((timestamp, i) => {
             const lower = config.series.lower?.[i];
             const upper = config.series.upper?.[i];
-            return [timestamp, lower === null || upper === null || lower === undefined || upper === undefined ? null : upper - lower];
+            return [
+              timestamp,
+              lower === null || upper === null || lower === undefined || upper === undefined
+                ? null
+                : upper - lower,
+            ];
           }),
           lineStyle: { opacity: 0 },
           areaStyle: { color: colour, opacity: 0.085 },

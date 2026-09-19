@@ -230,8 +230,8 @@ export default function EmsPortfolioPage() {
               <li>
                 <span className="text-ink-200">Expected</span> comes from the per-facility
                 forecaster, or from a seasonal-naive reference when that model failed its own
-                quality gate — the row is marked{' '}
-                <span className="text-status-warning">naive</span> when it does.
+                quality gate — the row is marked <span className="text-status-warning">naive</span>{' '}
+                when it does.
               </li>
               <li>
                 <span className="text-ink-200">Loading</span> is the predicted peak against a

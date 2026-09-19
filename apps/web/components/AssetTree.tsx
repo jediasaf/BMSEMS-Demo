@@ -55,22 +55,35 @@ function TreeNode({
         >
           {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </button>
-        <Icon className={cn('h-3 w-3 shrink-0', node.has_anomaly ? 'text-status-warning' : 'text-ink-500')} />
-        <span className="min-w-0 flex-1 truncate text-2xs text-ink-200" title={node.detail ?? undefined}>
+        <Icon
+          className={cn(
+            'h-3 w-3 shrink-0',
+            node.has_anomaly ? 'text-status-warning' : 'text-ink-500',
+          )}
+        />
+        <span
+          className="min-w-0 flex-1 truncate text-2xs text-ink-200"
+          title={node.detail ?? undefined}
+        >
           {node.name}
         </span>
         <span
-          className={cn('shrink-0 font-mono text-[9px] uppercase opacity-0 transition-opacity group-hover:opacity-100', style.text)}
+          className={cn(
+            'shrink-0 font-mono text-[9px] uppercase opacity-0 transition-opacity group-hover:opacity-100',
+            style.text,
+          )}
           title={style.blurb}
         >
           {node.source_type}
         </span>
-        {Object.entries(node.metrics).slice(0, 2).map(([key, value]) => (
-          <span key={key} className="tabular shrink-0 font-mono text-[10px] text-ink-400">
-            {num(value, key.includes('area') ? 0 : 1)}
-            <span className="ml-0.5 text-ink-600">{node.units[key]}</span>
-          </span>
-        ))}
+        {Object.entries(node.metrics)
+          .slice(0, 2)
+          .map(([key, value]) => (
+            <span key={key} className="tabular shrink-0 font-mono text-[10px] text-ink-400">
+              {num(value, key.includes('area') ? 0 : 1)}
+              <span className="ml-0.5 text-ink-600">{node.units[key]}</span>
+            </span>
+          ))}
       </div>
       {open &&
         node.children.map((child) => (
