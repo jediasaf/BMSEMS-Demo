@@ -145,9 +145,7 @@ class PowerLawsBuildingAdapter(BuildingSourceAdapter):
         descriptor = self.site(site_id)
         dow = out.index.dayofweek
         out["is_day_off"] = [bool(descriptor.day_off.get(int(d), False)) for d in dow]
-        site_holidays = set(
-            pd.to_datetime(holidays[holidays["site_id"] == sid]["date"]).dt.date
-        )
+        site_holidays = set(pd.to_datetime(holidays[holidays["site_id"] == sid]["date"]).dt.date)
         out["is_holiday"] = [ts.date() in site_holidays for ts in out.index]
 
         if start is not None:

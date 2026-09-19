@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -70,9 +70,7 @@ def status(settings: Settings = Depends(get_settings)) -> SystemStatus:
     }
     notes: list[str] = []
     if not real:
-        notes.append(
-            "No source files present. Values are SAMPLE FIXTURE and are synthetic."
-        )
+        notes.append("No source files present. Values are SAMPLE FIXTURE and are synthetic.")
     if engine.engine is not SimulationEngine.BOPTEST:
         notes.append(
             "BOPTEST is not reachable; building simulation uses the EcoTwin RC "
@@ -189,6 +187,6 @@ def reset_demo() -> dict[str, Any]:
     _load_tables.cache_clear()
     return {
         "reset": True,
-        "at": datetime.now(timezone.utc),
+        "at": datetime.now(UTC),
         "note": "All service and adapter caches cleared; next request rebuilds from disk.",
     }

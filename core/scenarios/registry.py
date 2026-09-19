@@ -150,9 +150,7 @@ EMS_SCENARIOS: tuple[Scenario, ...] = (
     ),
 )
 
-ALL_SCENARIOS: dict[str, Scenario] = {
-    s.scenario_id: s for s in (*BMS_SCENARIOS, *EMS_SCENARIOS)
-}
+ALL_SCENARIOS: dict[str, Scenario] = {s.scenario_id: s for s in (*BMS_SCENARIOS, *EMS_SCENARIOS)}
 
 
 def list_scenarios(module: str | None = None) -> list[Scenario]:

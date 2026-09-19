@@ -1,0 +1,193 @@
+{
+  "node_id": "227",
+  "parent_id": null,
+  "name": "Site 227",
+  "kind": "building",
+  "metrics": {
+    "load_kw": 30.09,
+    "floor_area_m2": 1142.3452776584,
+    "outdoor_temp_c": 22.0
+  },
+  "units": {
+    "load_kw": "kW",
+    "floor_area_m2": "m\u00b2",
+    "outdoor_temp_c": "\u00b0C"
+  },
+  "status": "INFO",
+  "source_type": "MEASURED",
+  "has_anomaly": true,
+  "detail": "Whole-site meter. The only node in this tree backed by a measurement.",
+  "children": [
+    {
+      "node_id": "F1",
+      "parent_id": "227",
+      "name": "Floor 1",
+      "kind": "floor",
+      "metrics": {
+        "floor_area_m2": 1142.3
+      },
+      "units": {
+        "floor_area_m2": "m\u00b2"
+      },
+      "status": "INFO",
+      "source_type": "DERIVED",
+      "has_anomaly": false,
+      "detail": "Floor split derived from the published total floor area.",
+      "children": [
+        {
+          "node_id": "Z1.01",
+          "parent_id": "F1",
+          "name": "Zone Z1.01",
+          "kind": "zone",
+          "metrics": {
+            "allocated_load_kw": 10.03,
+            "floor_area_m2": 380.8
+          },
+          "units": {
+            "allocated_load_kw": "kW",
+            "floor_area_m2": "m\u00b2"
+          },
+          "status": "INFO",
+          "source_type": "DERIVED",
+          "has_anomaly": false,
+          "detail": "Zone geometry is not published by the source. Load is allocated pro rata by floor area and is DERIVED.",
+          "children": [
+            {
+              "node_id": "Z1.01-AHU",
+              "parent_id": "Z1.01",
+              "name": "Air handling",
+              "kind": "equipment",
+              "metrics": {},
+              "units": {},
+              "status": "INFO",
+              "source_type": "SIMULATED",
+              "has_anomaly": false,
+              "detail": "Modelled in the Control Lab. No equipment-level telemetry exists in this source.",
+              "children": [
+                {
+                  "node_id": "Z1.01-SP",
+                  "parent_id": "Z1.01-AHU",
+                  "name": "Cooling setpoint",
+                  "kind": "point",
+                  "metrics": {
+                    "value": 23.0
+                  },
+                  "units": {
+                    "value": "\u00b0C"
+                  },
+                  "status": "INFO",
+                  "source_type": "SIMULATED",
+                  "has_anomaly": false,
+                  "detail": "Writable only against the simulator.",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "node_id": "Z1.02",
+          "parent_id": "F1",
+          "name": "Zone Z1.02",
+          "kind": "zone",
+          "metrics": {
+            "allocated_load_kw": 10.03,
+            "floor_area_m2": 380.8
+          },
+          "units": {
+            "allocated_load_kw": "kW",
+            "floor_area_m2": "m\u00b2"
+          },
+          "status": "INFO",
+          "source_type": "DERIVED",
+          "has_anomaly": false,
+          "detail": "Zone geometry is not published by the source. Load is allocated pro rata by floor area and is DERIVED.",
+          "children": [
+            {
+              "node_id": "Z1.02-AHU",
+              "parent_id": "Z1.02",
+              "name": "Air handling",
+              "kind": "equipment",
+              "metrics": {},
+              "units": {},
+              "status": "INFO",
+              "source_type": "SIMULATED",
+              "has_anomaly": false,
+              "detail": "Modelled in the Control Lab. No equipment-level telemetry exists in this source.",
+              "children": [
+                {
+                  "node_id": "Z1.02-SP",
+                  "parent_id": "Z1.02-AHU",
+                  "name": "Cooling setpoint",
+                  "kind": "point",
+                  "metrics": {
+                    "value": 23.0
+                  },
+                  "units": {
+                    "value": "\u00b0C"
+                  },
+                  "status": "INFO",
+                  "source_type": "SIMULATED",
+                  "has_anomaly": false,
+                  "detail": "Writable only against the simulator.",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "node_id": "Z1.03",
+          "parent_id": "F1",
+          "name": "Zone Z1.03",
+          "kind": "zone",
+          "metrics": {
+            "allocated_load_kw": 10.03,
+            "floor_area_m2": 380.8
+          },
+          "units": {
+            "allocated_load_kw": "kW",
+            "floor_area_m2": "m\u00b2"
+          },
+          "status": "INFO",
+          "source_type": "DERIVED",
+          "has_anomaly": false,
+          "detail": "Zone geometry is not published by the source. Load is allocated pro rata by floor area and is DERIVED.",
+          "children": [
+            {
+              "node_id": "Z1.03-AHU",
+              "parent_id": "Z1.03",
+              "name": "Air handling",
+              "kind": "equipment",
+              "metrics": {},
+              "units": {},
+              "status": "INFO",
+              "source_type": "SIMULATED",
+              "has_anomaly": false,
+              "detail": "Modelled in the Control Lab. No equipment-level telemetry exists in this source.",
+              "children": [
+                {
+                  "node_id": "Z1.03-SP",
+                  "parent_id": "Z1.03-AHU",
+                  "name": "Cooling setpoint",
+                  "kind": "point",
+                  "metrics": {
+                    "value": 23.0
+                  },
+                  "units": {
+                    "value": "\u00b0C"
+                  },
+                  "status": "INFO",
+                  "source_type": "SIMULATED",
+                  "has_anomaly": false,
+                  "detail": "Writable only against the simulator.",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

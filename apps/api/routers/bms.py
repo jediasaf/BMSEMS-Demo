@@ -96,9 +96,7 @@ def recommendations(
     site_id: str | None = None, scenario_id: str = Query("bms_normal_day")
 ) -> list[Recommendation]:
     service = get_bms_service()
-    return service.recommendations(
-        site_id or service.default_site_id(), scenario_id=scenario_id
-    )
+    return service.recommendations(site_id or service.default_site_id(), scenario_id=scenario_id)
 
 
 @router.post("/recommendations/{recommendation_id}/validate")

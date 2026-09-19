@@ -85,9 +85,7 @@ class CrossModuleService:
                 "link": link,
             }
 
-        control = self.bms.control_lab(
-            facility_id, hours=hours, prefer_boptest=prefer_boptest
-        )
+        control = self.bms.control_lab(facility_id, hours=hours, prefer_boptest=prefer_boptest)
         baseline_hvac = np.asarray(control["baseline"]["hvac_kw"], dtype=float)
         ai_hvac = np.asarray(control["ai_control"]["hvac_kw"], dtype=float)
         timestamps = pd.DatetimeIndex(control["timestamps"])
@@ -105,11 +103,7 @@ class CrossModuleService:
         row = ctx.frame.loc[peak_time]
         outdoor = float(row.get("outdoor_temp_c", float("nan")))
         expected_series = ctx.expected.frame.loc[:peak_time, "prediction"].dropna()
-        site_kw = (
-            float(expected_series.iloc[-1])
-            if len(expected_series)
-            else float(row["load_kw"])
-        )
+        site_kw = float(expected_series.iloc[-1]) if len(expected_series) else float(row["load_kw"])
         flexible_kw = float(row.get("injection_kw", 0.0))
         network = self.ems.network(facility_id)
 
@@ -181,9 +175,9 @@ class CrossModuleService:
                 "delta_loading_pct": round(
                     after.transformer_loading_pct - before.transformer_loading_pct, 3
                 ),
-                "provenance": self.ems._network_provenance(
-                    peak_time.to_pydatetime()
-                ).model_dump(mode="json"),
+                "provenance": self.ems._network_provenance(peak_time.to_pydatetime()).model_dump(
+                    mode="json"
+                ),
             },
             "chain": [
                 {

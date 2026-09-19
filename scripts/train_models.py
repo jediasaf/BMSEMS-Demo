@@ -15,16 +15,16 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from core.adapters.building import get_building_adapter  # noqa: E402
+from core.adapters.building.power_laws import demo_window  # noqa: E402
 from core.adapters.power import get_power_adapter  # noqa: E402
 from core.common import paths  # noqa: E402
-from core.adapters.building.power_laws import demo_window  # noqa: E402
 from core.models.forecast import LoadForecaster  # noqa: E402
 
 
@@ -90,7 +90,7 @@ def main() -> int:
     summary = []
     for asset_id, info in sorted(assets.items(), key=lambda kv: int(kv[0])):
         adapter = info["adapter"]
-        loader = getattr(adapter, "load_frame")
+        loader = adapter.load_frame
         frame = loader(asset_id)
         _log(f"asset {asset_id} ({info['name']}): {len(frame):,} rows")
         try:
@@ -169,7 +169,7 @@ def main() -> int:
     (models_dir / "training_summary.json").write_text(
         json.dumps(
             {
-                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
                 "n_models": len(summary),
                 "models": summary,
             },

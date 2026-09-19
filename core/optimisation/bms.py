@@ -37,9 +37,9 @@ import cvxpy as cp
 import numpy as np
 
 from core.adapters.building.simulation import (
-    ComfortBand,
-    STEPS_PER_HOUR,
     STEP_SECONDS,
+    STEPS_PER_HOUR,
+    ComfortBand,
     ZoneThermalParams,
     cop_cooling,
 )
@@ -102,13 +102,9 @@ class SetpointOptimiser:
         # The plant term is written as a gain on the tracking error, which is
         # exactly what the ideal-load simulator does inside its capacity band.
         a = np.exp(-ua * STEP_SECONDS / params.c_air)
-        gain = np.clip(
-            params.cooling_capacity_w * STEP_SECONDS / params.c_air / 4.0, 0.15, 0.9
-        )
+        gain = np.clip(params.cooling_capacity_w * STEP_SECONDS / params.c_air / 4.0, 0.15, 0.9)
 
-        q_internal = params.internal_gain_w_m2 * params.floor_area_m2 * (
-            0.25 + 0.75 * occupancy
-        )
+        q_internal = params.internal_gain_w_m2 * params.floor_area_m2 * (0.25 + 0.75 * occupancy)
         drift = q_internal * STEP_SECONDS / params.c_air * (1.0 - a)
 
         # Electrical cost per K of cooling delivered, at each step's COP. This
@@ -116,12 +112,8 @@ class SetpointOptimiser:
         cop = np.array([cop_cooling(float(t), params) for t in outdoor])
         kw_per_k = params.ua_total(1.0) / cop / 1000.0
 
-        lower = np.array(
-            [problem.comfort.bounds(o > 0.15)[0] for o in occupancy], dtype=float
-        )
-        upper = np.array(
-            [problem.comfort.bounds(o > 0.15)[1] for o in occupancy], dtype=float
-        )
+        lower = np.array([problem.comfort.bounds(o > 0.15)[0] for o in occupancy], dtype=float)
+        upper = np.array([problem.comfort.bounds(o > 0.15)[1] for o in occupancy], dtype=float)
 
         u = cp.Variable(horizon, name="setpoint")
         temp = cp.Variable(horizon + 1, name="zone_temp")
@@ -132,10 +124,7 @@ class SetpointOptimiser:
         for t in range(horizon):
             constraints.append(
                 temp[t + 1]
-                == a[t] * temp[t]
-                + (1 - a[t]) * outdoor[t]
-                + gain * (u[t] - temp[t])
-                + drift[t]
+                == a[t] * temp[t] + (1 - a[t]) * outdoor[t] + gain * (u[t] - temp[t]) + drift[t]
             )
         constraints += [
             u >= problem.setpoint_min_c,
@@ -189,8 +178,7 @@ class SetpointOptimiser:
         setpoints = np.asarray(u.value, dtype=float)
         baseline_effort = np.maximum(outdoor - problem.baseline_setpoint_c, 0.0) * kw_per_k
         baseline_objective = float(
-            baseline_effort.sum() / STEPS_PER_HOUR
-            + problem.lambda_peak * baseline_effort.max()
+            baseline_effort.sum() / STEPS_PER_HOUR + problem.lambda_peak * baseline_effort.max()
         )
 
         return SetpointOptimisationResult(
@@ -198,15 +186,13 @@ class SetpointOptimiser:
             solved=True,
             setpoints_c=[round(float(v), 3) for v in setpoints],
             predicted_zone_temp_c=[round(float(v), 3) for v in np.asarray(temp.value)[1:]],
-            predicted_hvac_kw=[
-                round(float(v), 4) for v in np.asarray(effort.value, dtype=float)
-            ],
+            predicted_hvac_kw=[round(float(v), 4) for v in np.asarray(effort.value, dtype=float)],
             objective=float(prob.value),
             baseline_objective=baseline_objective,
             comfort_slack_kh=round(float(np.sum(slack.value)) / STEPS_PER_HOUR, 4),
-            max_step_change_k=round(float(np.max(np.abs(np.diff(setpoints)))), 3)
-            if horizon > 1
-            else 0.0,
+            max_step_change_k=(
+                round(float(np.max(np.abs(np.diff(setpoints)))), 3) if horizon > 1 else 0.0
+            ),
             solver=str(prob.solver_stats.solver_name if prob.solver_stats else "unknown"),
             solve_time_s=round(
                 float(prob.solver_stats.solve_time or 0.0) if prob.solver_stats else 0.0, 4

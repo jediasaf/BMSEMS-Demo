@@ -1,0 +1,58 @@
+# ---- EcoTwin AI :: local engineering mode ----------------------------------
+#
+#   docker compose up                    web + api, RC thermal engine
+#   docker compose --profile boptest up   ... and a live BOPTEST instance
+#
+# The `boptest` profile is opt-in because the BOPTEST image is large and slow
+# to start. Without it the Control Lab uses the EcoTwin RC engine and says so
+# in the status bar — it never claims to be BOPTEST.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ecotwin/api:latest
+    container_name: ecotwin-api
+    environment:
+      ECOTWIN_DEMO_MODE: "false"
+      ECOTWIN_INTERVIEW_MODE: "true"
+      ECOTWIN_CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+      ECOTWIN_LOG_LEVEL: "INFO"
+      # Empty unless the boptest profile is up; an unreachable URL is handled.
+      ECOTWIN_BOPTEST_URL: "${ECOTWIN_BOPTEST_URL:-}"
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        # Baked into the client bundle at build time, so it must be the URL the
+        # *browser* will use, not the compose service name.
+        NEXT_PUBLIC_API_BASE: "${NEXT_PUBLIC_API_BASE:-http://localhost:8000}"
+    image: ecotwin/web:latest
+    container_name: ecotwin-web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  # Live building emulator. Opt in with: docker compose --profile boptest up
+  boptest:
+    image: "${BOPTEST_IMAGE:-ghcr.io/ibpsa/boptest-service:latest}"
+    container_name: ecotwin-boptest
+    profiles: ["boptest"]
+    ports:
+      - "5000:5000"
+    restart: unless-stopped

@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -117,9 +117,7 @@ def _load_consumption(raw: Path, keep_windows: set[int], sites: set[int]) -> pd.
         parse_dates=["Timestamp"],
         chunksize=1_500_000,
     ):
-        frames.append(
-            chunk[chunk["ForecastId"].isin(keep_windows) & chunk["SiteId"].isin(sites)]
-        )
+        frames.append(chunk[chunk["ForecastId"].isin(keep_windows) & chunk["SiteId"].isin(sites)])
     return pd.concat(frames, ignore_index=True)
 
 
@@ -270,7 +268,7 @@ def _select_demo_window(day_quality: pd.DataFrame) -> dict[str, Any]:
         if eligible.empty:
             continue
         end = eligible.idxmax()
-        sites = set(int(s) for s in complete.columns[complete.loc[end]].tolist())
+        sites = {int(s) for s in complete.columns[complete.loc[end]].tolist()}
         candidate = {
             "n_days": int(n_days),
             "end": end,
@@ -310,7 +308,7 @@ def _extract(raw: Path, out: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     fine = windows[windows["interval_min"] == float(GRID_MINUTES)]
     keep_windows = set(fine.index.get_level_values("ForecastId"))
     per_site_rows = fine.groupby(level="SiteId")["n"].sum()
-    shortlist = set(int(s) for s in per_site_rows[per_site_rows >= MIN_SAMPLES].index)
+    shortlist = {int(s) for s in per_site_rows[per_site_rows >= MIN_SAMPLES].index}
     _log(
         f"{len(windows)} windows, {len(fine)} at {GRID_MINUTES} min, "
         f"{len(shortlist)} sites with >= {MIN_SAMPLES:,} fine samples"
@@ -320,7 +318,7 @@ def _extract(raw: Path, out: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     cons = _load_consumption(raw, keep_windows, shortlist)
     _log("loading weather ...")
     weather = _load_weather(raw, shortlist)
-    weather_sites = set(int(s) for s in weather["SiteId"].unique()) if not weather.empty else set()
+    weather_sites = {int(s) for s in weather["SiteId"].unique()} if not weather.empty else set()
     _log(f"weather available for {len(weather_sites)} shortlisted sites")
 
     load_frames: list[pd.DataFrame] = []
@@ -426,7 +424,7 @@ def main() -> int:
         (out / "selection.json").write_text(
             json.dumps(
                 {
-                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "generated_at": datetime.now(UTC).isoformat(),
                     "status": "NO_RAW_DATA",
                     "missing_files": missing,
                     "mode": "SAMPLE_FIXTURE",
@@ -532,7 +530,7 @@ def main() -> int:
     profile_frame.to_json(out / "site_profiles.json", orient="records", indent=2)
 
     selection = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "status": "OK",
         "mode": "REAL_DATA",
         "source_key": "power_laws_forecasting",

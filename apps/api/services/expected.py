@@ -106,8 +106,7 @@ class ExpectedLoadService:
                             model_id=model.model_id,
                             units=unit,
                             processing=(
-                                "LightGBM day-ahead forecast with a conformalised "
-                                "80% interval"
+                                "LightGBM day-ahead forecast with a conformalised " "80% interval"
                             ),
                             notes=(
                                 f"Trained on data before {model.cutoff}; backtest "

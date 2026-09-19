@@ -26,7 +26,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -36,7 +36,7 @@ import numpy as np
 import pandas as pd
 
 from core.common import paths
-from core.models.features import FeatureBuilder, FEATURE_LABELS
+from core.models.features import FEATURE_LABELS, FeatureBuilder
 
 log = logging.getLogger(__name__)
 
@@ -262,9 +262,7 @@ class LoadForecaster:
         x_calib, y_calib = features.iloc[fit_end:calib_end], y.iloc[fit_end:calib_end]
         x_back, y_back = features.iloc[backtest_slice], y.iloc[backtest_slice]
         if len(x_back) < 500:
-            raise ValueError(
-                f"asset {asset_id}: backtest split has only {len(x_back)} rows"
-            )
+            raise ValueError(f"asset {asset_id}: backtest split has only {len(x_back)} rows")
 
         merged = {**DEFAULT_PARAMS, **(params or {})}
         rounds = int(merged.pop("num_boost_round"))
@@ -326,9 +324,7 @@ class LoadForecaster:
                 rmse_kw=round(float(np.sqrt(np.mean(residual**2))), 4),
                 mape_pct=round(float(np.nanmean(np.abs(residual / denom)) * 100.0), 3),
                 wape_pct=round(
-                    100.0 * float(np.sum(np.abs(residual))) / total_actual
-                    if total_actual
-                    else 0.0,
+                    100.0 * float(np.sum(np.abs(residual))) / total_actual if total_actual else 0.0,
                     3,
                 ),
                 r2=round(1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan"), 4),
@@ -380,7 +376,7 @@ class LoadForecaster:
             base_temperature_c=base_temperature_c,
             metrics=metrics,
             feature_importance=importance,
-            trained_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            trained_at=datetime.now(UTC).isoformat(timespec="seconds"),
             cutoff=str(cutoff) if cutoff is not None else None,
             notes=notes or [],
             booster=booster,
@@ -423,9 +419,7 @@ class LoadForecaster:
         Rows whose features are not fully available (the warm-up period) come
         back as NaN rather than being silently filled.
         """
-        builder = FeatureBuilder(
-            base_temperature_c=model.base_temperature_c, target=model.target
-        )
+        builder = FeatureBuilder(base_temperature_c=model.base_temperature_c, target=model.target)
         builder.columns = model.feature_columns
         features = builder.transform(frame)
         complete = features.dropna(how="any")

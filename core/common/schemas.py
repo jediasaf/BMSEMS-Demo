@@ -165,7 +165,7 @@ class AssetNode(BaseModel):
     source_type: SourceType = SourceType.MEASURED
     has_anomaly: bool = False
     detail: str | None = None
-    children: list["AssetNode"] = Field(default_factory=list)
+    children: list[AssetNode] = Field(default_factory=list)
 
 
 class KpiValue(BaseModel):

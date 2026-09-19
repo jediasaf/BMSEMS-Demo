@@ -7,8 +7,9 @@ source whose descriptor says it is not a real measurement, and cannot build a
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Generic, Sequence, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -44,7 +45,7 @@ class Provenance(BaseModel):
     notes: str | None = None
 
     @model_validator(mode="after")
-    def _check_consistency(self) -> "Provenance":
+    def _check_consistency(self) -> Provenance:
         descriptor = source(self.source_key)
         if self.source_type is SourceType.MEASURED and not descriptor.is_real_measurement:
             raise ValueError(
@@ -263,7 +264,7 @@ class ProvenancedSeries(BaseModel):
     upper: list[float | None] | None = None
 
     @model_validator(mode="after")
-    def _check_lengths(self) -> "ProvenancedSeries":
+    def _check_lengths(self) -> ProvenancedSeries:
         if len(self.timestamps) != len(self.values):
             raise ValueError(
                 f"series {self.series_id}: {len(self.timestamps)} timestamps vs "

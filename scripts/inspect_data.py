@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -144,8 +144,7 @@ def _profile_csv(path: Path, max_rows: int) -> dict[str, Any]:
         for c, s in numeric_stats.items()
     }
     report["unique_counts"] = {
-        c: {"n_unique_seen": len(v), "sample": sorted(list(v))[:10]}
-        for c, v in unique_tracker.items()
+        c: {"n_unique_seen": len(v), "sample": sorted(v)[:10]} for c, v in unique_tracker.items()
     }
     report["timestamps"] = {
         c: {
@@ -157,6 +156,11 @@ def _profile_csv(path: Path, max_rows: int) -> dict[str, Any]:
         for c in parse_dates
     }
     return report
+
+
+def _fmt(stats: dict[str, Any], key: str) -> str:
+    value = stats.get(key)
+    return f"{value:.4g}" if isinstance(value, int | float) else "—"
 
 
 def _candidate_targets(reports: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -205,9 +209,7 @@ def main() -> int:
                 "columns": list(df.columns),
                 "rows_scanned": len(df),
                 "dtypes": {c: str(t) for c, t in df.dtypes.items()},
-                "missingness_pct": {
-                    c: round(100.0 * df[c].isna().mean(), 4) for c in df.columns
-                },
+                "missingness_pct": {c: round(100.0 * df[c].isna().mean(), 4) for c in df.columns},
                 "numeric_stats": {},
                 "unique_counts": {},
                 "timestamps": {},
@@ -217,7 +219,7 @@ def main() -> int:
         )
 
     payload = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "raw_dir": str(raw_dir.relative_to(REPO_ROOT)),
         "n_files": len(reports),
         "files": reports,
@@ -263,19 +265,19 @@ def main() -> int:
         ]
         for col in rep["columns"]:
             stats = rep.get("numeric_stats", {}).get(col, {})
-
-            def fmt(key: str) -> str:
-                val = stats.get(key)
-                return f"{val:.4g}" if isinstance(val, (int, float)) else "—"
-
             lines.append(
                 f"| `{col}` | {rep['dtypes'].get(col, '—')} | "
                 f"{rep['missingness_pct'].get(col, 0):.3f} | "
-                f"{fmt('min')} | {fmt('max')} | {fmt('mean')} |"
+                f"{_fmt(stats, 'min')} | {_fmt(stats, 'max')} | {_fmt(stats, 'mean')} |"
             )
         lines.append("")
         if rep.get("timestamps"):
-            lines += ["**Timestamps**", "", "| column | min | max | median Δ (min) | mode Δ (min) |", "|---|---|---|---|---|"]
+            lines += [
+                "**Timestamps**",
+                "",
+                "| column | min | max | median Δ (min) | mode Δ (min) |",
+                "|---|---|---|---|---|",
+            ]
             for col, meta in rep["timestamps"].items():
                 sampling = meta.get("sampling", {})
                 lines.append(
@@ -287,8 +289,7 @@ def main() -> int:
             lines += ["**Identifier-like columns**", ""]
             for col, meta in rep["unique_counts"].items():
                 lines.append(
-                    f"- `{col}`: {meta['n_unique_seen']} unique seen "
-                    f"(sample: {meta['sample']})"
+                    f"- `{col}`: {meta['n_unique_seen']} unique seen " f"(sample: {meta['sample']})"
                 )
             lines.append("")
 

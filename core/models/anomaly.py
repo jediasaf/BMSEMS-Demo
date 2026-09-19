@@ -172,9 +172,9 @@ class ResidualAnomalyDetector:
             )
         else:
             centre = residual.rolling(cfg.window, min_periods=cfg.window // 6).median()
-            mad = (residual - centre).abs().rolling(
-                cfg.window, min_periods=cfg.window // 6
-            ).median()
+            mad = (
+                (residual - centre).abs().rolling(cfg.window, min_periods=cfg.window // 6).median()
+            )
             reference, basis = {}, "trailing rolling window"
 
         # A perfectly modelled stretch gives MAD = 0 and an infinite score;
@@ -340,9 +340,12 @@ class ResidualAnomalyDetector:
             observed = float(peak["actual"])
             expected = float(peak["expected"])
             deviation = observed - expected
-            insight_id = "ins-" + hashlib.sha1(
-                f"{asset_id}|{metric}|{window.index[0]}|{kind.value}".encode()
-            ).hexdigest()[:10]
+            insight_id = (
+                "ins-"
+                + hashlib.sha1(
+                    f"{asset_id}|{metric}|{window.index[0]}|{kind.value}".encode()
+                ).hexdigest()[:10]
+            )
 
             evidence = [
                 FeatureContribution(

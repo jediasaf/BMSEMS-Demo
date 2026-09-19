@@ -132,9 +132,11 @@ class ControlValidator:
         record(
             "simulation_mode_only",
             simulation_mode,
-            "target is a simulator"
-            if simulation_mode
-            else "real actuation is not implemented and never will be in this prototype",
+            (
+                "target is a simulator"
+                if simulation_mode
+                else "real actuation is not implemented and never will be in this prototype"
+            ),
         )
 
         valid = all(bool(c["passed"]) for c in checks)
