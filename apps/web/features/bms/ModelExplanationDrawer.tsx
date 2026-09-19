@@ -73,13 +73,22 @@ function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-200">
             Forecast model — asset {siteId}
           </h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="focus-ring text-ink-400 hover:text-ink-100">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="focus-ring text-ink-400 hover:text-ink-100"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {loading && !data && <Skeleton className="mt-3 h-64 w-full" />}
-        {error && <div className="mt-3"><ErrorNote message={error} onRetry={reload} /></div>}
+        {error && (
+          <div className="mt-3">
+            <ErrorNote message={error} onRetry={reload} />
+          </div>
+        )}
 
         {data && (
           <div className="mt-3 space-y-3">
@@ -98,8 +107,8 @@ function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
                 <Section title="Evaluation">
                   <p className="mb-2 text-[10px] leading-relaxed text-ink-500">
                     Backtest is a chronological holdout inside the training history — large enough
-                    for the numbers to mean something. Live is the window the demo replays, held
-                    out entirely by the training cutoff.
+                    for the numbers to mean something. Live is the window the demo replays, held out
+                    entirely by the training cutoff.
                   </p>
                   <MetricsTable backtest={card.metrics.backtest} live={card.metrics.live} />
                 </Section>
@@ -107,8 +116,14 @@ function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
                 <Section title="Prediction interval">
                   <p className="text-2xs leading-relaxed text-ink-300">{card.interval_method}</p>
                   <div className="mt-2 grid grid-cols-3 gap-2">
-                    <Stat label="Target" value={`${num(card.metrics.backtest.interval_target_pct, 0)}%`} />
-                    <Stat label="Raw" value={`${num(card.metrics.backtest.raw_interval_coverage_pct, 1)}%`} />
+                    <Stat
+                      label="Target"
+                      value={`${num(card.metrics.backtest.interval_target_pct, 0)}%`}
+                    />
+                    <Stat
+                      label="Raw"
+                      value={`${num(card.metrics.backtest.raw_interval_coverage_pct, 1)}%`}
+                    />
                     <Stat
                       label="Conformalised"
                       value={`${num(card.metrics.backtest.interval_coverage_pct, 1)}%`}
@@ -160,7 +175,10 @@ function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
                   <Section title="Notes">
                     <ul className="space-y-1">
                       {card.notes.map((note) => (
-                        <li key={note} className="flex gap-1.5 text-2xs leading-relaxed text-ink-300">
+                        <li
+                          key={note}
+                          className="flex gap-1.5 text-2xs leading-relaxed text-ink-300"
+                        >
                           <span className="text-ink-600">·</span>
                           <span>{note}</span>
                         </li>
@@ -181,7 +199,11 @@ function MetricsTable({ backtest, live }: { backtest: SplitMetrics; live: SplitM
   const rows: { label: string; a: string; b: string }[] = [
     { label: 'Samples', a: num(backtest.n, 0), b: live ? num(live.n, 0) : '—' },
     { label: 'MAE (kW)', a: num(backtest.mae_kw, 2), b: live ? num(live.mae_kw, 2) : '—' },
-    { label: 'WAPE', a: `${num(backtest.wape_pct, 1)}%`, b: live ? `${num(live.wape_pct, 1)}%` : '—' },
+    {
+      label: 'WAPE',
+      a: `${num(backtest.wape_pct, 1)}%`,
+      b: live ? `${num(live.wape_pct, 1)}%` : '—',
+    },
     { label: 'R²', a: num(backtest.r2, 3), b: live ? num(live.r2, 3) : '—' },
     {
       label: `Skill vs ${backtest.baseline_name}`,
@@ -198,7 +220,9 @@ function MetricsTable({ backtest, live }: { backtest: SplitMetrics; live: SplitM
     <div className="overflow-hidden rounded-panel border border-base-600">
       <div className="grid grid-cols-[1.3fr_1fr_1fr] border-b border-base-600 bg-base-800/80 px-2 py-1">
         <span className="text-[10px] uppercase tracking-wider text-ink-500">Metric</span>
-        <span className="text-right text-[10px] uppercase tracking-wider text-ink-400">Backtest</span>
+        <span className="text-right text-[10px] uppercase tracking-wider text-ink-400">
+          Backtest
+        </span>
         <span className="text-right text-[10px] uppercase tracking-wider text-accent">Live</span>
       </div>
       {rows.map((row) => (

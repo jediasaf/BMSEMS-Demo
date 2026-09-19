@@ -96,10 +96,11 @@ claims no saving until the simulator has run.
 
 ![BMS AI Operations](docs/images/bms-ai-operations.png)
 
-**BMS — Control Lab.** Baseline against AI control, both from the same engine
-over identical inputs, with every model parameter on screen.
+**BMS — Control Lab, mid-demo.** Baseline against AI control, both from the
+same engine over identical inputs, with every model parameter on screen — and
+the simulator's verdict on the proposal, which it is allowed to reject.
 
-![BMS Control Lab](docs/images/bms-control-lab.png)
+![Interview mode on the Control Lab](docs/images/interview-mode.png)
 
 **EMS — Scenario Lab.** The flagship: an EV surge past nameplate, a dispatch
 that defers rather than sheds, verification by a second load flow, and the
@@ -113,9 +114,11 @@ feeder width follows its share of demand.
 ![EMS Power Network](docs/images/ems-network.png)
 
 <details>
-<summary>More: BMS Overview, EMS Portfolio, About &amp; provenance, and a provenance popover</summary>
+<summary>More: BMS Overview, Control Lab, EMS Portfolio, architecture, About &amp; provenance, and a provenance popover</summary>
 
 ![BMS Overview](docs/images/bms-overview.png)
+![BMS Control Lab](docs/images/bms-control-lab.png)
+![Architecture drawer](docs/images/architecture-drawer.png)
 ![EMS Portfolio](docs/images/ems-portfolio.png)
 ![About and provenance](docs/images/about-provenance.png)
 ![Provenance badge](docs/images/provenance-badge.png)
@@ -203,10 +206,13 @@ measurement.
 
 ```bash
 make check      # ruff + black + eslint + strict tsc + pytest
+make audit      # every visible metric carries provenance
+make demo       # build, restart, and verify the interview path
+make e2e        # drive the twelve demo steps in a browser
 ```
 
-137 Python tests. They assert properties rather than restating the
-implementation:
+170 Python tests plus a four-test browser suite. They assert properties rather
+than restating the implementation:
 
 - no feature can read the present (perturb the last sample; no earlier feature
   row may move);
@@ -215,19 +221,37 @@ implementation:
   rolling one goes quiet;
 - relaxing a cooling setpoint saves a credible 2–30% per K;
 - EV energy is conserved **and** recovery never precedes curtailment;
-- a value cannot be tagged `MEASURED` from a source that is not a measurement.
+- a value cannot be tagged `MEASURED` from a source that is not a measurement;
+- a re-simulated proposal that is worse than doing nothing is rejected, and no
+  saving is claimed for it;
+- a recorded result is never served for a scenario it was not recorded for.
 
 ---
 
 ## Demo
 
-[`docs/interview_demo.md`](docs/interview_demo.md) is a 5-minute script with
-talking points. In the app, press **Guided demo** for the same route, and
-**Reset demo** in the status bar to clear every cache between runs.
+Press **Start demo** in the sidebar. Twelve steps, each owning its route and
+its scenario, so a stray click cannot knock the walkthrough off course; Back
+and Next are symmetric, and **Reset demo** restores the whole product —
+route, replay cursor, both scenarios, every selection, and every computed
+result — to its opening position.
 
-Approximate route: BMS overview → replay → inject a hot day → detection →
-recommendation → safety gate → Control Lab → EMS portfolio → network → EV surge
-→ optimise → verify by load flow → cross-module chain → provenance.
+[`docs/interview_demo.md`](docs/interview_demo.md) is the 5-minute script:
+what to click, what to say, the technical point of each screen, and the
+fallback for every service that can be unavailable.
+
+The demo is not a claim, it is a check:
+
+```bash
+curl -s localhost:8000/interview/verify | jq .ready
+```
+
+That runs the eight claims the walkthrough makes — an insight appears, an
+action is proposed, the simulator accepts it, the baseline day stays quiet,
+the EV surge passes nameplate, the optimiser brings it back, the load flow
+agrees, the baseline network has no violation — against real computation.
+`tests/test_interview.py` asserts it, so a model change that quietly makes the
+demo boring fails CI rather than an interview.
 
 ---
 
@@ -326,4 +350,7 @@ docs/         architecture · data provenance · modelling · deployment · demo
   intervals, the thermal model
 - [Deployment](docs/deployment.md) — both targets, configuration, operations
 - [Interview demo](docs/interview_demo.md) — the 5-minute script
+- [Technical questions](docs/interview_questions.md) — why LightGBM, why
+  BOPTEST, why pandapower, how EBO and PME integration would work, and what
+  each choice cost
 - [Schema report](docs/schema_report.md) — generated from the raw files

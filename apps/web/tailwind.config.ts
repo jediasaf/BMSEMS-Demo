@@ -75,7 +75,10 @@ const config: Config = {
       },
       keyframes: {
         pulseDot: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.3' } },
-        sweep: { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'translateX(320%)' } },
+        sweep: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(320%)' },
+        },
         fadeUp: {
           '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },

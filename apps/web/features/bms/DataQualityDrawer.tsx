@@ -7,13 +7,7 @@ import { useAsync } from '@/lib/useAsync';
 import { num, pct, fullTimestamp } from '@/lib/format';
 import { Button, ErrorNote, Skeleton } from '@/components/Primitives';
 
-export function DataQualityDrawer({
-  assetId,
-  module,
-}: {
-  assetId: string;
-  module: 'bms' | 'ems';
-}) {
+export function DataQualityDrawer({ assetId, module }: { assetId: string; module: 'bms' | 'ems' }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -50,25 +44,48 @@ function Drawer({
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-200">
             Data quality — asset {assetId}
           </h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="focus-ring text-ink-400 hover:text-ink-100">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="focus-ring text-ink-400 hover:text-ink-100"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {loading && !data && <Skeleton className="mt-3 h-64 w-full" />}
-        {error && <div className="mt-3"><ErrorNote message={error} onRetry={reload} /></div>}
+        {error && (
+          <div className="mt-3">
+            <ErrorNote message={error} onRetry={reload} />
+          </div>
+        )}
 
         {data && (
           <div className="mt-3 space-y-3">
             <dl className="grid grid-cols-2 gap-2">
-              <Stat label="Window" value={`${fullTimestamp(data.report.window_start)} → ${fullTimestamp(data.report.window_end)}`} wide />
-              <Stat label="Samples" value={`${num(data.report.actual_samples, 0)} / ${num(data.report.expected_samples, 0)}`} />
+              <Stat
+                label="Window"
+                value={`${fullTimestamp(data.report.window_start)} → ${fullTimestamp(data.report.window_end)}`}
+                wide
+              />
+              <Stat
+                label="Samples"
+                value={`${num(data.report.actual_samples, 0)} / ${num(data.report.expected_samples, 0)}`}
+              />
               <Stat label="Missing" value={pct(data.report.missing_pct, 3)} />
-              <Stat label="Sampling interval" value={`${num(data.report.sampling_minutes, 0)} min`} />
+              <Stat
+                label="Sampling interval"
+                value={`${num(data.report.sampling_minutes, 0)} min`}
+              />
               <Stat label="Duplicate timestamps" value={num(data.report.duplicate_timestamps, 0)} />
               <Stat label="Outliers" value={num(data.report.outlier_count, 0)} />
               <Stat label="Flatline runs" value={num(data.report.flatline_runs, 0)} />
-              <Stat label="Last timestamp" value={data.report.last_timestamp ? fullTimestamp(data.report.last_timestamp) : '—'} wide />
+              <Stat
+                label="Last timestamp"
+                value={data.report.last_timestamp ? fullTimestamp(data.report.last_timestamp) : '—'}
+                wide
+              />
               <Stat label="Timezone" value={data.report.timezone} wide />
             </dl>
 
