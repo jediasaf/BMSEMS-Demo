@@ -58,6 +58,18 @@ def _boptest_state(settings: Settings) -> str:
     return "local"
 
 
+@router.get("/healthz")
+def healthz() -> dict[str, str]:
+    """Liveness only: is this process answering?
+
+    Deliberately touches nothing. A platform health check runs every few
+    seconds for the life of the service, and `/health` solves a load flow to
+    prove pandapower works -- correct once, wasteful on a loop. Readiness is
+    `/health`; demo readiness is `/interview/verify`.
+    """
+    return {"status": "ok"}
+
+
 @router.get("/health", response_model=HealthResponse)
 @router.get("/api/health", response_model=HealthResponse, include_in_schema=False)
 def health(settings: Settings = Depends(get_settings)) -> HealthResponse:

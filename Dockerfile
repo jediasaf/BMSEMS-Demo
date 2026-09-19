@@ -50,8 +50,12 @@ ENV ECOTWIN_ROOT=/app \
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
-  CMD curl -fsS "http://127.0.0.1:${PORT}/health" || exit 1
+# Liveness, not readiness: /healthz touches nothing, so a check every 30s for
+# the life of the container costs nothing. /health solves a load flow to prove
+# pandapower works, which is worth doing once rather than on a loop.
+# start-period covers the measured 24 s cold start with margin.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:${PORT}/healthz" || exit 1
 
 # Single worker on purpose: the services hold warmed per-asset caches, and a
 # second worker would double the memory for no throughput a demo needs.
