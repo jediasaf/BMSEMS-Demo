@@ -350,6 +350,7 @@ class EmsService:
             },
             "served_by": ctx.expected.served_by,
             "gate_reason": ctx.expected.gate_reason,
+            "injection": ctx.injection.__dict__ if ctx.injection else None,
         }
 
     # -- optimisation -----------------------------------------------------
@@ -538,6 +539,7 @@ class EmsService:
                 "the worst instant, before and after the proposed dispatch. They are "
                 "not the optimiser's own estimate."
             ),
+            "injection": ctx.injection.__dict__ if ctx.injection else None,
         }
 
     # -- portfolio --------------------------------------------------------

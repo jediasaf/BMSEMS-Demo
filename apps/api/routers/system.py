@@ -204,23 +204,27 @@ def replay_window() -> dict[str, Any]:
     }
 
 
+def _scenario_payload(s: Any) -> dict[str, Any]:
+    return {
+        "scenario_id": s.scenario_id,
+        "module": s.module,
+        "name": s.name,
+        "subtitle": s.subtitle,
+        "description": s.description,
+        "teaches": s.teaches,
+        "is_baseline": s.is_baseline,
+        "is_flagship": s.is_flagship,
+        "parameters": s.parameters,
+        "injected_parameter": s.injected_parameter,
+        "magnitude": s.magnitude,
+        "duration": s.duration,
+        "expected_impact": s.expected_impact,
+    }
+
+
 @router.get("/scenarios")
 def scenarios(module: str | None = None) -> dict[str, Any]:
-    return {
-        "scenarios": [
-            {
-                "scenario_id": s.scenario_id,
-                "module": s.module,
-                "name": s.name,
-                "subtitle": s.subtitle,
-                "description": s.description,
-                "teaches": s.teaches,
-                "is_baseline": s.is_baseline,
-                "parameters": s.parameters,
-            }
-            for s in list_scenarios(module)
-        ]
-    }
+    return {"scenarios": [_scenario_payload(s) for s in list_scenarios(module)]}
 
 
 @router.post("/demo/reset")
