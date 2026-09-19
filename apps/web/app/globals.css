@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-base-900 text-ink-100 antialiased;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+  background-image:
+    radial-gradient(900px 500px at 12% -8%, rgba(15, 185, 177, 0.07), transparent 60%),
+    radial-gradient(760px 420px at 92% -4%, rgba(0, 224, 138, 0.055), transparent 62%);
+  background-attachment: fixed;
+}
+
+/* Thin, unobtrusive scrollbars: dense tables everywhere. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #26323f transparent;
+}
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #26323f;
+  border-radius: 6px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #3a4655;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-panel border border-base-600/70 bg-base-800/70 shadow-panel backdrop-blur-[2px];
+  }
+  .panel-header {
+    @apply flex items-center justify-between gap-3 border-b border-base-600/70 px-3 py-2;
+  }
+  .panel-title {
+    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-ink-300;
+  }
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(38, 50, 63, 0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(38, 50, 63, 0.35) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .focus-ring {
+    @apply outline-none ring-offset-0 focus-visible:ring-2 focus-visible:ring-accent/70;
+  }
+}

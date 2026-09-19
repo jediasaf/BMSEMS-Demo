@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from apps.api.services.timeparse import naive_instant
 from apps.api.services.expected import ExpectedLoadService, ExpectedSeries
 from core.adapters.building.power_laws import demo_window
 from core.adapters.power import PowerSourceAdapter, get_power_adapter
@@ -41,7 +42,12 @@ HVAC_FLEXIBILITY_HOURS = 1.5
 #: Spare EV charger capacity available for catch-up, as a share of its rating.
 EV_CATCHUP_SHARE = 0.55
 #: Horizon the risk assessment and optimisation look over.
-RISK_HORIZON_STEPS = 8 * STEPS_PER_HOUR
+#:
+#: Twelve hours, not eight: deferred load has to land somewhere. A horizon that
+#: ends before the flexible resource does leaves the optimiser with nowhere to
+#: recover the energy it curtails, and the honest answer becomes "infeasible"
+#: for a problem that is perfectly feasible over a realistic operating window.
+RISK_HORIZON_STEPS = 12 * STEPS_PER_HOUR
 
 
 @dataclass
@@ -247,7 +253,7 @@ class EmsService:
         ctx = self.context(facility_id, scenario_id)
         window = ctx.window
         stamp = (
-            pd.Timestamp(at)
+            naive_instant(at)
             if at is not None
             else self.default_instant(facility_id, scenario_id)
         )
@@ -266,7 +272,7 @@ class EmsService:
         ctx = self.context(facility_id, scenario_id)
         window = ctx.window
         stamp = (
-            pd.Timestamp(at)
+            naive_instant(at)
             if at is not None
             else self.default_instant(facility_id, scenario_id)
         )
@@ -384,9 +390,19 @@ class EmsService:
             ]
         )
         ev_available = injected_kw.copy()
-        ev_headroom = np.where(
-            injected_kw > 0.1, 0.0, float(np.nanmax(injected_kw)) * EV_CATCHUP_SHARE
-        )
+        # Catch-up capacity exists only once a session has started and only
+        # while it is not already drawing full power. Offering headroom before
+        # the first arrival would let the optimiser charge vehicles that are
+        # not there.
+        session = np.flatnonzero(injected_kw > 0.1)
+        ev_headroom = np.zeros_like(injected_kw)
+        if session.size:
+            first = int(session[0])
+            ev_headroom[first:] = np.where(
+                injected_kw[first:] > 0.1,
+                0.0,
+                float(np.nanmax(injected_kw)) * EV_CATCHUP_SHARE,
+            )
 
         hvac = FlexibleResource(
             resource_id="F1_HVAC",
@@ -557,7 +573,7 @@ class EmsService:
             if window.empty:
                 continue
             stamp = (
-                pd.Timestamp(at)
+                naive_instant(at)
                 if at is not None
                 else self.default_instant(facility_id, scenario_id)
             )
