@@ -1,12 +1,24 @@
 # Deploying EcoTwin AI
 
+## Current production state
+
+|                    |                                                                             |
+| ------------------ | --------------------------------------------------------------------------- |
+| Frontend           | https://ecotwin-ai-zeta.vercel.app — deployed, SSO Deployment Protection on |
+| Backend            | **not deployed** — no Fly.io or Render credential has been available        |
+| Frontend → backend | `NEXT_PUBLIC_API_BASE` unset, so the site shows **Not configured**          |
+
+The frontend is correct and complete; it is waiting on a backend URL. Nothing
+below is aspirational — the image builds, runs and passes `/interview/verify`
+locally, and the manifests are sized from measurements of that run.
+
 ## The shape of it
 
 EcoTwin is two processes, and only one of them belongs on Vercel.
 
-| | What it is | Where it runs |
-|---|---|---|
-| `apps/web` | Next.js 15, React 19 | **Vercel** — this is what Vercel is for |
+|            | What it is                                    | Where it runs                                             |
+| ---------- | --------------------------------------------- | --------------------------------------------------------- |
+| `apps/web` | Next.js 15, React 19                          | **Vercel** — this is what Vercel is for                   |
 | `apps/api` | FastAPI + pandas, LightGBM, pandapower, CVXPY | **A container host** — Fly.io, Render, Railway, Cloud Run |
 
 The backend does not fit Vercel's serverless model and it is not close. Its
@@ -31,15 +43,15 @@ processed dataset, the trained models and the demo cache.
 
 Sized from running the production image, not from habit:
 
-| | |
-|---|---|
-| Image | 255 MB |
-| Artifacts in image | 95 MB (90 MB Parquet, 4 MB models, 1 MB demo cache) |
-| Cold start to first `200 /healthz` | **24 s** (16 s of it warm-up) |
-| RAM after warm-up | 502 MB |
-| RAM after `/interview/verify` | 522 MB |
-| RAM peak under the whole demo workload | **548 MB** |
-| Warm latency | `/healthz` 4 ms · `/health` 64 ms · overview 640 ms · Control Lab 805 ms · EMS optimise 133 ms |
+|                                        |                                                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Image                                  | 255 MB                                                                                         |
+| Artifacts in image                     | 95 MB (90 MB Parquet, 4 MB models, 1 MB demo cache)                                            |
+| Cold start to first `200 /healthz`     | **24 s** (16 s of it warm-up)                                                                  |
+| RAM after warm-up                      | 502 MB                                                                                         |
+| RAM after `/interview/verify`          | 522 MB                                                                                         |
+| RAM peak under the whole demo workload | **548 MB**                                                                                     |
+| Warm latency                           | `/healthz` 4 ms · `/health` 64 ms · overview 640 ms · Control Lab 805 ms · EMS optimise 133 ms |
 
 So **1 GB** is the right size: 45% headroom over the measured peak. 512 MB
 would OOM during warm-up. 2 GB is paying for nothing.
@@ -110,11 +122,11 @@ vercel --prod
 Or through the dashboard: import the repository, set **Root Directory** to
 `apps/web`, and add the environment variable.
 
-| Setting | Value |
-|---|---|
-| Root directory | `apps/web` |
-| Framework | Next.js (detected) |
-| Build command | `next build` (in `vercel.json`) |
+| Setting                | Value                                    |
+| ---------------------- | ---------------------------------------- |
+| Root directory         | `apps/web`                               |
+| Framework              | Next.js (detected)                       |
+| Build command          | `next build` (in `vercel.json`)          |
 | `NEXT_PUBLIC_API_BASE` | `https://<your-api>` — no trailing slash |
 
 `NEXT_PUBLIC_API_BASE` is inlined at build time, so **changing it requires a
@@ -132,8 +144,8 @@ https://ecotwin-ai-jediasafs-projects.vercel.app
 ```
 
 `allow_credentials` is False and the API has no cookies or auth headers, so
-`*` is never paired with credentials — and an empty list now means *no*
-cross-origin access rather than silently meaning *all* of it. Override for a
+`*` is never paired with credentials — and an empty list now means _no_
+cross-origin access rather than silently meaning _all_ of it. Override for a
 different frontend:
 
 ```bash
@@ -178,14 +190,14 @@ which is the only definition of "deployed" worth having.
 
 ## Expected behaviour of a healthy public deployment
 
-| | |
-|---|---|
-| Zone simulation | EcoTwin RC engine, labelled as such. Not BOPTEST. |
-| First load | Preload runs once; the system bar reports how long it took |
-| Control Lab | Live solve, ~0.5 s warm |
-| EMS optimisation | Live solve, ~0.1 s warm |
-| If a heavy solve fails | A recorded result for the *same scenario*, banner-marked SIMULATION REPLAY |
-| If the dataset is absent | Everything reads SAMPLE FIXTURE; no value can be mistaken for real |
+|                          |                                                                            |
+| ------------------------ | -------------------------------------------------------------------------- |
+| Zone simulation          | EcoTwin RC engine, labelled as such. Not BOPTEST.                          |
+| First load               | Preload runs once; the system bar reports how long it took                 |
+| Control Lab              | Live solve, ~0.5 s warm                                                    |
+| EMS optimisation         | Live solve, ~0.1 s warm                                                    |
+| If a heavy solve fails   | A recorded result for the _same scenario_, banner-marked SIMULATION REPLAY |
+| If the dataset is absent | Everything reads SAMPLE FIXTURE; no value can be mistaken for real         |
 
 ---
 

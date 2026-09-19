@@ -81,7 +81,7 @@ export default function AboutPage() {
                   <ErrorNote message={sources.error} onRetry={sources.reload} />
                 </div>
               )}
-              {!sources.data && <Skeleton className="m-2.5 h-48" />}
+              {!sources.data && sources.loading && <Skeleton className="m-2.5 h-48" />}
               {registry.length > 0 && (
                 <table className="tech-table min-w-[42rem]">
                   <thead>

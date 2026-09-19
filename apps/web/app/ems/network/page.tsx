@@ -138,7 +138,7 @@ export default function PowerNetworkPage() {
                     selected={selectedAsset}
                   />
                 ) : (
-                  <Skeleton className="m-2.5 h-[330px] w-full" />
+                  network.loading && <Skeleton className="m-2.5 h-[330px] w-full" />
                 )}
               </Panel>
 
@@ -441,7 +441,10 @@ export default function PowerNetworkPage() {
                 </Panel>
               )}
 
-              {!data && <Skeleton className="h-[360px]" />}
+              {!data && network.loading && <Skeleton className="h-[360px]" />}
+              {!data && network.error && (
+                <ErrorNote message={network.error} onRetry={network.reload} />
+              )}
             </div>
           </div>
         </div>

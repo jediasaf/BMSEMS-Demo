@@ -190,6 +190,10 @@ export default function BmsOverviewPage() {
                   y2AxisName="°C"
                   cursorTime={stamp ?? undefined}
                 />
+              ) : overview.error ? (
+                <div className="p-2.5">
+                  <ErrorNote message={overview.error} onRetry={overview.reload} />
+                </div>
               ) : (
                 <Skeleton className="m-2.5 h-[300px]" />
               )}
@@ -206,6 +210,8 @@ export default function BmsOverviewPage() {
                   onSelect={setDrawerNode}
                   selected={drawerNode?.node_id ?? null}
                 />
+              ) : assets.error ? (
+                <ErrorNote message={assets.error} onRetry={assets.reload} />
               ) : (
                 <Skeleton className="h-[280px]" />
               )}
@@ -229,7 +235,12 @@ export default function BmsOverviewPage() {
               className="max-h-[22rem]"
               bodyClassName="overflow-y-auto"
             >
-              {!data && <Skeleton className="m-2.5 h-32" />}
+              {!data && overview.loading && <Skeleton className="m-2.5 h-32" />}
+              {!data && overview.error && (
+                <div className="p-2.5">
+                  <ErrorNote message={overview.error} onRetry={overview.reload} />
+                </div>
+              )}
               {data && data.insights.length === 0 && (
                 <div className="p-2.5">
                   <EmptyNote
@@ -303,7 +314,9 @@ function RecommendationPanel({
   if (recommendations.error) {
     return <ErrorNote message={recommendations.error} onRetry={recommendations.reload} />;
   }
-  if (!recommendations.data) return <Skeleton className="h-[22rem]" />;
+  if (!recommendations.data) {
+    return recommendations.loading ? <Skeleton className="h-[22rem]" /> : null;
+  }
   if (recommendations.data.length === 0) {
     return (
       <Panel title="AI recommendation">

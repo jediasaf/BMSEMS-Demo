@@ -104,7 +104,12 @@ export default function EmsPortfolioPage() {
             flush
             bodyClassName="overflow-x-auto"
           >
-            {!data && <Skeleton className="m-2.5 h-48" />}
+            {!data && portfolio.loading && <Skeleton className="m-2.5 h-48" />}
+            {!data && portfolio.error && (
+              <div className="p-2.5">
+                <ErrorNote message={portfolio.error} onRetry={portfolio.reload} />
+              </div>
+            )}
             {data && (
               <table className="tech-table min-w-[62rem]">
                 <thead>
@@ -338,7 +343,7 @@ function PortfolioDemandPanel({
           markLineLabel={`${num(data.cap_kw, 0)} kW = 100% transformer loading`}
         />
       ) : (
-        <Skeleton className="m-2.5 h-[260px]" />
+        risk.loading && <Skeleton className="m-2.5 h-[260px]" />
       )}
     </Panel>
   );
