@@ -25,6 +25,11 @@ interface DemoState {
   speed: number;
   interviewMode: boolean;
   tourStep: number | null;
+  compactNav: boolean;
+  /** Asset selected in the BMS building view, shown in the detail drawer. */
+  selectedZone: string | null;
+  /** Insight selected in the AI Operations feed. */
+  selectedInsight: string | null;
 
   setStatus: (status: SystemStatus) => void;
   setWindow: (window: ReplayWindow) => void;
@@ -40,6 +45,9 @@ interface DemoState {
   toggle: () => void;
   setSpeed: (speed: number) => void;
   setInterviewMode: (on: boolean) => void;
+  toggleCompactNav: () => void;
+  setSelectedZone: (id: string | null) => void;
+  setSelectedInsight: (id: string | null) => void;
   startTour: () => void;
   nextTourStep: () => void;
   endTour: () => void;
@@ -59,6 +67,9 @@ export const useDemo = create<DemoState>((set, get) => ({
   speed: 20,
   interviewMode: true,
   tourStep: null,
+  compactNav: false,
+  selectedZone: null,
+  selectedInsight: null,
 
   setStatus: (status) => set({ status, interviewMode: status.interview_mode }),
   setWindow: (window) =>
@@ -85,6 +96,9 @@ export const useDemo = create<DemoState>((set, get) => ({
   toggle: () => set({ playing: !get().playing }),
   setSpeed: (speed) => set({ speed }),
   setInterviewMode: (interviewMode) => set({ interviewMode }),
+  toggleCompactNav: () => set({ compactNav: !get().compactNav }),
+  setSelectedZone: (selectedZone) => set({ selectedZone }),
+  setSelectedInsight: (selectedInsight) => set({ selectedInsight }),
   startTour: () => set({ tourStep: 0 }),
   nextTourStep: () => set({ tourStep: (get().tourStep ?? 0) + 1 }),
   endTour: () => set({ tourStep: null }),
@@ -96,6 +110,8 @@ export const useDemo = create<DemoState>((set, get) => ({
       playing: false,
       speed: 20,
       tourStep: null,
+      selectedZone: null,
+      selectedInsight: null,
     }),
 }));
 

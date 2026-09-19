@@ -28,13 +28,17 @@ export interface ChartSeriesConfig {
 }
 
 const PROV_COLOUR: Record<string, string> = {
-  MEASURED: '#22c55e',
-  PREDICTED: '#3b9dfb',
-  SIMULATED: '#a78bfa',
-  OPTIMISED: '#00e08a',
-  DERIVED: '#f5a524',
+  MEASURED: '#3ddc97',
+  PREDICTED: '#4cc2ff',
+  SIMULATED: '#a98bfa',
+  OPTIMISED: '#22d3a6',
+  DERIVED: '#f2b544',
   INJECTED: '#f472b6',
 };
+
+const AXIS = '#65807c';
+const GRID = 'rgba(30, 61, 57, 0.55)';
+const LINE = '#1e3d39';
 
 export function TimeSeriesChart({
   configs,
@@ -106,7 +110,7 @@ export function TimeSeriesChart({
             return [timestamp, lower === null || upper === null || lower === undefined || upper === undefined ? null : upper - lower];
           }),
           lineStyle: { opacity: 0 },
-          areaStyle: { color: colour, opacity: 0.13 },
+          areaStyle: { color: colour, opacity: 0.085 },
           symbol: 'none',
           silent: true,
           legendHoverLink: false,
@@ -140,7 +144,7 @@ export function TimeSeriesChart({
                 x2: 0,
                 y2: 1,
                 colorStops: [
-                  { offset: 0, color: `${colour}33` },
+                  { offset: 0, color: `${colour}26` },
                   { offset: 1, color: `${colour}00` },
                 ],
               },
@@ -156,10 +160,10 @@ export function TimeSeriesChart({
                     ? [
                         {
                           yAxis: markLineValue,
-                          lineStyle: { color: '#f4404b', type: 'dashed', width: 1.2 },
+                          lineStyle: { color: '#ff5a5f', type: 'dashed', width: 1.2 },
                           label: {
                             formatter: markLineLabel ?? '',
-                            color: '#f4404b',
+                            color: '#ff5a5f',
                             fontSize: 10,
                             position: 'insideEndTop',
                           },
@@ -170,7 +174,7 @@ export function TimeSeriesChart({
                     ? [
                         {
                           xAxis: cursorTime,
-                          lineStyle: { color: '#00e08a', width: 1.2 },
+                          lineStyle: { color: '#3ddc97', width: 1.4 },
                           label: { show: false },
                         },
                       ]
@@ -182,7 +186,7 @@ export function TimeSeriesChart({
           index === 0 && markAreaFrom && markAreaTo
             ? {
                 silent: true,
-                itemStyle: { color: 'rgba(244, 114, 182, 0.09)' },
+                itemStyle: { color: 'rgba(244, 114, 182, 0.10)' },
                 label: {
                   show: Boolean(markAreaLabel),
                   formatter: markAreaLabel ?? '',
@@ -200,12 +204,20 @@ export function TimeSeriesChart({
       {
         type: 'value',
         name: yAxisName,
+        // A capacity line is the point of the panel it sits in, so the axis has
+        // to reach it. ECharts sizes a value axis from the series alone, which
+        // silently clips a mark line that sits above every plotted point.
+        max:
+          markLineValue === undefined
+            ? undefined
+            : (value: { max: number }) => Math.max(value.max, markLineValue * 1.06),
         // A kW axis reads better from zero; a temperature axis does not.
         scale: yScale,
-        nameGap: 12,
-        nameTextStyle: { color: '#6b7a8d', fontSize: 10, align: 'left' },
-        axisLabel: { color: '#6b7a8d', fontSize: 10 },
-        splitLine: { lineStyle: { color: 'rgba(38,50,63,0.55)', type: 'dashed' } },
+        nameLocation: 'end',
+        nameGap: 10,
+        nameTextStyle: { color: AXIS, fontSize: 9, align: 'left', padding: [0, 0, 0, -6] },
+        axisLabel: { color: AXIS, fontSize: 10 },
+        splitLine: { lineStyle: { color: GRID, type: 'dashed' } },
         axisLine: { show: false },
       },
     ];
@@ -214,9 +226,10 @@ export function TimeSeriesChart({
         type: 'value',
         name: y2AxisName,
         scale: y2Scale,
-        nameGap: 12,
-        nameTextStyle: { color: '#6b7a8d', fontSize: 10, align: 'right' },
-        axisLabel: { color: '#6b7a8d', fontSize: 10 },
+        nameLocation: 'end',
+        nameGap: 10,
+        nameTextStyle: { color: AXIS, fontSize: 9, align: 'right', padding: [0, -6, 0, 0] },
+        axisLabel: { color: AXIS, fontSize: 10 },
         splitLine: { show: false } as never,
         axisLine: { show: false },
       } as never);
@@ -225,31 +238,36 @@ export function TimeSeriesChart({
     return {
       backgroundColor: 'transparent',
       animationDuration: 260,
-      grid: { left: 52, right: y2AxisName ? 52 : 16, top: legend ? 34 : 18, bottom: 24 },
+      grid: { left: 50, right: y2AxisName ? 50 : 18, top: legend ? 30 : 20, bottom: 22 },
       legend: legend
         ? {
             show: true,
-            top: 0,
-            right: 8,
+            top: 2,
+            // Centred, not right-aligned: the axis unit names sit at both
+            // edges of this same row, and a right-aligned legend runs into
+            // the right-hand one as soon as a series name gets long.
+            left: 'center',
+            width: '64%',
             icon: 'roundRect',
             itemWidth: 9,
             itemHeight: 3,
-            textStyle: { color: '#94a3b8', fontSize: 10 },
+            textStyle: { color: '#8ba39f', fontSize: 10 },
             data: configs.map((c) => c.series.label),
           }
         : { show: false },
       tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(8,11,17,0.96)',
-        borderColor: '#26323f',
+        backgroundColor: 'rgba(7,16,15,0.97)',
+        borderColor: '#2a514c',
         borderWidth: 1,
-        textStyle: { color: '#e8eef5', fontSize: 11 },
-        axisPointer: { type: 'line', lineStyle: { color: '#3a4655' } },
+        padding: [6, 8],
+        textStyle: { color: '#e6f0ee', fontSize: 11 },
+        axisPointer: { type: 'line', lineStyle: { color: '#3d6b64' } },
       },
       xAxis: {
         type: 'time',
-        axisLabel: { color: '#6b7a8d', fontSize: 10, hideOverlap: true },
-        axisLine: { lineStyle: { color: '#26323f' } },
+        axisLabel: { color: AXIS, fontSize: 10, hideOverlap: true },
+        axisLine: { lineStyle: { color: LINE } },
         splitLine: { show: false },
       },
       yAxis: yAxes,

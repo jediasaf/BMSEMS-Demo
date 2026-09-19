@@ -125,6 +125,67 @@ def sources() -> dict[str, Any]:
     }
 
 
+@router.get("/dataset")
+def dataset() -> dict[str, Any]:
+    """Headline facts about the served dataset, counted rather than estimated.
+
+    The UI shows a "Data source" panel; every figure in it comes from here, so
+    it is the real row count of the real files, not a round number chosen to
+    look impressive.
+    """
+    building = get_building_adapter()
+    power = get_power_adapter()
+    selection = load_selection()
+    descriptor = SOURCES.get(building.source_key)
+
+    counts: dict[str, int] = {}
+    span: dict[str, str | None] = {"first": None, "last": None}
+    try:
+        import pandas as pd
+
+        if paths.LOAD_PARQUET.exists():
+            load = pd.read_parquet(paths.LOAD_PARQUET, columns=["site_id", "timestamp"])
+            counts["load_records"] = int(len(load))
+            counts["sites"] = int(load["site_id"].nunique())
+            span = {
+                "first": load["timestamp"].min().isoformat(),
+                "last": load["timestamp"].max().isoformat(),
+            }
+        if paths.WEATHER_PARQUET.exists():
+            counts["weather_records"] = int(
+                len(pd.read_parquet(paths.WEATHER_PARQUET, columns=["site_id"]))
+            )
+        if paths.HOLIDAYS_PARQUET.exists():
+            counts["holiday_records"] = int(
+                len(pd.read_parquet(paths.HOLIDAYS_PARQUET, columns=["site_id"]))
+            )
+    except Exception as exc:  # pragma: no cover - defensive
+        return {"available": False, "reason": str(exc)}
+
+    counts["total_records"] = sum(v for k, v in counts.items() if k.endswith("_records"))
+    return {
+        "available": True,
+        "name": descriptor.name if descriptor else building.key,
+        "publisher": descriptor.publisher if descriptor else "unknown",
+        "url": descriptor.url if descriptor else None,
+        "licence": descriptor.licence if descriptor else None,
+        "data_mode": building.data_mode.value,
+        "counts": counts,
+        "span": span,
+        "sampling_minutes": 15,
+        "update_cadence": "static historical archive",
+        "access": "read-only",
+        "buildings": len(building.list_sites()),
+        "facilities": len(power.list_facilities()),
+        "models": _model_count(),
+        "prepared_at": selection.get("generated_at"),
+        "unit_note": (
+            selection.get("unit_hypothesis", {}).get("consequence")
+            or "kW series are DERIVED from the published energy counter."
+        ),
+    }
+
+
 @router.get("/replay-window")
 def replay_window() -> dict[str, Any]:
     window = demo_window()

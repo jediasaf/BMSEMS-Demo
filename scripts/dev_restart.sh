@@ -41,8 +41,9 @@ WEB_PORT="${WEB_PORT:-3000}"
 
 for _ in $(seq 1 40); do
   api=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$API_PORT/health" || true)
+  # `/` redirects into the product, so accept the redirect as "serving".
   web=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$WEB_PORT/" || true)
-  if [ "$api" = "200" ] && [ "$web" = "200" ]; then
+  if [ "$api" = "200" ] && { [ "$web" = "200" ] || [ "$web" = "307" ] || [ "$web" = "308" ]; }; then
     echo "[restart] api=$api web=$web ready"
     exit 0
   fi

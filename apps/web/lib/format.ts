@@ -53,29 +53,62 @@ export function fullTimestamp(iso: string): string {
   )}:${pad(date.getMinutes())}`;
 }
 
-export const SEVERITY_STYLE: Record<Severity, { text: string; bg: string; dot: string; label: string }> =
-  {
-    INFO: { text: 'text-status-info', bg: 'bg-status-info/10', dot: 'bg-status-info', label: 'Info' },
-    LOW: { text: 'text-ink-300', bg: 'bg-base-700/60', dot: 'bg-status-idle', label: 'Low' },
-    MEDIUM: {
-      text: 'text-status-warning',
-      bg: 'bg-status-warning/10',
-      dot: 'bg-status-warning',
-      label: 'Medium',
-    },
-    HIGH: {
-      text: 'text-status-warning',
-      bg: 'bg-status-warning/15',
-      dot: 'bg-status-warning',
-      label: 'High',
-    },
-    CRITICAL: {
-      text: 'text-status-critical',
-      bg: 'bg-status-critical/15',
-      dot: 'bg-status-critical',
-      label: 'Critical',
-    },
-  };
+export const SEVERITY_STYLE: Record<
+  Severity,
+  { text: string; bg: string; border: string; dot: string; label: string }
+> = {
+  INFO: {
+    text: 'text-status-info',
+    bg: 'bg-status-info/10',
+    border: 'border-status-info/35',
+    dot: 'bg-status-info',
+    label: 'Info',
+  },
+  LOW: {
+    text: 'text-ink-300',
+    bg: 'bg-base-700/60',
+    border: 'border-base-500/70',
+    dot: 'bg-status-idle',
+    label: 'Normal',
+  },
+  MEDIUM: {
+    text: 'text-status-warning',
+    bg: 'bg-status-warning/10',
+    border: 'border-status-warning/35',
+    dot: 'bg-status-warning',
+    label: 'Medium',
+  },
+  HIGH: {
+    text: 'text-status-warning',
+    bg: 'bg-status-warning/14',
+    border: 'border-status-warning/45',
+    dot: 'bg-status-warning',
+    label: 'High',
+  },
+  CRITICAL: {
+    text: 'text-status-critical',
+    bg: 'bg-status-critical/14',
+    border: 'border-status-critical/45',
+    dot: 'bg-status-critical',
+    label: 'Critical',
+  },
+};
+
+/** Compact integer/decimal formatting for large counts: 1,028,872 -> 1.03 M. */
+export function compact(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (Math.abs(value) >= 1e6) return `${(value / 1e6).toFixed(2)} M`;
+  if (Math.abs(value) >= 1e3) return `${(value / 1e3).toFixed(0)} k`;
+  return String(Math.round(value));
+}
+
+export function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 export const PROVENANCE_STYLE: Record<
   SourceType,

@@ -359,7 +359,7 @@ class BmsService:
             "series": [
                 {
                     "series_id": "actual",
-                    "label": "Measured load",
+                    "label": "Metered load",
                     "unit": "kW",
                     "timestamps": timestamps,
                     "values": clean(window["load_kw"]),
@@ -461,7 +461,12 @@ class BmsService:
         return inside
 
     # -- asset tree -------------------------------------------------------
-    def asset_tree(self, site_id: str, scenario_id: str = "bms_normal_day") -> AssetNode:
+    def asset_tree(
+        self,
+        site_id: str,
+        scenario_id: str = "bms_normal_day",
+        at: datetime | None = None,
+    ) -> AssetNode:
         """Building → Floor → Zone → Equipment → Point.
 
         The source has no zone topology. Rather than invent a floor plan, the
@@ -472,6 +477,12 @@ class BmsService:
         ctx = self.context(site_id, scenario_id)
         descriptor = self.adapter.site(site_id)
         window = ctx.window
+        # Honour the replay cursor. Reading the end of the window instead would
+        # put a different load on this panel from the one in the KPI row, on
+        # the same screen, at the same instant.
+        if at is not None and not window.empty:
+            stamp = min(max(naive_instant(at), window.index[0]), window.index[-1])
+            window = window.loc[:stamp]
         latest = window.iloc[-1] if not window.empty else None
         insights = self.insights(site_id, scenario_id=scenario_id)
         flagged = {i.zone_id for i in insights if i.zone_id}
@@ -915,7 +926,7 @@ class BmsService:
                     proposed_value=round(proposed, 1),
                     unit="°C",
                     rationale=(
-                        f"Measured load is {insight.deviation:+,.0f} kW above expected at "
+                        f"Metered load is {insight.deviation:+,.0f} kW above expected at "
                         f"{abs(insight.robust_z or 0):.1f}× this building's normal forecast "
                         f"miss. The occupancy proxy moves {occupancy_change:+.0f}% over the "
                         f"next two hours and outdoor air is {outdoor_trend:+.1f} K over six, "

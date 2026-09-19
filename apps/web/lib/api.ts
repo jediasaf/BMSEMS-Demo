@@ -21,6 +21,7 @@ import type {
   Recommendation,
   ReplayWindow,
   RiskResponse,
+  DatasetInfo,
   Scenario,
   SystemStatus,
 } from './types';
@@ -103,6 +104,7 @@ export const api = {
   scenarios: (module?: 'BMS' | 'EMS') =>
     request<{ scenarios: Scenario[] }>('/scenarios', { query: { module } }),
   sources: () => request<Record<string, unknown>>('/sources'),
+  dataset: () => request<DatasetInfo>('/dataset'),
   resetDemo: () => request<{ reset: boolean; at: string }>('/demo/reset', { method: 'POST' }),
 
   bms: {
@@ -131,9 +133,9 @@ export const api = {
         method: 'POST',
         query: { site_id: siteId, scenario_id: scenarioId },
       }),
-    assets: (siteId?: string, scenarioId?: string) =>
+    assets: (siteId?: string, scenarioId?: string, at?: string) =>
       request<{ root: AssetNode; site_id: string }>('/bms/assets', {
-        query: { site_id: siteId, scenario_id: scenarioId },
+        query: { site_id: siteId, scenario_id: scenarioId, at },
       }),
     controlLab: (siteId?: string, hours = 24, scenarioId?: string) =>
       request<ControlLabResult>('/bms/control-lab', {
