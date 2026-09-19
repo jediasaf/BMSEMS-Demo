@@ -13,50 +13,75 @@ body {
 
 body {
   @apply bg-base-900 text-ink-100 antialiased;
-  font-feature-settings: 'tnum' 1, 'cv05' 1;
+  /* Tabular numerals everywhere: columns of readings must line up. */
+  font-feature-settings: 'tnum' 1, 'ss01' 1;
   background-image:
-    radial-gradient(900px 500px at 12% -8%, rgba(15, 185, 177, 0.07), transparent 60%),
-    radial-gradient(760px 420px at 92% -4%, rgba(0, 224, 138, 0.055), transparent 62%);
+    radial-gradient(1100px 520px at 18% -10%, rgba(61, 220, 151, 0.045), transparent 62%),
+    radial-gradient(820px 420px at 88% -6%, rgba(76, 194, 255, 0.035), transparent 60%);
   background-attachment: fixed;
 }
 
-/* Thin, unobtrusive scrollbars: dense tables everywhere. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #26323f transparent;
+  scrollbar-color: #1e3d39 transparent;
 }
 *::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #26323f;
-  border-radius: 6px;
+  background: #1e3d39;
+  border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #3a4655;
+  background: #2a514c;
 }
 
 @layer components {
+  /* One panel treatment across the whole app. Flat, thin-bordered, no glow —
+     depth comes from the border and a single inset highlight, not shadow. */
   .panel {
-    @apply rounded-panel border border-base-600/70 bg-base-800/70 shadow-panel backdrop-blur-[2px];
+    @apply flex min-w-0 flex-col rounded-panel border border-base-600/80 bg-base-850/80 shadow-panel;
   }
-  .panel-header {
-    @apply flex items-center justify-between gap-3 border-b border-base-600/70 px-3 py-2;
+  .panel-head {
+    @apply flex h-8 shrink-0 items-center justify-between gap-3 border-b border-base-600/70 px-2.5;
   }
   .panel-title {
-    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-ink-300;
+    @apply truncate text-2xs font-semibold uppercase tracking-[0.13em] text-ink-300;
   }
-  .grid-lines {
-    background-image:
-      linear-gradient(to right, rgba(38, 50, 63, 0.35) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(38, 50, 63, 0.35) 1px, transparent 1px);
-    background-size: 28px 28px;
+  .panel-sub {
+    @apply truncate text-2xs normal-case tracking-normal text-ink-500;
+  }
+  .panel-body {
+    @apply min-w-0 flex-1 p-2.5;
+  }
+  .label {
+    @apply text-3xs font-medium uppercase tracking-[0.1em] text-ink-500;
   }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
   .focus-ring {
-    @apply outline-none ring-offset-0 focus-visible:ring-2 focus-visible:ring-accent/70;
+    @apply outline-none focus-visible:ring-1 focus-visible:ring-accent/70 focus-visible:ring-offset-0;
+  }
+  /* Technical table: dense rows, hairline rules, no zebra striping. */
+  .tech-table {
+    @apply w-full border-collapse text-2xs;
+  }
+  .tech-table thead th {
+    @apply whitespace-nowrap border-b border-base-600 bg-base-800/70 px-2.5 py-1.5 text-left
+           text-3xs font-medium uppercase tracking-[0.1em] text-ink-500;
+  }
+  .tech-table tbody td {
+    @apply whitespace-nowrap border-b border-base-700/60 px-2.5 py-[7px] text-ink-300;
+  }
+  .tech-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(30, 61, 57, 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30, 61, 57, 0.4) 1px, transparent 1px);
+    background-size: 26px 26px;
   }
 }

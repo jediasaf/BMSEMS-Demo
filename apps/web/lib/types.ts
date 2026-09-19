@@ -322,6 +322,9 @@ export interface NetworkResponse {
       id: string;
       label: string;
       cable: Record<string, number>;
+      /** Parallel runs of the base cable, sized from the transformer rating. */
+      parallel_circuits?: number;
+      design_share?: number;
       flexible: boolean;
     }[];
     limits: {
@@ -476,4 +479,30 @@ export interface ModelCardResponse {
   gate_reason: string;
   model_id: string;
   card: Record<string, unknown> | null;
+}
+
+export interface DatasetInfo {
+  available: boolean;
+  reason?: string;
+  name: string;
+  publisher: string;
+  url: string | null;
+  licence: string | null;
+  data_mode: 'REAL_DATA' | 'SAMPLE_FIXTURE';
+  counts: {
+    load_records?: number;
+    weather_records?: number;
+    holiday_records?: number;
+    sites?: number;
+    total_records?: number;
+  };
+  span: { first: string | null; last: string | null };
+  sampling_minutes: number;
+  update_cadence: string;
+  access: string;
+  buildings: number;
+  facilities: number;
+  models: number;
+  prepared_at: string | null;
+  unit_note: string;
 }

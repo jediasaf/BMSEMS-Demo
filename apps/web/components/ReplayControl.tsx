@@ -28,14 +28,14 @@ export function ReplayControl({ compact = false }: { compact?: boolean }) {
   }, [playing, speed, tick, replayWindow?.available]);
 
   if (!replayWindow?.available) {
-    return <div className="text-2xs text-ink-500">Replay window unavailable</div>;
+    return <div className="text-3xs text-ink-600">Replay window unavailable</div>;
   }
 
   const stamp = cursorTimestamp(replayWindow, cursor);
   const progress = (cursor / Math.max(replayWindow.n_steps - 1, 1)) * 100;
 
   return (
-    <div className={cn('flex items-center gap-2.5', compact ? 'text-2xs' : 'text-xs')}>
+    <div className={cn('flex items-center gap-2', compact ? 'text-3xs' : 'text-2xs')}>
       <div className="flex items-center gap-0.5">
         <TransportButton
           label="Step back"
@@ -47,10 +47,10 @@ export function ReplayControl({ compact = false }: { compact?: boolean }) {
           onClick={toggle}
           aria-label={playing ? 'Pause replay' : 'Play replay'}
           className={cn(
-            'focus-ring flex h-6 w-6 items-center justify-center rounded-panel border transition-colors',
+            'focus-ring flex h-[22px] w-[22px] items-center justify-center rounded-panel border transition-colors',
             playing
               ? 'border-accent/60 bg-accent/15 text-accent'
-              : 'border-base-500 bg-base-700 text-ink-200 hover:border-base-400',
+              : 'border-base-500 bg-base-750 text-ink-200 hover:border-base-400',
           )}
         >
           {playing ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
@@ -62,7 +62,7 @@ export function ReplayControl({ compact = false }: { compact?: boolean }) {
         />
       </div>
 
-      <div className="tabular shrink-0 font-mono text-ink-100">
+      <div className="tabular shrink-0 font-mono text-2xs text-ink-100">
         {stamp ? fullTimestamp(stamp) : '—'}
       </div>
 
@@ -74,9 +74,9 @@ export function ReplayControl({ compact = false }: { compact?: boolean }) {
           value={cursor}
           onChange={(event) => setCursor(Number(event.target.value))}
           aria-label="Replay position"
-          className="focus-ring h-1 w-full cursor-pointer appearance-none rounded-full bg-base-600 accent-accent"
+          className="focus-ring h-[3px] w-full cursor-pointer appearance-none rounded-full accent-accent"
           style={{
-            background: `linear-gradient(to right, #00e08a ${progress}%, #26323f ${progress}%)`,
+            background: `linear-gradient(to right, #3ddc97 ${progress}%, #1e3d39 ${progress}%)`,
           }}
         />
       </div>
@@ -88,10 +88,10 @@ export function ReplayControl({ compact = false }: { compact?: boolean }) {
             type="button"
             onClick={() => setSpeed(value)}
             className={cn(
-              'focus-ring rounded-pill px-1.5 py-0.5 font-mono text-2xs transition-colors',
+              'focus-ring rounded-pill px-1.5 py-[1px] font-mono text-3xs transition-colors',
               speed === value
                 ? 'bg-accent/15 text-accent'
-                : 'text-ink-400 hover:bg-base-700 hover:text-ink-200',
+                : 'text-ink-500 hover:bg-base-750 hover:text-ink-200',
             )}
           >
             {value}x
@@ -116,7 +116,7 @@ function TransportButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="focus-ring flex h-6 w-6 items-center justify-center rounded-panel border border-base-500 bg-base-700 text-ink-300 transition-colors hover:border-base-400 hover:text-ink-100"
+      className="focus-ring flex h-[22px] w-[22px] items-center justify-center rounded-panel border border-base-500 bg-base-750 text-ink-400 transition-colors hover:border-base-400 hover:text-ink-100"
     >
       {icon}
     </button>

@@ -132,11 +132,16 @@ def validate_recommendation(
 
 @router.get("/assets")
 def assets(
-    site_id: str | None = None, scenario_id: str = Query("bms_normal_day")
+    site_id: str | None = None,
+    at: datetime | None = None,
+    scenario_id: str = Query("bms_normal_day"),
 ) -> dict[str, Any]:
     service = get_bms_service()
     site = site_id or service.default_site_id()
-    return {"root": service.asset_tree(site, scenario_id), "site_id": site}
+    return {
+        "root": service.asset_tree(site, scenario_id, at=naive_instant(at)),
+        "site_id": site,
+    }
 
 
 @router.get("/control-lab")

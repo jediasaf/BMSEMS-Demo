@@ -24,7 +24,7 @@ export function DemoTour() {
 
   const steps: TourStep[] = [
     {
-      title: 'EcoTwin BMS — the building as recorded',
+      title: 'The building as recorded',
       body: 'Real 15-minute metered demand from the Schneider / DrivenData public dataset, with the nearest published weather station. Every number carries a provenance badge: the load is DERIVED because the publisher never states a unit for its energy counter, and outdoor air is MEASURED.',
       href: '/bms',
       action: () => setBmsScenario('bms_normal_day'),
@@ -103,41 +103,53 @@ export function DemoTour() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-3">
-      <div className="pointer-events-auto w-full max-w-2xl rounded-panel border border-accent/40 bg-base-850/97 p-3 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-panel bg-accent/15 font-mono text-2xs font-bold text-accent">
+      <div className="animate-fade-up pointer-events-auto w-full max-w-3xl rounded-panel border border-accent/40 bg-base-850/[0.97] shadow-raised backdrop-blur">
+        <div className="flex items-center justify-between gap-2 border-b border-base-700 px-2.5 py-1.5">
+          <span className="label text-accent">Guided demo</span>
+          <div className="flex items-center gap-2">
+            <span className="tabular font-mono text-3xs text-ink-500">
+              step {tourStep + 1} of {steps.length}
+            </span>
+            <button
+              type="button"
+              onClick={endTour}
+              aria-label="End guided demo"
+              className="focus-ring rounded-panel p-0.5 text-ink-500 hover:text-ink-100"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3 px-2.5 py-2.5">
+          <span className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-panel border border-accent/40 bg-accent/12 font-mono text-3xs font-bold text-accent">
             {tourStep + 1}
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-semibold text-ink-100">{step.title}</h3>
+            <h3 className="text-2xs font-semibold uppercase tracking-[0.08em] text-ink-100">
+              {step.title}
+            </h3>
             <p className="mt-1 text-2xs leading-relaxed text-ink-300">{step.body}</p>
           </div>
-          <button
-            type="button"
-            onClick={endTour}
-            aria-label="End guided demo"
-            className="focus-ring shrink-0 rounded-panel p-1 text-ink-500 hover:text-ink-100"
+          <Button
+            size="md"
+            variant="primary"
+            onClick={isLast ? endTour : nextTourStep}
+            className="shrink-0"
           >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <div className="mt-2.5 flex items-center gap-2 border-t border-base-700 pt-2.5">
-          <div className="flex flex-1 gap-1">
-            {steps.map((_, index) => (
-              <span
-                key={index}
-                className={`h-0.5 flex-1 rounded-full ${
-                  index <= tourStep ? 'bg-accent' : 'bg-base-600'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="tabular shrink-0 font-mono text-[10px] text-ink-500">
-            {tourStep + 1}/{steps.length}
-          </span>
-          <Button size="sm" variant="primary" onClick={isLast ? endTour : nextTourStep}>
-            {isLast ? 'Finish' : 'Next'}
+            {isLast ? 'Finish' : 'Next demo step'}
           </Button>
+        </div>
+
+        <div className="flex gap-[2px] px-2.5 pb-2">
+          {steps.map((_, index) => (
+            <span
+              key={index}
+              className={`h-[2px] flex-1 rounded-full ${
+                index <= tourStep ? 'bg-accent' : 'bg-base-700'
+              }`}
+            />
+          ))}
         </div>
       </div>
     </div>

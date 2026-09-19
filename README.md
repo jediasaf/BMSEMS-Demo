@@ -113,10 +113,11 @@ feeder width follows its share of demand.
 ![EMS Power Network](docs/images/ems-network.png)
 
 <details>
-<summary>More: BMS Overview, EMS Portfolio, and a provenance popover</summary>
+<summary>More: BMS Overview, EMS Portfolio, About &amp; provenance, and a provenance popover</summary>
 
 ![BMS Overview](docs/images/bms-overview.png)
 ![EMS Portfolio](docs/images/ems-portfolio.png)
+![About and provenance](docs/images/about-provenance.png)
 ![Provenance badge](docs/images/provenance-badge.png)
 
 </details>
