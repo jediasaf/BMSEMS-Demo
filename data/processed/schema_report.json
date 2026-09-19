@@ -1,0 +1,598 @@
+{
+  "generated_at": "2026-09-19T08:24:22.712593+00:00",
+  "raw_dir": "data/raw",
+  "n_files": 5,
+  "files": [
+    {
+      "file": "data/raw/power_laws_forecasting/holidays.csv",
+      "bytes": 301022,
+      "size_human": "294.0 KB",
+      "format": "csv",
+      "columns": [
+        "Unnamed: 0",
+        "Date",
+        "Holiday",
+        "SiteId"
+      ],
+      "rows_scanned": 8387,
+      "truncated": false,
+      "dtypes": {
+        "Unnamed: 0": "int64",
+        "Date": "object",
+        "Holiday": "object",
+        "SiteId": "int64"
+      },
+      "duplicate_rows_scanned": 0,
+      "missingness_pct": {
+        "Unnamed: 0": 0.0,
+        "Date": 0.0,
+        "Holiday": 0.0,
+        "SiteId": 0.0
+      },
+      "numeric_stats": {
+        "Unnamed: 0": {
+          "min": 0.0,
+          "max": 8386.0,
+          "mean": 4193.0,
+          "pct_zero": 0.012
+        },
+        "SiteId": {
+          "min": 1.0,
+          "max": 305.0,
+          "mean": 156.67580779778228,
+          "pct_zero": 0.0
+        }
+      },
+      "unique_counts": {
+        "Holiday": {
+          "n_unique_seen": 110,
+          "sample": [
+            "All Saints Day",
+            "Annunciation",
+            "Armistice Day",
+            "Armistice of 1918",
+            "Ascension Thursday",
+            "Assumption of Mary to Heaven",
+            "Assun\u00e7\u00e3o de Nossa Senhora",
+            "Bastille Day",
+            "Berchtold's Day",
+            "Birthday of Martin Luther King, Jr."
+          ]
+        },
+        "SiteId": {
+          "n_unique_seen": 227,
+          "sample": [
+            1,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            20,
+            21
+          ]
+        }
+      },
+      "timestamps": {
+        "Date": {
+          "min": "2009-01-01T00:00:00",
+          "max": "2018-01-01T00:00:00",
+          "tz": "naive (no offset in source)",
+          "sampling": {
+            "median_minutes": 7200.0,
+            "mode_minutes": 1440.0,
+            "n_gaps": 71
+          }
+        }
+      }
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/metadata.csv",
+      "bytes": 19380,
+      "size_human": "18.9 KB",
+      "format": "csv",
+      "columns": [
+        "SiteId",
+        "Surface",
+        "Sampling",
+        "BaseTemperature",
+        "MondayIsDayOff",
+        "TuesdayIsDayOff",
+        "WednesdayIsDayOff",
+        "ThursdayIsDayOff",
+        "FridayIsDayOff",
+        "SaturdayIsDayOff",
+        "SundayIsDayOff"
+      ],
+      "rows_scanned": 267,
+      "truncated": false,
+      "dtypes": {
+        "SiteId": "int64",
+        "Surface": "float64",
+        "Sampling": "float64",
+        "BaseTemperature": "float64",
+        "MondayIsDayOff": "bool",
+        "TuesdayIsDayOff": "bool",
+        "WednesdayIsDayOff": "bool",
+        "ThursdayIsDayOff": "bool",
+        "FridayIsDayOff": "bool",
+        "SaturdayIsDayOff": "bool",
+        "SundayIsDayOff": "bool"
+      },
+      "duplicate_rows_scanned": 0,
+      "missingness_pct": {
+        "SiteId": 0.0,
+        "Surface": 0.0,
+        "Sampling": 0.0,
+        "BaseTemperature": 0.0,
+        "MondayIsDayOff": 0.0,
+        "TuesdayIsDayOff": 0.0,
+        "WednesdayIsDayOff": 0.0,
+        "ThursdayIsDayOff": 0.0,
+        "FridayIsDayOff": 0.0,
+        "SaturdayIsDayOff": 0.0,
+        "SundayIsDayOff": 0.0
+      },
+      "numeric_stats": {
+        "SiteId": {
+          "min": 1.0,
+          "max": 305.0,
+          "mean": 157.7191011235955,
+          "pct_zero": 0.0
+        },
+        "Surface": {
+          "min": 14.884534437442198,
+          "max": 71615.85247589508,
+          "mean": 7894.541318576253,
+          "pct_zero": 0.0
+        },
+        "Sampling": {
+          "min": 5.0,
+          "max": 30.0,
+          "mean": 14.438202247191011,
+          "pct_zero": 0.0
+        },
+        "BaseTemperature": {
+          "min": 18.0,
+          "max": 21.0,
+          "mean": 18.026217228464418,
+          "pct_zero": 0.0
+        },
+        "MondayIsDayOff": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "pct_zero": 100.0
+        },
+        "TuesdayIsDayOff": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "pct_zero": 100.0
+        },
+        "WednesdayIsDayOff": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "pct_zero": 100.0
+        },
+        "ThursdayIsDayOff": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "pct_zero": 100.0
+        },
+        "FridayIsDayOff": {
+          "min": 0.0,
+          "max": 1.0,
+          "mean": 0.003745318352059925,
+          "pct_zero": 99.625
+        },
+        "SaturdayIsDayOff": {
+          "min": 0.0,
+          "max": 1.0,
+          "mean": 0.951310861423221,
+          "pct_zero": 4.869
+        },
+        "SundayIsDayOff": {
+          "min": 0.0,
+          "max": 1.0,
+          "mean": 0.9662921348314607,
+          "pct_zero": 3.371
+        }
+      },
+      "unique_counts": {
+        "SiteId": {
+          "n_unique_seen": 267,
+          "sample": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ]
+        }
+      },
+      "timestamps": {}
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/submission_format.csv",
+      "bytes": 52826177,
+      "size_human": "50.4 MB",
+      "format": "csv",
+      "columns": [
+        "obs_id",
+        "SiteId",
+        "Timestamp",
+        "ForecastId",
+        "Value"
+      ],
+      "rows_scanned": 1309176,
+      "truncated": false,
+      "dtypes": {
+        "obs_id": "int64",
+        "SiteId": "int64",
+        "Timestamp": "object",
+        "ForecastId": "int64",
+        "Value": "float64"
+      },
+      "duplicate_rows_scanned": 0,
+      "missingness_pct": {
+        "obs_id": 0.0,
+        "SiteId": 0.0,
+        "Timestamp": 0.0,
+        "ForecastId": 0.0,
+        "Value": 0.0
+      },
+      "numeric_stats": {
+        "obs_id": {
+          "min": 2.0,
+          "max": 7869003.0,
+          "mean": 3931478.2073204825,
+          "pct_zero": 0.0
+        },
+        "SiteId": {
+          "min": 1.0,
+          "max": 305.0,
+          "mean": 162.1133850605266,
+          "pct_zero": 0.0
+        },
+        "ForecastId": {
+          "min": 1.0,
+          "max": 6974.0,
+          "mean": 3482.6801369716522,
+          "pct_zero": 0.0
+        },
+        "Value": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "pct_zero": 100.0
+        }
+      },
+      "unique_counts": {
+        "obs_id": {
+          "n_unique_seen": 500000,
+          "sample": [
+            2,
+            3,
+            4,
+            27,
+            34,
+            35,
+            40,
+            55,
+            74,
+            94
+          ]
+        },
+        "SiteId": {
+          "n_unique_seen": 267,
+          "sample": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ]
+        },
+        "ForecastId": {
+          "n_unique_seen": 5322,
+          "sample": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      },
+      "timestamps": {
+        "Timestamp": {
+          "min": "2009-08-02T10:45:00",
+          "max": "2017-12-28T00:00:00",
+          "tz": "naive (no offset in source)",
+          "sampling": {
+            "median_minutes": 15.0,
+            "mode_minutes": 15.0,
+            "n_gaps": 11313
+          }
+        }
+      }
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/train.csv",
+      "bytes": 357511339,
+      "size_human": "340.9 MB",
+      "format": "csv",
+      "columns": [
+        "obs_id",
+        "SiteId",
+        "Timestamp",
+        "ForecastId",
+        "Value"
+      ],
+      "rows_scanned": 4000000,
+      "truncated": true,
+      "dtypes": {
+        "obs_id": "int64",
+        "SiteId": "int64",
+        "Timestamp": "object",
+        "ForecastId": "int64",
+        "Value": "float64"
+      },
+      "duplicate_rows_scanned": 0,
+      "missingness_pct": {
+        "obs_id": 0.0,
+        "SiteId": 0.0,
+        "Timestamp": 0.0,
+        "ForecastId": 0.0,
+        "Value": 1.2626
+      },
+      "numeric_stats": {
+        "obs_id": {
+          "min": 0.0,
+          "max": 7869005.0,
+          "mean": 3934804.69177975,
+          "pct_zero": 0.0
+        },
+        "SiteId": {
+          "min": 1.0,
+          "max": 204.0,
+          "mean": 99.4586645,
+          "pct_zero": 0.0
+        },
+        "ForecastId": {
+          "min": 1.0,
+          "max": 4245.0,
+          "mean": 2123.5463805,
+          "pct_zero": 0.0
+        },
+        "Value": {
+          "min": 0.0,
+          "max": 640468258727.1079,
+          "mean": 520124.3086982537,
+          "pct_zero": 0.01
+        }
+      },
+      "unique_counts": {
+        "obs_id": {
+          "n_unique_seen": 500000,
+          "sample": [
+            14,
+            21,
+            28,
+            33,
+            41,
+            67,
+            71,
+            84,
+            103,
+            110
+          ]
+        },
+        "SiteId": {
+          "n_unique_seen": 172,
+          "sample": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ]
+        },
+        "ForecastId": {
+          "n_unique_seen": 4245,
+          "sample": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      },
+      "timestamps": {
+        "Timestamp": {
+          "min": "2013-01-01T01:00:00",
+          "max": "2017-12-04T02:45:00",
+          "tz": "naive (no offset in source)",
+          "sampling": {
+            "median_minutes": 15.0,
+            "mode_minutes": 60.0,
+            "n_gaps": 26737
+          }
+        }
+      }
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/weather.csv",
+      "bytes": 1060763256,
+      "size_human": "1011.6 MB",
+      "format": "csv",
+      "columns": [
+        "Unnamed: 0",
+        "Timestamp",
+        "Temperature",
+        "Distance",
+        "SiteId"
+      ],
+      "rows_scanned": 4000000,
+      "truncated": true,
+      "dtypes": {
+        "Unnamed: 0": "int64",
+        "Timestamp": "object",
+        "Temperature": "float64",
+        "Distance": "float64",
+        "SiteId": "int64"
+      },
+      "duplicate_rows_scanned": 0,
+      "missingness_pct": {
+        "Unnamed: 0": 0.0,
+        "Timestamp": 0.0,
+        "Temperature": 0.0,
+        "Distance": 0.0,
+        "SiteId": 0.0
+      },
+      "numeric_stats": {
+        "Unnamed: 0": {
+          "min": 0.0,
+          "max": 331147.0,
+          "mean": 65201.44566675,
+          "pct_zero": 0.001
+        },
+        "Temperature": {
+          "min": -26.3,
+          "max": 45.0,
+          "mean": 14.173909774999998,
+          "pct_zero": 0.732
+        },
+        "Distance": {
+          "min": 1.2986667203779374,
+          "max": 29.977839214395026,
+          "mean": 16.604655829281832,
+          "pct_zero": 0.0
+        },
+        "SiteId": {
+          "min": 1.0,
+          "max": 55.0,
+          "mean": 27.818421,
+          "pct_zero": 0.0
+        }
+      },
+      "unique_counts": {
+        "SiteId": {
+          "n_unique_seen": 48,
+          "sample": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      },
+      "timestamps": {
+        "Timestamp": {
+          "min": "2013-01-01T13:00:00",
+          "max": "2017-12-31T10:30:00",
+          "tz": "naive (no offset in source)",
+          "sampling": {
+            "median_minutes": 30.0,
+            "mode_minutes": 30.0,
+            "n_gaps": 21
+          }
+        }
+      }
+    }
+  ],
+  "candidate_targets": [
+    {
+      "file": "data/raw/power_laws_forecasting/holidays.csv",
+      "column": "Unnamed: 0",
+      "reason": "numeric, range 0..8386"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/metadata.csv",
+      "column": "Surface",
+      "reason": "numeric, range 14.88..7.162e+04"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/metadata.csv",
+      "column": "Sampling",
+      "reason": "numeric, range 5..30"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/metadata.csv",
+      "column": "BaseTemperature",
+      "reason": "numeric, range 18..21"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/metadata.csv",
+      "column": "FridayIsDayOff",
+      "reason": "numeric, range 0..1"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/metadata.csv",
+      "column": "SaturdayIsDayOff",
+      "reason": "numeric, range 0..1"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/metadata.csv",
+      "column": "SundayIsDayOff",
+      "reason": "numeric, range 0..1"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/train.csv",
+      "column": "Value",
+      "reason": "numeric, range 0..6.405e+11"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/weather.csv",
+      "column": "Unnamed: 0",
+      "reason": "numeric, range 0..3.311e+05"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/weather.csv",
+      "column": "Temperature",
+      "reason": "numeric, range -26.3..45"
+    },
+    {
+      "file": "data/raw/power_laws_forecasting/weather.csv",
+      "column": "Distance",
+      "reason": "numeric, range 1.299..29.98"
+    }
+  ]
+}

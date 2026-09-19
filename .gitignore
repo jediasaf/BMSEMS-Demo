@@ -1,0 +1,33 @@
+# ---- python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# ---- node ----
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# ---- env ----
+.env
+.env.local
+.env.*.local
+
+# ---- data ----
+# Raw source files are NOT vendored: they are public but large, and the
+# licence is "redistribute by reference". `make data` re-downloads them.
+data/raw/**
+!data/raw/README.md
+# Intermediate extraction caches (regenerable in one command).
+data/processed/_*.parquet
+data/processed/_*.json
+
+# ---- artefacts ----
+*.log
+.DS_Store
