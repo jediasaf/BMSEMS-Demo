@@ -42,12 +42,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         bms_service.zone_params(site)
         ems_service = get_ems_service()
         facility = ems_service.default_facility_id()
-        ems_service.context(facility)
         ems_service.network(facility)
         # The portfolio view calibrates a transformer capacity per facility by
         # bisection on the load flow. Doing that lazily makes the first click of
         # the demo the slow one, which is the one click that must not be.
-        ems_service.portfolio()
+        #
+        # Each scenario gets its own context, so warming only the baseline
+        # leaves the scenario the demo actually runs cold. Three cheap calls
+        # here buy a responsive demo throughout.
+        for scenario in ("ems_normal_day", "ems_peak_demand", "ems_ev_surge"):
+            ems_service.context(facility, scenario)
+            ems_service.portfolio(scenario_id=scenario)
+        for scenario in ("bms_normal_day", "bms_hot_day", "bms_sensor_drift"):
+            bms_service.context(site, scenario)
         log.info(
             "warm-up complete in %.2fs (bms site %s, ems facility %s)",
             time.perf_counter() - start,

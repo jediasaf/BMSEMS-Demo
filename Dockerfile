@@ -18,8 +18,15 @@ RUN apt-get update \
 WORKDIR /app
 
 # Dependencies first so a code change does not invalidate the wheel layer.
+# The scientific stack is most of the image, so strip what a runtime never
+# reads: vendored test suites, bundled headers and byte-code caches.
 COPY requirements.txt ./
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt \
+ && find /usr/local/lib/python3.11/site-packages \
+      \( -type d -name tests -o -type d -name test -o -type d -name __pycache__ \) \
+      -prune -exec rm -rf {} + \
+ && find /usr/local/lib/python3.11/site-packages -name "*.pyx" -delete \
+ && rm -rf /root/.cache
 
 COPY core/ ./core/
 COPY apps/api/ ./apps/api/

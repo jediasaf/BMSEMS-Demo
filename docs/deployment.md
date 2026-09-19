@@ -99,12 +99,25 @@ docker build -t ecotwin-web \
 On Vercel: root directory `apps/web`, and set `NEXT_PUBLIC_API_BASE` as a build
 environment variable.
 
-### Sizing
+### Sizing, measured
 
-| | Memory | Note |
-|---|---|---|
-| api | ~700 MB | pandas + LightGBM + pandapower resident, plus warmed caches |
-| web | ~120 MB | standalone server only |
+| | Image | Memory | Note |
+|---|---:|---:|---|
+| api | 1.11 GB | ~700 MB | The scientific stack is nearly all of it: pandas, scipy, LightGBM, pandapower, CVXPY |
+| web | 333 MB | ~120 MB | Next.js standalone output; no toolchain in the runtime layer |
+
+The backend image is large and that is mostly unavoidable with this stack.
+Vendored test suites, `.pyx` sources and byte-code caches are stripped after
+install, which is worth 18% (1.36 GB → 1.11 GB). Going further would mean a multi-stage build
+against a slimmer base, which is a real option but not one worth the fragility
+here.
+
+**Start-up takes ~16 s**, almost all of it warming caches: the BMS context and
+zone calibration, then the EMS portfolio for all three scenarios including the
+per-facility transformer-capacity bisection. The health check allows 45 s before
+it starts probing. The pay-off is that the portfolio responds in ~1.4 s rather
+than ~11 s on the first click — and scenario contexts are warmed too, because
+warming only the baseline leaves the scenario a demo actually runs cold.
 
 One backend worker on purpose: the services hold warmed per-asset caches and a
 second worker would double memory for throughput a demo does not need.
