@@ -28,8 +28,42 @@ import type {
   SystemStatus,
 } from './types';
 
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://127.0.0.1:8000';
+/** Where the browser looks for the API, and what "not configured" means.
+ *
+ * The localhost fallback is a development convenience and a production bug: a
+ * deployed build that quietly points at 127.0.0.1 sends every visitor's page
+ * to their own machine, so the deployment looks healthy while nothing works.
+ * In a production build a missing base is a configuration error, stated as
+ * one, rather than a request that can never succeed.
+ *
+ * Exported as a pure function of its environment so it can be tested without
+ * building the app twice.
+ */
+export function resolveApiBase(env: {
+  NEXT_PUBLIC_API_BASE?: string | undefined;
+  NODE_ENV?: string | undefined;
+}): { base: string; configured: boolean } {
+  const configured = env.NEXT_PUBLIC_API_BASE?.trim().replace(/\/+$/, '');
+  if (configured) return { base: configured, configured: true };
+  if (env.NODE_ENV === 'production') return { base: '', configured: false };
+  return { base: 'http://127.0.0.1:8000', configured: true };
+}
+
+const resolved = resolveApiBase({
+  // Next.js inlines these at build time; they must be referenced literally.
+  NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE,
+  NODE_ENV: process.env.NODE_ENV,
+});
+
+export const API_BASE = resolved.base;
+
+/** False when a production build shipped without NEXT_PUBLIC_API_BASE. */
+export const API_BASE_CONFIGURED = resolved.configured;
+
+export const API_BASE_ERROR =
+  'NEXT_PUBLIC_API_BASE is not set in this build. Next.js inlines it at build ' +
+  'time, so set it in the deployment environment and redeploy — changing it ' +
+  'without rebuilding has no effect.';
 
 const DEFAULT_TIMEOUT_MS = 45_000;
 
@@ -68,6 +102,9 @@ async function request<T>(
     timeoutMs?: number;
   } = {},
 ): Promise<T> {
+  // Fail loudly and immediately rather than firing a request at an origin
+  // that cannot answer. Every caller already renders ApiError.
+  if (!API_BASE_CONFIGURED) throw new ApiError(API_BASE_ERROR, 0, path);
   const url = `${API_BASE}${withQuery(path, query)}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

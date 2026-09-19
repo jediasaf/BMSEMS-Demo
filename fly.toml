@@ -1,0 +1,39 @@
+# EcoTwin AI backend on Fly.io.
+#
+# Sized from measurement, not habit (see docs/deployment.md):
+#   image 255 MB · artifacts 95 MB in-image
+#   cold start to first 200 on /healthz: 24 s (16 s of that is warm-up)
+#   RAM after warm-up 502 MB · peak under the whole demo workload 548 MB
+#
+# 1 GB therefore leaves ~45% headroom. 2 GB would be paying for nothing.
+app = "ecotwin-api"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  ECOTWIN_LOG_LEVEL = "INFO"
+  # CORS is a closed list; override here if the frontend alias changes.
+  # ECOTWIN_CORS_ORIGINS = "https://ecotwin-ai-zeta.vercel.app"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # The warm-up is the point: a machine that sleeps pays 24 s on the next
+  # request, which is the one an interviewer is watching. Keep one running.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "60s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

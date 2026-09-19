@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { API_BASE, api } from '@/lib/api';
+import { API_BASE, API_BASE_CONFIGURED, API_BASE_ERROR, api } from '@/lib/api';
 import { useDemo } from '@/lib/store';
 import { cn, fullTimestamp } from '@/lib/format';
 import { cursorTimestamp } from '@/lib/store';
@@ -40,6 +40,20 @@ export function SystemBar() {
 
   const stamp = cursorTimestamp(replayWindow, cursor);
 
+  // A build with no API base and a build whose API is down are different
+  // faults with different fixes, so they get different messages.
+  if (!API_BASE_CONFIGURED) {
+    return (
+      <div className="flex h-sysbar shrink-0 items-center gap-2 border-b border-status-critical/40 bg-status-critical/[0.08] px-3 text-2xs">
+        <StatusDot tone="critical" pulse />
+        <span className="shrink-0 text-3xs font-semibold uppercase tracking-[0.1em] text-status-critical">
+          Not configured
+        </span>
+        <span className="truncate text-ink-400">{API_BASE_ERROR}</span>
+      </div>
+    );
+  }
+
   if (unreachable) {
     return (
       <div className="flex h-sysbar shrink-0 items-center gap-2 border-b border-status-critical/40 bg-status-critical/[0.08] px-3 text-2xs">
@@ -50,7 +64,7 @@ export function SystemBar() {
         <span className="truncate text-ink-400">
           The interface is running but no backend answered at{' '}
           <span className="tabular font-mono text-ink-200">{API_BASE}</span>. Nothing on screen is
-          data. Start the API, or point NEXT_PUBLIC_API_BASE at one.
+          data — no value here is a model output.
         </span>
         <span className="tabular ml-auto shrink-0 font-mono text-3xs text-ink-600">
           {unreachable}

@@ -1,0 +1,23 @@
+# EcoTwin AI backend on Render.
+#
+# Sized from measurement (see docs/deployment.md): 548 MB peak under the full
+# demo workload, 24 s cold start. The Starter plan (512 MB) is NOT enough;
+# Standard (2 GB) is the smallest plan that fits with headroom.
+#
+# Note the free tier spins down when idle and would put a 24 s cold start in
+# front of the first click of the demo. Do not use it for an interview.
+services:
+  - type: web
+    name: ecotwin-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    region: frankfurt
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: ECOTWIN_LOG_LEVEL
+        value: INFO
+      - key: ECOTWIN_CORS_ORIGINS
+        value: https://ecotwin-ai-zeta.vercel.app,https://ecotwin-ai-jediasafs-projects.vercel.app

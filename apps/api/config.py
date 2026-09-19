@@ -18,8 +18,16 @@ class Settings(BaseSettings):
     interview_mode: bool = True
     #: Base URL of a BOPTEST REST instance. Empty disables live BOPTEST.
     boptest_url: str = ""
-    #: Allowed CORS origins, comma-separated.
-    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    #: Allowed CORS origins, comma-separated. Deliberately a closed list: the
+    #: two production frontend aliases plus local development. An empty list
+    #: means no cross-origin browser access at all, which is the right answer
+    #: for a misconfigured deployment -- "*" is not.
+    cors_origins: str = (
+        "http://localhost:3000,"
+        "http://127.0.0.1:3000,"
+        "https://ecotwin-ai-zeta.vercel.app,"
+        "https://ecotwin-ai-jediasafs-projects.vercel.app"
+    )
     #: Serve simulation results from the demo cache when one exists.
     use_demo_cache: bool = True
     log_level: str = "INFO"

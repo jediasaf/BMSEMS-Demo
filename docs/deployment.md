@@ -27,34 +27,68 @@ eight identical red panels. Deploy the backend first.
 The image is already built by the repository's `Dockerfile` and includes the
 processed dataset, the trained models and the demo cache.
 
+### Measured requirements
+
+Sized from running the production image, not from habit:
+
+| | |
+|---|---|
+| Image | 255 MB |
+| Artifacts in image | 95 MB (90 MB Parquet, 4 MB models, 1 MB demo cache) |
+| Cold start to first `200 /healthz` | **24 s** (16 s of it warm-up) |
+| RAM after warm-up | 502 MB |
+| RAM after `/interview/verify` | 522 MB |
+| RAM peak under the whole demo workload | **548 MB** |
+| Warm latency | `/healthz` 4 ms · `/health` 64 ms · overview 640 ms · Control Lab 805 ms · EMS optimise 133 ms |
+
+So **1 GB** is the right size: 45% headroom over the measured peak. 512 MB
+would OOM during warm-up. 2 GB is paying for nothing.
+
 ### Fly.io
 
+`fly.toml` is committed with these numbers already in it.
+
 ```bash
-fly launch --no-deploy --name ecotwin-api      # accept the detected Dockerfile
-fly scale memory 2048                          # LightGBM + pandapower want room
+fly launch --no-deploy --copy-config --name ecotwin-api
 fly deploy
-fly open /health                               # expect status: ok
+curl -s https://ecotwin-api.fly.dev/healthz        # {"status":"ok"}
 ```
 
-### Render / Railway / Cloud Run
+`auto_stop_machines = false` and `min_machines_running = 1` are deliberate: a
+machine that sleeps pays the 24 s cold start on the next request, and that
+request is the one an interviewer is watching.
 
-Point the service at the repository root `Dockerfile`. It listens on `$PORT`
-and needs no volume: the data ships in the image.
+### Render
+
+`render.yaml` is committed. **Do not use the free tier** — it spins down when
+idle and puts a 24 s cold start in front of the first click. Starter (512 MB)
+is too small; Standard is the smallest plan that fits.
+
+### Cloud Run
 
 ```bash
 gcloud run deploy ecotwin-api \
   --source . --region europe-west1 \
-  --memory 2Gi --cpu 2 --timeout 120 --allow-unauthenticated
+  --memory 1Gi --cpu 1 --timeout 120 \
+  --min-instances 1 --allow-unauthenticated
 ```
+
+`--min-instances 1` for the same reason: scale-to-zero means a cold start in
+the demo.
 
 ### Check it before moving on
 
 ```bash
+curl -s https://<your-api>/healthz                          # liveness, touches nothing
 curl -s https://<your-api>/health | jq .components
 # {"api":"ok","data":"ok","models":"ok","pandapower":"ok","boptest":"local"}
 
 curl -s https://<your-api>/interview/verify | jq .ready     # must be true
 ```
+
+Three endpoints, three questions: `/healthz` is the process alive (what the
+platform check should poll), `/health` is every component healthy, and
+`/interview/verify` is the demo actually ready.
 
 `boptest: "local"` is expected and correct: the hosted deployment has no
 BOPTEST instance, so the zone simulator is the in-process RC engine and every
@@ -88,12 +122,26 @@ redeploy**, not just an environment edit.
 
 ### CORS
 
-The backend allows every origin by default (`ECOTWIN_CORS_ORIGINS` unset), so
-a fresh Vercel deployment works immediately. To lock it down:
+The origin list is closed, not `*`. The default already contains the two
+production frontend aliases and local development:
+
+```
+http://localhost:3000, http://127.0.0.1:3000,
+https://ecotwin-ai-zeta.vercel.app,
+https://ecotwin-ai-jediasafs-projects.vercel.app
+```
+
+`allow_credentials` is False and the API has no cookies or auth headers, so
+`*` is never paired with credentials — and an empty list now means *no*
+cross-origin access rather than silently meaning *all* of it. Override for a
+different frontend:
 
 ```bash
-fly secrets set ECOTWIN_CORS_ORIGINS=https://ecotwin.vercel.app
+fly secrets set ECOTWIN_CORS_ORIGINS=https://your-frontend.example.com
 ```
+
+Preview deployments get their own origins and are deliberately **not** in the
+list; add one explicitly if you need to test against a preview.
 
 ### Avoiding CORS entirely (optional)
 

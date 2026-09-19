@@ -77,13 +77,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# A closed origin list, and no credentials. The previous `or ["*"]` fallback
+# meant a deployment that forgot to configure CORS silently became open to
+# every origin on the internet; an empty list now means exactly what it says.
+# There are no cookies or auth headers in this API, so allow_credentials stays
+# False and `*` is never paired with credentials.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origin_list or ["*"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["accept", "content-type"],
+    max_age=600,
 )
+if not settings.cors_origin_list:
+    log.warning("no CORS origins configured; browsers will block cross-origin requests")
 
 
 @app.middleware("http")
