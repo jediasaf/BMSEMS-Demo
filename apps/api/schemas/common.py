@@ -23,6 +23,13 @@ from core.provenance.model import Provenance, ProvenancedSeries
 
 
 class HealthResponse(BaseModel):
+    """Liveness plus a per-component verdict.
+
+    ``components`` is the flat answer a load balancer or an operator wants:
+    one word per subsystem. ``checks`` keeps the individual booleans behind
+    those words, so a "degraded" is always traceable to something specific.
+    """
+
     status: Literal["ok", "degraded"]
     version: str
     data_mode: DataMode
@@ -31,7 +38,9 @@ class HealthResponse(BaseModel):
     simulation_engine: str
     models_loaded: int
     demo_cache: bool
+    components: dict[str, str] = Field(default_factory=dict)
     checks: dict[str, Any] = Field(default_factory=dict)
+    notes: list[str] = Field(default_factory=list)
 
 
 class SystemStatus(BaseModel):

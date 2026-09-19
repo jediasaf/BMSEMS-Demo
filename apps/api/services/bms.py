@@ -35,7 +35,7 @@ from core.common.schemas import (
     KpiValue,
     Recommendation,
 )
-from core.enums import Severity, SimulationEngine, SourceType
+from core.enums import Severity, SimulationEngine
 from core.models.anomaly import AnomalyConfig, ResidualAnomalyDetector
 from core.optimisation.bms import SetpointOptimiser, SetpointProblem
 from core.provenance import Provenance
@@ -568,6 +568,36 @@ class BmsService:
         zones_per_floor = max(2, min(4, int(round(area / n_floors / 450.0))))
         site_load = float(latest["load_kw"]) if latest is not None else 0.0
 
+        # One provenance record per kind of node, built once.
+        zone_provenance = derived(
+            self.adapter.source_key,
+            field="Value -> allocated_load_kw",
+            units="kW",
+            processing=(
+                "whole-site metered demand allocated pro rata by floor area; the "
+                "source publishes no zone-level telemetry"
+            ),
+            assumptions=[
+                "Zone geometry is invented for the hierarchy view and is not published.",
+                "Equal share by area, which is why every zone reads the same.",
+            ],
+        )
+        floor_provenance = derived(
+            self.adapter.source_key,
+            field="surface -> floor_area_m2",
+            units="m²",
+            processing="published total floor area split evenly across modelled floors",
+            assumptions=["Floor count is inferred from total area, not published."],
+        )
+        modelled_provenance = simulated(
+            SimulationEngine.ECOTWIN_RC,
+            units="mixed",
+            processing=(
+                "equipment and points exist only in the Control Lab simulator; no "
+                "equipment-level telemetry exists in this source"
+            ),
+        )
+
         floors: list[AssetNode] = []
         for floor_index in range(n_floors):
             zones: list[AssetNode] = []
@@ -585,7 +615,7 @@ class BmsService:
                             "floor_area_m2": round(area * share, 1),
                         },
                         units={"allocated_load_kw": "kW", "floor_area_m2": "m²"},
-                        source_type=SourceType.DERIVED,
+                        provenance=zone_provenance,
                         has_anomaly=zone_id in flagged,
                         detail=(
                             "Zone geometry is not published by the source. Load is "
@@ -597,7 +627,7 @@ class BmsService:
                                 parent_id=zone_id,
                                 name="Air handling",
                                 kind="equipment",
-                                source_type=SourceType.SIMULATED,
+                                provenance=modelled_provenance,
                                 detail=(
                                     "Modelled in the Control Lab. No equipment-level "
                                     "telemetry exists in this source."
@@ -610,7 +640,7 @@ class BmsService:
                                         kind="point",
                                         metrics={"value": BASELINE_OCCUPIED_SETPOINT_C},
                                         units={"value": "°C"},
-                                        source_type=SourceType.SIMULATED,
+                                        provenance=modelled_provenance,
                                         detail="Writable only against the simulator.",
                                     )
                                 ],
@@ -626,7 +656,7 @@ class BmsService:
                     kind="floor",
                     metrics={"floor_area_m2": round(area / n_floors, 1)},
                     units={"floor_area_m2": "m²"},
-                    source_type=SourceType.DERIVED,
+                    provenance=floor_provenance,
                     detail="Floor split derived from the published total floor area.",
                     children=zones,
                 )
@@ -647,9 +677,14 @@ class BmsService:
                 ),
             },
             units={"load_kw": "kW", "floor_area_m2": "m²", "outdoor_temp_c": "°C"},
-            source_type=SourceType.MEASURED,
+            provenance=self._load_provenance(
+                latest.name.to_pydatetime() if latest is not None else None
+            ),
             has_anomaly=bool(insights),
-            detail="Whole-site meter. The only node in this tree backed by a measurement.",
+            detail=(
+                "Whole-site meter: the only node in this tree backed by a measurement. "
+                "The kW figure is DERIVED from the published energy counter."
+            ),
             children=floors,
         )
 

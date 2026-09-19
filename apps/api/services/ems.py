@@ -694,6 +694,23 @@ class EmsService:
             "scenario_id": scenario_id,
             "kpis": kpis,
             "facilities": rows,
+            # The facility table's columns, by origin. The rows are plain
+            # numbers; without this the densest table in the product would be
+            # the one place with no provenance on it.
+            "provenance": {
+                "demand": self._load_provenance().model_dump(mode="json"),
+                "expected": derived(
+                    "lightgbm_forecast",
+                    field="per-facility expected demand",
+                    units="kW",
+                    processing=(
+                        "gradient-boosted forecast where the model passed its own "
+                        "quality gate, seasonal-naive reference where it did not; the "
+                        "row is marked when it did not"
+                    ),
+                ).model_dump(mode="json"),
+                "loading": self._network_provenance().model_dump(mode="json"),
+            },
         }
 
     # -- insights ---------------------------------------------------------

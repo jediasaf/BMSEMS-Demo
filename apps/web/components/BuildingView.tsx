@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Box, ChevronDown, ChevronRight, Cpu, Layers, Radio, X } from 'lucide-react';
+import { ProvenanceBadge } from './ProvenanceBadge';
 import { PROVENANCE_STYLE, cn, num } from '@/lib/format';
 import { Field, Pill, StatusDot } from './Primitives';
 import type { AssetNode } from '@/lib/types';
@@ -49,41 +50,50 @@ export function BuildingView({
           <div className="space-y-2">
             {/* The one node backed by a measurement. Everything below it is an
                 allocation, and the contrast is the point of this panel. */}
-            <button
-              type="button"
-              onClick={() => onSelect?.(root)}
+            {/* The tile is one big target, but the provenance badge is its own
+                control — so the badge sits beside the target rather than
+                inside it. A button inside a button is not a thing. */}
+            <div
               className={cn(
-                'focus-ring w-full rounded-panel border px-2.5 py-2 text-left transition-colors',
+                'relative rounded-panel border transition-colors',
                 selected === root.node_id
                   ? 'border-accent/60 bg-accent/[0.08]'
-                  : 'border-prov-measured/35 bg-prov-measured/[0.05] hover:border-prov-measured/55',
+                  : 'border-prov-derived/35 bg-prov-derived/[0.05] hover:border-prov-derived/55',
               )}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-2xs font-semibold text-ink-100">{root.name}</span>
-                <span className="rounded-pill border border-prov-measured/40 bg-prov-measured/10 px-1 font-mono text-3xs font-semibold text-prov-measured">
-                  MEASURED
-                </span>
-              </div>
-              <div className="mt-1 flex items-end gap-3">
-                <span className="tabular text-lg font-semibold leading-none text-ink-100">
-                  {num(siteLoadKw, 1)}
-                  <span className="ml-0.5 text-2xs font-normal text-ink-500">kW</span>
-                </span>
-                <span className="tabular pb-[2px] font-mono text-3xs text-ink-500">
-                  {num(siteAreaM2, 0)} m² · {num((siteLoadKw / Math.max(siteAreaM2, 1)) * 1000, 1)}{' '}
-                  W/m²
-                </span>
-                {root.metrics.outdoor_temp_c !== undefined && (
-                  <span className="tabular pb-[2px] font-mono text-3xs text-ink-500">
-                    {num(root.metrics.outdoor_temp_c, 1)} °C outdoor
+              <button
+                type="button"
+                onClick={() => onSelect?.(root)}
+                aria-label={`Open ${root.name}`}
+                className="focus-ring absolute inset-0 rounded-panel"
+              />
+              <div className="pointer-events-none relative px-2.5 py-2 text-left">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-2xs font-semibold text-ink-100">{root.name}</span>
+                  <span className="pointer-events-auto">
+                    <ProvenanceBadge provenance={root.provenance} size="xs" align="right" />
                   </span>
-                )}
+                </div>
+                <div className="mt-1 flex items-end gap-3">
+                  <span className="tabular text-lg font-semibold leading-none text-ink-100">
+                    {num(siteLoadKw, 1)}
+                    <span className="ml-0.5 text-2xs font-normal text-ink-500">kW</span>
+                  </span>
+                  <span className="tabular pb-[2px] font-mono text-3xs text-ink-500">
+                    {num(siteAreaM2, 0)} m² ·{' '}
+                    {num((siteLoadKw / Math.max(siteAreaM2, 1)) * 1000, 1)} W/m²
+                  </span>
+                  {root.metrics.outdoor_temp_c !== undefined && (
+                    <span className="tabular pb-[2px] font-mono text-3xs text-ink-500">
+                      {num(root.metrics.outdoor_temp_c, 1)} °C outdoor
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 text-3xs text-ink-600">
+                  Whole-site meter · kW derived from the energy counter
+                </div>
               </div>
-              <div className="mt-1 text-3xs text-ink-600">
-                Whole-site meter · the only measured node
-              </div>
-            </button>
+            </div>
 
             {floors.map((floor) => (
               <div key={floor.node_id}>
@@ -189,7 +199,7 @@ function TreeNode({
   const [open, setOpen] = useState(depth < 2);
   const Icon = ICONS[node.kind] ?? Box;
   const hasChildren = node.children.length > 0;
-  const style = PROVENANCE_STYLE[node.source_type];
+  const style = PROVENANCE_STYLE[node.provenance.source_type];
 
   return (
     <div>
@@ -225,7 +235,7 @@ function TreeNode({
           {node.name}
         </button>
         <span className={cn('shrink-0 font-mono text-3xs opacity-60', style.text)}>
-          {node.source_type.slice(0, 3)}
+          {node.provenance.source_type.slice(0, 3)}
         </span>
         {Object.entries(node.metrics)
           .slice(0, 1)
@@ -277,7 +287,7 @@ function SegButton({
 
 /** Right-hand drawer with the detail for a selected asset. */
 export function AssetDrawer({ node, onClose }: { node: AssetNode; onClose: () => void }) {
-  const style = PROVENANCE_STYLE[node.source_type];
+  const style = PROVENANCE_STYLE[node.provenance.source_type];
   const entries = useMemo(() => Object.entries(node.metrics), [node.metrics]);
 
   return (
@@ -304,7 +314,7 @@ export function AssetDrawer({ node, onClose }: { node: AssetNode; onClose: () =>
         <div className="space-y-3 p-3">
           <div className="flex flex-wrap items-center gap-1.5">
             <Pill tone="neutral" className={cn(style.border, style.text)} title={style.blurb}>
-              {node.source_type}
+              {node.provenance.source_type}
             </Pill>
             {node.has_anomaly && <Pill tone="warning">Anomaly in window</Pill>}
           </div>

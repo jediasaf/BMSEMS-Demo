@@ -128,7 +128,7 @@ export interface AssetNode {
   metrics: Record<string, number>;
   units: Record<string, string>;
   status: Severity;
-  source_type: SourceType;
+  provenance: Provenance;
   has_anomaly: boolean;
   detail?: string | null;
   children: AssetNode[];

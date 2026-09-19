@@ -199,11 +199,22 @@ def test_data_quality_reports_missingness(client) -> None:
 @requires_real_data
 def test_asset_tree_marks_synthesised_nodes(client) -> None:
     root = client.get("/bms/assets").json()["root"]
-    assert root["source_type"] == "MEASURED"
+    # The site node reads DERIVED, not MEASURED: the meter is a measurement,
+    # but the kW figure shown on it is a unit conversion of an energy counter.
+    _check_provenance(root["provenance"])
+    assert root["provenance"]["source_type"] == "DERIVED"
     assert root["children"]
     floor = root["children"][0]
-    assert floor["source_type"] in {"DERIVED", "SIMULATED"}
+    _check_provenance(floor["provenance"])
+    assert floor["provenance"]["source_type"] in {"DERIVED", "SIMULATED"}
     assert floor["detail"]
+
+    # Equipment and points are modelled, and must name the engine that models
+    # them rather than borrowing the building's credibility.
+    zone = floor["children"][0]
+    equipment = zone["children"][0]
+    assert equipment["provenance"]["source_type"] == "SIMULATED"
+    assert equipment["provenance"]["engine"]
 
 
 # -- EMS ------------------------------------------------------------------
