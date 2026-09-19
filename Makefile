@@ -5,7 +5,7 @@ PIP := .venv/bin/pip
 
 .PHONY: help
 help: ## Show this help
-	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
+	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 	 | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: setup
@@ -64,6 +64,23 @@ format: ## Auto-format Python and TypeScript
 
 .PHONY: check
 check: lint test ## Lint and test
+
+.PHONY: demo
+demo: ## Build the frontend, restart both servers, and verify the interview path
+	cd apps/web && npm run build
+	bash scripts/dev_restart.sh
+	@curl -fsS http://127.0.0.1:8000/interview/verify | \
+		$(PY) -c "import json,sys; b=json.load(sys.stdin); \
+		print('demo ready' if b['ready'] else 'NOT READY: ' + ', '.join(b['failed'])); \
+		sys.exit(0 if b['ready'] else 1)"
+
+.PHONY: e2e
+e2e: ## Drive the interview demo end to end in a browser
+	cd apps/web && npx playwright test
+
+.PHONY: audit
+audit: ## Check that every visible metric carries provenance
+	$(PY) scripts/audit_provenance.py
 
 .PHONY: up
 up: ## Local engineering mode (web + api)

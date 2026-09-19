@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-19 10:00:43.846026+00:00",
+  "generated_at": "2026-09-19 16:40:28.513804+00:00",
   "scenario_id": "ems_ev_surge",
   "kpis": [
     {
@@ -266,5 +266,70 @@
       "served_by": "model",
       "model_note": "Model beats the lag_96 baseline by 29.8% on backtest."
     }
-  ]
+  ],
+  "provenance": {
+    "demand": {
+      "source_type": "DERIVED",
+      "source_key": "power_laws_forecasting",
+      "source_name": "Power Laws: Forecasting Energy Consumption",
+      "publisher": "Schneider Electric / DrivenData (public competition data)",
+      "field": "Value \u2192 load_kw",
+      "dataset_id": null,
+      "engine": null,
+      "engine_label": null,
+      "model_id": null,
+      "processing": "Wh per 15-minute interval \u00d7 4 \u00f7 1000, on a strict 15-minute grid",
+      "units": "kW",
+      "timestamp": null,
+      "quality": "GOOD",
+      "is_fixture": false,
+      "assumptions": [
+        "The publisher does not state a unit for `Value`; the hypothesis was validated by a power-density check (see docs/data_provenance.md)."
+      ],
+      "url": "https://www.drivendata.org/competitions/51/electricity-prediction-machine-learning/",
+      "notes": null
+    },
+    "expected": {
+      "source_type": "DERIVED",
+      "source_key": "lightgbm_forecast",
+      "source_name": "EcoTwin gradient-boosted forecaster",
+      "publisher": "EcoTwin AI (LightGBM)",
+      "field": "per-facility expected demand",
+      "dataset_id": null,
+      "engine": null,
+      "engine_label": null,
+      "model_id": null,
+      "processing": "gradient-boosted forecast where the model passed its own quality gate, seasonal-naive reference where it did not; the row is marked when it did not",
+      "units": "kW",
+      "timestamp": null,
+      "quality": "GOOD",
+      "is_fixture": false,
+      "assumptions": [],
+      "url": null,
+      "notes": null
+    },
+    "loading": {
+      "source_type": "SIMULATED",
+      "source_key": "pandapower",
+      "source_name": "pandapower load flow",
+      "publisher": "Fraunhofer IEE / University of Kassel",
+      "field": null,
+      "dataset_id": null,
+      "engine": "PANDAPOWER",
+      "engine_label": "pandapower",
+      "model_id": null,
+      "processing": "balanced AC Newton-Raphson load flow over the EcoTwin LV model",
+      "units": "%",
+      "timestamp": null,
+      "quality": "GOOD",
+      "is_fixture": false,
+      "assumptions": [
+        "Transformer rating is DERIVED from the observed peak; the source publishes no nameplate data.",
+        "Displacement power factor assumed 0.95.",
+        "Feeder split is a documented disaggregation, not measured sub-metering."
+      ],
+      "url": "https://www.pandapower.org/",
+      "notes": null
+    }
+  }
 }

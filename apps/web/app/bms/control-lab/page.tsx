@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { TimeSeriesChart, type ChartSeriesConfig } from '@/components/TimeSeriesChart';
 import { BeforeAfterPanel, type ComparisonRow } from '@/components/BeforeAfterPanel';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
+import { ReplayNotice } from '@/components/ReplayNotice';
 import { ErrorNote, Field, Panel, Pill, Skeleton } from '@/components/Primitives';
 import { cn, num } from '@/lib/format';
 import type { Provenance, Series } from '@/lib/types';
@@ -294,6 +295,11 @@ export default function ControlLabPage() {
       </div>
 
       <Workspace>
+        {result?.served_from === 'demo_cache' && (
+          <div className="mb-2.5">
+            <ReplayNotice note={result.replay_note} recordedAt={result.recorded_at} />
+          </div>
+        )}
         {lab.error && <ErrorNote message={lab.error} onRetry={lab.reload} />}
         {!result && !lab.error && <Skeleton className="h-[30rem]" />}
 

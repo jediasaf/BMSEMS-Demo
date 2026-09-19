@@ -285,7 +285,26 @@
       }
     },
     "served_by": "model",
-    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest."
+    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest.",
+    "injection": {
+      "scenario_id": "ems_peak_demand",
+      "label": "Peak Demand",
+      "description": "A broad afternoon uplift applied to the site's demand, representing the coincidence of cooling load, occupancy and process demand that produces the monthly maximum.",
+      "metric": "load_kw",
+      "unit": "kW",
+      "peak_injection": 28.714,
+      "total_injection": 687.494,
+      "affected_steps": 289,
+      "seed": 20299123,
+      "affected_asset": "227",
+      "injection_start": "2017-08-24T00:00:00",
+      "injection_end": "2017-08-27T00:00:00",
+      "duration_hours": 72.25,
+      "detail": {
+        "uplift_pct": 38.0,
+        "centre_hour": 15.0
+      }
+    }
   },
   "timestamps": [
     "2017-08-25 08:00:00",
@@ -599,7 +618,7 @@
     "target_kw": 140.592,
     "status": "optimal",
     "solver": "CLARABEL",
-    "solve_time_s": 0.0061
+    "solve_time_s": 0.006
   },
   "constraints": [
     "site demand \u2264 140.6 kW (3% below the 145 kW cap)",
@@ -722,5 +741,24 @@
       "notes": null
     }
   },
-  "verification_note": "The transformer figures above are two separate pandapower solves at the worst instant, before and after the proposed dispatch. They are not the optimiser's own estimate."
+  "verification_note": "The transformer figures above are two separate pandapower solves at the worst instant, before and after the proposed dispatch. They are not the optimiser's own estimate.",
+  "injection": {
+    "scenario_id": "ems_peak_demand",
+    "label": "Peak Demand",
+    "description": "A broad afternoon uplift applied to the site's demand, representing the coincidence of cooling load, occupancy and process demand that produces the monthly maximum.",
+    "metric": "load_kw",
+    "unit": "kW",
+    "peak_injection": 28.714,
+    "total_injection": 687.494,
+    "affected_steps": 289,
+    "seed": 20299123,
+    "affected_asset": "227",
+    "injection_start": "2017-08-24T00:00:00",
+    "injection_end": "2017-08-27T00:00:00",
+    "duration_hours": 72.25,
+    "detail": {
+      "uplift_pct": 38.0,
+      "centre_hour": 15.0
+    }
+  }
 }

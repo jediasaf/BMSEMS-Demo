@@ -94,15 +94,26 @@ export default function BmsOverviewPage() {
         subtitle="Measured → detect → predict → recommend → simulate"
         chips={[
           { label: 'Source', value: status?.data_label ?? '…' },
+          // An absent answer is not a negative answer. With no status yet, the
+          // chip reads "…" rather than asserting SAMPLE FIXTURE — which would
+          // be the interface inventing a fact about data it has not seen.
           {
             label: 'Mode',
-            value: status?.data_mode === 'REAL_DATA' ? 'Historical replay' : 'Sample fixture',
-            tone: status?.data_mode === 'REAL_DATA' ? 'accent' : 'warning',
+            value: !status
+              ? '…'
+              : status.data_mode === 'REAL_DATA'
+                ? 'Historical replay'
+                : 'Sample fixture',
+            tone: !status ? 'neutral' : status.data_mode === 'REAL_DATA' ? 'accent' : 'warning',
           },
           {
             label: 'Expected',
-            value: data?.timeline.served_by === 'model' ? 'LightGBM' : 'Seasonal naive',
-            tone: data?.timeline.served_by === 'model' ? 'info' : 'warning',
+            value: !data
+              ? '…'
+              : data.timeline.served_by === 'model'
+                ? 'LightGBM'
+                : 'Seasonal naive',
+            tone: !data ? 'neutral' : data.timeline.served_by === 'model' ? 'info' : 'warning',
             title: data?.timeline.gate_reason,
           },
           ...(site ? [{ label: 'Area', value: `${num(site.surface_m2 as number, 0)} m²` }] : []),

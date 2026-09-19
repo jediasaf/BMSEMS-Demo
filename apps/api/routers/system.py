@@ -292,6 +292,7 @@ def scenarios(module: str | None = None) -> dict[str, Any]:
 @router.post("/demo/reset")
 def reset_demo() -> dict[str, Any]:
     """Drop every cache so the next request rebuilds from the source files."""
+    from apps.api.services import demo_cache
     from apps.api.services.bms import get_bms_service
     from apps.api.services.crossmodule import get_crossmodule_service
     from apps.api.services.ems import get_ems_service
@@ -312,6 +313,7 @@ def reset_demo() -> dict[str, Any]:
     reset_building()
     reset_power()
     _load_tables.cache_clear()
+    demo_cache.reset_cache()
     return {
         "reset": True,
         "at": datetime.now(UTC),

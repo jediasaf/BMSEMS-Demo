@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from apps.api.services import demo_cache
 from apps.api.services.bms import get_bms_service
 from apps.api.services.quality import build_report
 from apps.api.services.timeparse import naive_instant
@@ -14,6 +16,8 @@ from core.common import paths
 from core.common.schemas import Insight, KpiValue, Recommendation
 from core.models.anomaly import summarise
 from core.optimisation.validation import ControlValidator
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bms", tags=["bms"])
 
@@ -152,7 +156,22 @@ def control_lab(
 ) -> dict[str, Any]:
     service = get_bms_service()
     site = site_id or service.default_site_id()
-    result = service.control_lab(site, hours=hours, scenario_id=scenario_id)
+    try:
+        result = service.control_lab(site, hours=hours, scenario_id=scenario_id)
+        result["served_from"] = "live"
+    except Exception as exc:
+        # The zone simulation is the most expensive thing in the product. If it
+        # cannot answer, a recorded result for this same scenario is a better
+        # answer than an empty panel -- provided it says it is a recording.
+        log.warning("control lab failed for %s/%s: %s", site, scenario_id, exc)
+        recorded = demo_cache.load(f"bms/control-lab/{scenario_id}")
+        if recorded is None:
+            raise
+        result = demo_cache.as_replay(
+            recorded,
+            key=f"bms/control-lab/{scenario_id}",
+            original_engine=recorded.get("engine_label"),
+        )
     result["calibration"] = service.calibration_report(site)
     return result
 

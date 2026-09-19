@@ -1,220 +1,222 @@
-# Interview demo — 5 minutes
+# EcoTwin AI — interview demo script
 
-Press **Guided demo** in the header for the scripted version. This is the same
-route with the talking points.
+A five-minute run through both workflows. Everything below is produced by the
+running system; no slide, no recording, nothing hard-coded.
 
-**Before you start:** press **Reset demo** in the status bar. It clears every
-server-side cache and restores the default scenario.
+**Before you start**
 
----
+```bash
+make demo          # or: bash scripts/dev_restart.sh
+curl -s localhost:8000/interview/verify | jq .ready     # must print true
+```
 
-## 0. The status bar (10 s)
+`ready: true` means the eight claims this script makes have just been checked
+against real computation. If it prints `false`, the failing check names which
+half of the story broke — read it before you start, not during.
 
-> "Three indicators, always visible. Data: the Schneider/DrivenData public
-> dataset. AI: six models online. Simulation: which engine is actually running.
-> If any of those degrades, this bar says so — it never quietly falls back."
+Open `http://localhost:3000`. It opens straight into the BMS overview: there
+is no landing page. Click **Start demo** in the sidebar. That resets the
+product to its opening position, preloads every curated computation, and opens
+the guided bar at step 1. **Next demo step** advances; **Back** reverses; the
+scenario and the route are re-applied on every step, so a stray click cannot
+knock you off course.
 
----
-
-## 1. BMS Overview — measured (45 s)
-
-Go to **EcoTwin BMS → Overview**.
-
-> "Three days of real 15-minute metered demand with the nearest published
-> weather station. Note the badges. Outdoor air is **MEASURED**. Building load
-> is **DERIVED** — and that is the most important thing on this screen."
-
-Click the badge on **Building load**.
-
-> "The publisher never states a unit for its energy counter. Values span eleven
-> orders of magnitude across sites, so they are not all the same unit. Rather
-> than pick a scale factor, I tested the hypothesis that it is watt-hours per
-> interval by converting to power density and checking it against the band a
-> commercial building can physically occupy. Sites that failed were excluded,
-> not rescaled. That is why this says DERIVED, and the assumption is right
-> here."
-
-Press **play** on the replay control.
-
-> "One clock drives the whole platform, so the building view and the power view
-> are always on the same instant."
+The numbers quoted below are the ones the system produces for site 227 on the
+2017-08-24 → 2017-08-27 replay window. They are stable across restarts: every
+scenario is seeded from `sha256(scenario_id | asset_id)`, not from `hash()`.
 
 ---
 
-## 2. Prediction and detection (60 s)
+## 00:00–00:30 — What this is
 
-> "The dashed line with the band is the forecast — LightGBM, day-ahead, with a
-> conformalised 80% interval. It was trained only on data from before this
-> window, so what you are watching is genuinely out of sample."
+> "EcoTwin AI is a portfolio prototype, not a Schneider Electric product. It
+> runs on Schneider's own published dataset — the Power Laws forecasting
+> competition, 267 anonymised sites at 15-minute resolution. Two operational
+> workflows over one provenance model: a building operator and a power
+> operator.
+>
+> The bar across the top never goes quiet. It tells you where the data came
+> from, how many models are serving, which simulator is live, and where the
+> replay clock is. Right now it says the zone simulator is the EcoTwin RC
+> engine, because BOPTEST is not reachable from this deployment — and it will
+> keep saying that rather than quietly labelling RC results as BOPTEST."
 
-Open **Model card**.
-
-> "Two evaluations. The backtest is a proper holdout inside the training
-> history: 7.5% WAPE, R² 0.89. The live column is this window — smaller, so I
-> report it as evidence rather than as a claim. Skill is measured against the
-> *strongest* naive baseline, not a straw man. And look at the interval: the raw
-> quantile heads under-covered at 55% on one site; conformal calibration brings
-> it to 83%."
-
-Go to **AI Operations**. Note the finding already in the normal day.
-
-> "That is a real event in real data — 23 kW below expected at two in the
-> morning, ten times this building's normal forecast miss."
-
-Click **Hot Day / HVAC Stress**.
-
-> "Seeded, deterministic, additive — the measurement is kept alongside it. The
-> detector scores the forecast residual against an hour-of-day baseline
-> calibrated on history that *ends where this window begins*. My first version
-> used a trailing rolling baseline and flagged nothing: the injection spanned
-> the whole window, so the baseline absorbed it and the fault became the new
-> normal. There is a regression test for exactly that."
-
-Expand a finding.
-
-> "Observed, expected, deviation, the score against the threshold, how long it
-> held, and this asset's normal miss. It says *possible causes*, never a
-> diagnosis."
+**Point at:** the system bar. **Technical point:** the product is honest about
+its own degradations before you ask.
 
 ---
 
-## 3. Recommendation and the safety gate (45 s)
+## 00:30–02:30 — BMS: detect → explain → recommend → simulate
 
-> "A constrained setpoint proposal with the factors it responded to. Note what
-> it does **not** say: no energy saving. It refuses to claim a number before the
-> simulator has run."
+### Step 1 — the building as recorded
 
-Click **Run safety gate**.
+> "Real metered demand, replayed against its own clock. Note the badge on the
+> load: **DERIVED**, not measured. The publisher never states a unit for its
+> energy counter — so the kW figure is a hypothesis I validated by a
+> power-density check, and the badge says so. Outdoor air is **MEASURED**,
+> because that one is published as °C."
 
-> "Allowlist, min/max, rate limit, comfort envelope, and 'simulation target
-> only'. Real historical mode is read-only and there is no code path to a real
-> actuator."
+**Click:** any provenance badge. The popover gives source, publisher, field,
+units, processing and assumptions.
 
----
+### Step 2 — inject the disturbance
 
-## 4. Control Lab (50 s)
+> "A hot day. Seven kelvin on outdoor air with a mid-afternoon emphasis, and
+> the load follows through this building's own fitted cooling sensitivity. It
+> is **additive** — the measurement is untouched and both series stay charted —
+> and the banner says INJECTED SCENARIO. I am not going to pretend a
+> disturbance I wrote is something the building did."
 
-Click **Simulate in Control Lab**.
+### Step 3 — detection
 
-> "Baseline against AI control, both run through the same engine over identical
-> weather and occupancy. 10.8% less HVAC energy and 6.6% lower peak, for two
-> hundredths of a degree-hour of comfort give-away — one interval, just outside
-> the band. It is a trade, and the panel shows both sides of it."
+> "The detector scores the forecast residual as a robust z against an
+> hour-of-day baseline. The baseline is calibrated on history that *ends where
+> this window begins*. That matters: a rolling baseline adapts to a fault that
+> lasts the whole window and never flags it. I had that bug — the scenarios
+> produced zero insights — and the fix is a regression test now.
+>
+> Observed against expected, the deviation, how long it was sustained, and how
+> it compares with this asset's normal forecast miss. The causes are labelled
+> **possible** and 'not a diagnosis', because a residual cannot tell you which
+> of three things happened."
 
-Point at the engine pill.
+**Expected:** 2 findings on the curated scenario.
 
-> "This says EcoTwin RC, not BOPTEST. There is a real BOPTEST client in here and
-> local Docker mode runs it live, but this deployment cannot reach one — so a
-> 2R2C zone model with an ideal-load plant ran it, and the result is labelled
-> with the engine that actually answered."
+### Step 4 — the recommendation
 
-If asked about the physics:
+> "A constrained setpoint proposal: raise the occupied cooling setpoint from
+> 23 to 24. Its contributing factors, the constraints it was checked against,
+> a confidence, and a safety gate you can run. Notice the expected impact says
+> **no number is claimed until the simulator has run**. A recommendation that
+> quotes a saving before simulating it is guessing."
 
-> "Every parameter is on screen. The plant is ideal-load rather than
-> proportional because a proportional controller leaves a steady-state offset
-> that swamped the experiment — the setpoint change moved energy by 0.2%.
-> And heating and cooling setpoints are scheduled separately: deriving heating
-> as cooling minus a deadband made the model heat the building in August, which
-> had inflated the apparent saving from 10.8% to 39%."
+### Step 5 — simulate, and let the simulator judge
 
----
+> "The optimiser is a linear program over the same two-node zone model the
+> simulator integrates — air node and structure, 0.8-hour and 11-hour time
+> constants — with installed plant capacity as a box constraint and the COP as
+> a per-step price. Delivered cooling is the decision variable.
+>
+> Then the implied setpoint trajectory goes back through the full nonlinear
+> simulator, and this panel is the simulator's verdict, not the optimiser's.
+> **−11.9% HVAC energy, −8.4% peak, 0.035 K·h of comfort given up.** Both
+> columns are the same engine over identical weather and occupancy.
+>
+> And the gate can say no. I modelled the air node alone at first; a
+> single-node model thinks overnight pre-cooling is cheap, proposed exactly
+> that, and the simulator came back −0.4% energy and **+58% peak**. That is
+> what 'simulate before you actuate' has to mean: the simulation has a veto,
+> and a rejected proposal claims no saving."
 
-## 5. EMS Portfolio and Network (45 s)
-
-Go to **EcoTwin EMS → Portfolio**, then click a facility.
-
-> "The same meters as an electrical estate. Transformer ratings are DERIVED —
-> the dataset publishes no nameplate data, so they come from each site's
-> observed peak by standard sizing practice, and the badge says so."
-
-On **Power Network**:
-
-> "pandapower solving a balanced AC load flow over a six-bus LV model with
-> catalogue cable impedances. Bus voltages, feeder loading, losses — all
-> SIMULATED. The feeder split is a stated disaggregation of the measured total
-> using an HVAC sensitivity fitted to this site's own weather response. It is
-> not four sub-meters that do not exist."
-
----
-
-## 6. Scenario Lab — the flagship (75 s)
-
-Go to **Scenario Lab**, click **EV Charging Surge**.
-
-> "A 120 kW charging session on the flexible feeder. The transformer goes to
-> **138%** of nameplate."
-
-Click **Run flexible-load optimisation**.
-
-> "A linear program shifting EV charging and buying HVAC flexibility. Peak 201
-> down to 141 kW. EV energy is conserved as a hard equality — this defers load,
-> it does not shed it. And deferral has to precede recovery: my first version
-> recovered energy hours before it curtailed any, which meant charging cars that
-> had not arrived. Energy balance alone does not imply causality."
-
-Point at **Verified by load flow**.
-
-> "139% to 96%, voltage recovering from 0.958 to 0.972 per unit. Those are two
-> independent pandapower solves at the worst instant. The optimiser does not get
-> to mark its own homework."
-
-Click **Open BMS analysis & simulate HVAC action**.
-
-> "And this is the whole point of one platform rather than two dashboards. EMS
-> names the flexible contributors, BMS answers by running its *simulator* —
-> baseline and proposal — and hands back an HVAC reduction in kW, and EMS
-> re-solves the network with it applied. A thermal simulation feeding an
-> electrical simulation. Every step is a real computation."
+**Point at:** the four acceptance criteria with their measured margins.
 
 ---
 
-## 7. Close (20 s)
+## 02:30–04:30 — EMS: forecast → overload → optimise → resolve
 
-Click any provenance badge.
+### Step 6 — the portfolio
 
-> "Measured, predicted, simulated, optimised, derived, injected. Six categories,
-> one closed vocabulary, and two of the rules are validators in the backend: a
-> value cannot be tagged MEASURED unless its registered source is a real
-> measurement, and cannot be tagged SIMULATED without naming the engine that
-> produced it. A mislabelled number fails at construction rather than reaching
-> a chart."
+> "The same metered facilities as an electrical estate. Transformer ratings
+> are **DERIVED** from each site's observed peak by standard sizing practice,
+> because this dataset publishes no nameplate data, and the badge says so —
+> that would be the easiest lie in the whole project. Capacity is calibrated
+> by bisection on the load flow, not by kVA × power factor: a 160 kVA unit
+> gives 144.9 kW of real demand at exactly 100% loading."
+
+### Step 7 — the EV surge
+
+> "A 120 kW charging session on the flexible feeder each afternoon, ramping
+> over 30 minutes. This is load the transformer was never sized for. The Peak
+> Demand scenario, by contrast, does *not* break it — a correctly sized
+> transformer survives its own peak day, and the instructive result is the one
+> where nothing goes wrong."
+
+### Step 8 — what it does to the network
+
+> "pandapower, balanced AC load flow, six-bus LV model with catalogue XLPE
+> impedances. Forecast peak **200.8 kW against a 144.9 kW capacity — 138.5%**,
+> at 16:00. The LV bus sags. Every number here is a solve, and every one is
+> labelled SIMULATED with the engine named."
+
+**Click:** the transformer in the single-line diagram for the detail panel and
+the contributors at the peak.
+
+### Step 9 — optimise
+
+> "A linear program over the flexible resources. EV energy is conserved as a
+> **hard equality** — the vehicles get their kilowatt-hours — and recovery can
+> never precede curtailment, enforced as a cumulative-sum constraint. I had
+> that bug too: the optimiser was charging vehicles that had not arrived yet.
+> HVAC flexibility is bought against a comfort energy budget.
+>
+> **168.3 kWh of EV charging deferred, peak 200.8 → 140.6 kW.**"
+
+### Step 10 — verify
+
+> "The before and after transformer figures are **two independent pandapower
+> solves** at the worst instant, not the optimiser's own estimate.
+> **139.4% → 96.0%**, and every bus back inside the EN 50160 band."
 
 ---
 
-## Questions worth being ready for
+## 04:30–05:30 — Provenance and architecture
 
-**"Is any of this real?"**
-The data is: a Schneider Electric / DrivenData public competition dataset,
-267 sites, real meters, real weather. The models are trained on it. The physics
-and the network are models, labelled as models. What is *not* real is any claim
-to a live customer system, and the footer says that on every page.
+### Step 11 — provenance
 
-**"Why not BOPTEST here?"**
-It is implemented and runs in local Docker mode. Hosting a Modelica emulator for
-a portfolio demo is a poor trade. The important part is that swapping engines
-does not change a single line above the adapter, and the UI never mislabels one
-as the other.
+> "Six categories, one closed vocabulary, enforced in the backend. Two of them
+> are validators rather than conventions: a value cannot be tagged MEASURED
+> unless its registered source is a real measurement, and cannot be tagged
+> SIMULATED without naming the engine that produced it. A mislabelled number
+> fails at construction rather than reaching a chart.
+>
+> There is also an audit — `scripts/audit_provenance.py` — that walks every
+> served payload against a manifest and fails if a metric loses its badge. It
+> found three real gaps when I wrote it, including one panel drawing a
+> hardcoded MEASURED pill over a derived number."
 
-**"Why does one model only beat naive by 3%?"**
-Because that is what it does, and the site with the *best* absolute accuracy is
-the one with the smallest skill margin — its load is highly repeatable, so
-persistence is already strong. There is a gate: below 1% skill the platform
-serves the seasonal-naive reference instead and marks the row.
+### Step 12 — architecture
 
-**"How would this connect to EcoStruxure?"**
-Two abstract classes, four methods each. `BuildingSourceAdapter` becomes an EBO
-adapter, `PowerSourceAdapter` becomes a PME adapter. Nothing above them knows
-where the numbers came from — that is the whole reason the boundary is there.
+> "Both pipelines end to end. The thing I would emphasise is the adapter
+> layer: it is the only code that knows a source's field names, which is what
+> makes this EcoStruxure-ready rather than EcoStruxure-shaped. Swapping the
+> Power Laws adapter for an EBO or PME adapter does not touch the forecaster,
+> the detector, the optimiser or the simulator.
+>
+> And no actuation. Historical mode is read-only and there is no code path to
+> a real controller."
 
-**"What would you do next?"**
-Sub-metering, so the feeder split stops being a disaggregation. A second
-building so the thermal model can be validated against measured zone
-temperature. Probabilistic peak risk instead of a point forecast against a
-threshold. And a model registry — the cards are already emitted as JSON.
+---
 
-**"What is the weakest part?"**
-The thermal model. It is calibrated against whole-site electrical demand
-because there is no zone telemetry to calibrate against, so it is credible
-physics rather than a validated model of a specific building. The Control Lab
-is honest about that — every parameter is on screen — but it is the claim I
-would most want measured data behind.
+## If something is unavailable
+
+The demo is built to degrade in public rather than fail.
+
+| What fails | What you see | What to say |
+|---|---|---|
+| BOPTEST unreachable | System bar reads `EcoTwin RC engine`; the Control Lab banner explains it | "BOPTEST is optional. The engine that ran is named on every result; local Docker mode runs BOPTEST where it is reachable." |
+| Preload did not finish | Interview pill reads `· on demand` | "It computes on click instead of ahead of time. Slower, identical numbers." |
+| A panel errors | Red "Panel unavailable" with the message and a Retry | "Each panel fails alone. The rest of the page is still true." |
+| No processed dataset | Everything reads `SAMPLE FIXTURE` | "Deterministic synthetic stand-in. Every value carries SAMPLE FIXTURE in provenance — it cannot be mistaken for real." |
+| A model failed its quality gate | Row marked `naive`, gate reason in the tooltip | "The model is only served if it beats the strongest naive baseline by 1%. Otherwise you get seasonal-naive and a reason." |
+
+If the guided bar gets out of step, click **Reset demo**: it restores the
+route, the replay cursor, both scenarios, every selection and every computed
+result.
+
+---
+
+## Numbers worth having in your head
+
+| | |
+|---|---|
+| Dataset | Power Laws: Forecasting Energy Consumption, 1.03 M records, 2013-05-30 → 2017-11-20 |
+| Replay window | 2017-08-24 → 2017-08-27, 15-minute steps |
+| BMS site / EMS facility | 227 (1,142 m²) / 227 (160 kVA) |
+| Control Lab | −11.9% energy, −8.4% peak, +0.035 K·h comfort |
+| Transformer capacity | 144.9 kW at 100% loading (bisection on the load flow) |
+| EV surge | 200.8 kW peak, 138.5% loading at 16:00 |
+| After optimisation | 140.6 kW, 96.0% by an independent load flow, 168.3 kWh deferred |
+
+Every one of these is re-derived on each run. If a model changes and a number
+moves, `/interview/verify` and `tests/test_interview.py` will say so before an
+audience does.

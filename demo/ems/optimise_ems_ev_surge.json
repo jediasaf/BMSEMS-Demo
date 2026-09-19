@@ -285,7 +285,27 @@
       }
     },
     "served_by": "model",
-    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest."
+    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest.",
+    "injection": {
+      "scenario_id": "ems_ev_surge",
+      "label": "EV Charging Surge",
+      "description": "A block of EV charging load is added to the flexible feeder during the afternoon. It is additive: the measured site demand is untouched and both series are charted.",
+      "metric": "load_kw",
+      "unit": "kW",
+      "peak_injection": 126.751,
+      "total_injection": 1214.9,
+      "affected_steps": 45,
+      "seed": 20288320,
+      "affected_asset": "227",
+      "injection_start": "2017-08-24T13:15:00",
+      "injection_end": "2017-08-26T16:45:00",
+      "duration_hours": 11.25,
+      "detail": {
+        "charger_kw": 120.0,
+        "start_hour": 13.0,
+        "duration_hours": 4.0
+      }
+    }
   },
   "timestamps": [
     "2017-08-25 08:00:00",
@@ -599,7 +619,7 @@
     "target_kw": 140.592,
     "status": "optimal",
     "solver": "CLARABEL",
-    "solve_time_s": 0.0056
+    "solve_time_s": 0.0055
   },
   "constraints": [
     "site demand \u2264 140.6 kW (3% below the 145 kW cap)",
@@ -724,5 +744,25 @@
       "notes": null
     }
   },
-  "verification_note": "The transformer figures above are two separate pandapower solves at the worst instant, before and after the proposed dispatch. They are not the optimiser's own estimate."
+  "verification_note": "The transformer figures above are two separate pandapower solves at the worst instant, before and after the proposed dispatch. They are not the optimiser's own estimate.",
+  "injection": {
+    "scenario_id": "ems_ev_surge",
+    "label": "EV Charging Surge",
+    "description": "A block of EV charging load is added to the flexible feeder during the afternoon. It is additive: the measured site demand is untouched and both series are charted.",
+    "metric": "load_kw",
+    "unit": "kW",
+    "peak_injection": 126.751,
+    "total_injection": 1214.9,
+    "affected_steps": 45,
+    "seed": 20288320,
+    "affected_asset": "227",
+    "injection_start": "2017-08-24T13:15:00",
+    "injection_end": "2017-08-26T16:45:00",
+    "duration_hours": 11.25,
+    "detail": {
+      "charger_kw": 120.0,
+      "start_hour": 13.0,
+      "duration_hours": 4.0
+    }
+  }
 }

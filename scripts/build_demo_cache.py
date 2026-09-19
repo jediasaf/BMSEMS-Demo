@@ -102,10 +102,19 @@ def main() -> int:
         path = out / "bms" / f"overview_{scenario}.json"
         record(f"bms/{scenario}", path, time.perf_counter() - start, _write(path, payload))
 
-    start = time.perf_counter()
-    control = bms.control_lab(site)
-    path = out / "bms" / "control_lab.json"
-    record("bms/control-lab", path, time.perf_counter() - start, _write(path, control))
+    # Per scenario, not once: a recording is only ever served back for the
+    # request it was recorded for, so a single default-scenario control lab
+    # would be a cache that can never answer the scenario the demo runs.
+    for scenario in bms_scenarios:
+        start = time.perf_counter()
+        control = bms.control_lab(site, scenario_id=scenario)
+        path = out / "bms" / f"control_lab_{scenario}.json"
+        record(
+            f"bms/control-lab/{scenario}",
+            path,
+            time.perf_counter() - start,
+            _write(path, control),
+        )
 
     start = time.perf_counter()
     tree = bms.asset_tree(site).model_dump(mode="json")

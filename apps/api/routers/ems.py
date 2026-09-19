@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from apps.api.services import demo_cache
 from apps.api.services.ems import get_ems_service
 from apps.api.services.quality import build_report
 from apps.api.services.timeparse import naive_instant
 from core.common import paths
 from core.common.schemas import Insight
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ems", tags=["ems"])
 
@@ -108,9 +112,23 @@ def optimise(
     scenario_id: str = Query("ems_ev_surge"),
 ) -> dict[str, Any]:
     service = get_ems_service()
-    return service.optimise(
-        facility_id or service.default_facility_id(), at=naive_instant(at), scenario_id=scenario_id
-    )
+    facility = facility_id or service.default_facility_id()
+    try:
+        result = service.optimise(facility, at=naive_instant(at), scenario_id=scenario_id)
+        result["served_from"] = "live"
+        return result
+    except Exception as exc:
+        # Same contract as the Control Lab: a recording for this scenario, or
+        # the error. Never a recording for a different one.
+        log.warning("optimisation failed for %s/%s: %s", facility, scenario_id, exc)
+        recorded = demo_cache.load(f"ems/optimise/{scenario_id}")
+        if recorded is None:
+            raise
+        return demo_cache.as_replay(
+            recorded,
+            key=f"ems/optimise/{scenario_id}",
+            original_engine=(recorded.get("summary") or {}).get("solver"),
+        )
 
 
 @router.get("/insights", response_model=list[Insight])

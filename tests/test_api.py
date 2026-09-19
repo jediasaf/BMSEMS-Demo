@@ -281,3 +281,47 @@ def test_cross_module_chain_is_five_real_steps(client) -> None:
         body["power_impact"]["before"]["transformer_loading_pct"] + 1e-6
     )
     _check_provenance(body["power_impact"]["provenance"])
+
+
+# -- graceful degradation --------------------------------------------------
+def test_control_lab_falls_back_to_a_recording_and_says_so(client, monkeypatch) -> None:
+    """A failed simulation degrades to a recording, clearly relabelled."""
+    from apps.api.services import demo_cache
+    from apps.api.services.bms import BmsService
+
+    if not demo_cache.load("bms/control-lab/bms_hot_day"):
+        pytest.skip("no demo cache; run scripts/build_demo_cache.py")
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("simulation backend unavailable")
+
+    monkeypatch.setattr(BmsService, "control_lab", boom)
+    body = client.get("/bms/control-lab", params={"scenario_id": "bms_hot_day"}).json()
+
+    assert body["served_from"] == "demo_cache"
+    assert body["provenance"]["source_type"] == "SIMULATED"
+    assert body["provenance"]["engine"] == "REPLAY"
+    assert "SIMULATION REPLAY" in body["replay_note"]
+    # The recording still carries real KPIs; it is stale, not empty.
+    assert body["baseline"]["kpis"]["energy_kwh"] > 0
+
+
+def test_a_recording_is_never_served_for_a_different_scenario(client, monkeypatch) -> None:
+    """The failure mode this guards: a hot-day request answered with a quiet day."""
+    from apps.api.services.bms import BmsService
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("simulation backend unavailable")
+
+    monkeypatch.setattr(BmsService, "control_lab", boom)
+    # The error reaches the caller rather than a recording for some other
+    # scenario. TestClient re-raises server exceptions, so this is the shape
+    # a 500 takes in-process.
+    with pytest.raises(RuntimeError, match="simulation backend unavailable"):
+        client.get("/bms/control-lab", params={"scenario_id": "bms_no_such_scenario"})
+
+
+def test_a_live_result_says_it_is_live(client) -> None:
+    body = client.get("/bms/control-lab", params={"scenario_id": "bms_hot_day"}).json()
+    assert body["served_from"] == "live"
+    assert "replay_note" not in body

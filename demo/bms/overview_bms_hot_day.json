@@ -12,7 +12,7 @@
     "series": [
       {
         "series_id": "actual",
-        "label": "Measured load",
+        "label": "Metered load",
         "unit": "kW",
         "timestamps": [
           "2017-08-24 00:00:00",
@@ -3890,7 +3890,7 @@
           "label": "Normal miss for this asset (MAD)",
           "contribution": 1.448,
           "direction": "flat",
-          "detail": "rolling 3-day median absolute deviation"
+          "detail": "reference-period, hour-of-day conditioned, at 01:45"
         }
       ],
       "linked_recommendation_id": null
@@ -3969,7 +3969,7 @@
           "label": "Normal miss for this asset (MAD)",
           "contribution": 1.433,
           "direction": "flat",
-          "detail": "rolling 3-day median absolute deviation"
+          "detail": "reference-period, hour-of-day conditioned, at 04:00"
         }
       ],
       "linked_recommendation_id": null
@@ -3987,7 +3987,7 @@
       "current_value": 23.0,
       "proposed_value": 24.0,
       "unit": "\u00b0C",
-      "rationale": "Measured load is +8 kW above expected at 4.3\u00d7 this building's normal forecast miss. The occupancy proxy moves -6% over the next two hours and outdoor air is +11.7 K over six, so a 1.0 K relaxation is expected to stay inside the configured comfort envelope.",
+      "rationale": "Metered load is +8 kW above expected at 4.3\u00d7 this building's normal forecast miss. The occupancy proxy moves -6% over the next two hours and outdoor air is +11.7 K over six, so a 1.0 K relaxation is expected to stay inside the configured comfort envelope.",
       "factors": [
         {
           "feature": "occupancy_proxy",

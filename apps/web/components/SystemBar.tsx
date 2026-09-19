@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { api } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import { API_BASE, api } from '@/lib/api';
 import { useDemo } from '@/lib/store';
 import { cn, fullTimestamp } from '@/lib/format';
 import { cursorTimestamp } from '@/lib/store';
@@ -16,18 +16,48 @@ import { StatusDot } from './Primitives';
 export function SystemBar() {
   const { status, setStatus, window: replayWindow, cursor, interviewMode, preload } = useDemo();
 
+  const [unreachable, setUnreachable] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     api
       .status()
-      .then((s) => !cancelled && setStatus(s))
-      .catch(() => undefined);
+      .then((s) => {
+        if (cancelled) return;
+        setStatus(s);
+        setUnreachable(null);
+      })
+      // A frontend deployed without its backend must say so. Eight identical
+      // red panels and a status bar stuck on "…" is a worse answer than one
+      // line naming the API it could not reach.
+      .catch((error: unknown) => {
+        if (!cancelled) setUnreachable(error instanceof Error ? error.message : 'unreachable');
+      });
     return () => {
       cancelled = true;
     };
   }, [setStatus]);
 
   const stamp = cursorTimestamp(replayWindow, cursor);
+
+  if (unreachable) {
+    return (
+      <div className="flex h-sysbar shrink-0 items-center gap-2 border-b border-status-critical/40 bg-status-critical/[0.08] px-3 text-2xs">
+        <StatusDot tone="critical" pulse />
+        <span className="shrink-0 text-3xs font-semibold uppercase tracking-[0.1em] text-status-critical">
+          API unreachable
+        </span>
+        <span className="truncate text-ink-400">
+          The interface is running but no backend answered at{' '}
+          <span className="tabular font-mono text-ink-200">{API_BASE}</span>. Nothing on screen is
+          data. Start the API, or point NEXT_PUBLIC_API_BASE at one.
+        </span>
+        <span className="tabular ml-auto shrink-0 font-mono text-3xs text-ink-600">
+          {unreachable}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-sysbar shrink-0 items-center gap-3 border-b border-base-600/70 bg-base-950/90 px-3 text-2xs">

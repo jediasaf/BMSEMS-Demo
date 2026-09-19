@@ -1,170 +1,149 @@
-# Deployment
+# Deploying EcoTwin AI
 
-Two targets, one codebase. The only real difference is which simulation engine
-answers, and the platform states which one did.
+## The shape of it
 
-## Local engineering mode
+EcoTwin is two processes, and only one of them belongs on Vercel.
 
-```bash
-cp .env.example .env
-docker compose up --build            # web :3000, api :8000
-docker compose --profile boptest up  # ... and a live BOPTEST instance
-```
-
-| Service | Port | Notes |
+| | What it is | Where it runs |
 |---|---|---|
-| `web` | 3000 | Next.js standalone output, no toolchain in the runtime image |
-| `api` | 8000 | FastAPI + LightGBM + pandapower + CVXPY |
-| `boptest` | 5000 | Opt-in profile: the image is large and slow to start |
+| `apps/web` | Next.js 15, React 19 | **Vercel** — this is what Vercel is for |
+| `apps/api` | FastAPI + pandas, LightGBM, pandapower, CVXPY | **A container host** — Fly.io, Render, Railway, Cloud Run |
 
-Both images run as an unprivileged user with a health check. The backend's
-health check has a 45 s start period because start-up warms the per-asset
-caches, including the transformer-capacity bisection.
+The backend does not fit Vercel's serverless model and it is not close. Its
+dependency set is around 400 MB of wheels before any code, it reads ~94 MB of
+Parquet and joblib from disk, and it warms per-facility caches at start-up —
+including a transformer-capacity calibration that bisects on a load flow. That
+is a long-lived process with a filesystem, not a function.
 
-### Without Docker
+**A Vercel deployment on its own is not a working demo.** The interface will
+load and every panel will say the API is unreachable, because it is. The
+system bar states exactly that, with the URL it tried, rather than showing
+eight identical red panels. Deploy the backend first.
 
-```bash
-make setup      # venv + npm install
-make data       # download the public dataset (~1.4 GB)
-make pipeline   # inspect → prepare → train → cache
-make api        # :8000
-make web        # :3000  (separate terminal)
-```
+---
 
-### BOPTEST
+## 1. Backend
 
-`ECOTWIN_BOPTEST_URL` empty (the default) means the Control Lab uses the
-EcoTwin RC engine. When it is set, the backend probes `/version` at start-up
-and on every simulation:
+The image is already built by the repository's `Dockerfile` and includes the
+processed dataset, the trained models and the demo cache.
 
-- probe succeeds → BOPTEST runs the case, results are tagged `BOPTEST`;
-- probe fails → the RC engine runs it, results are tagged `ECOTWIN_RC`, and the
-  status bar and the Control Lab both say so.
-
-A result is **never** labelled BOPTEST unless a BOPTEST instance answered.
-
-## Hosted interview demo
-
-```mermaid
-flowchart LR
-    B["Browser"] --> V["Frontend host<br/>(Vercel or any Node host)"]
-    V -->|NEXT_PUBLIC_API_BASE| A["Backend host<br/>(Railway · Render · Cloud Run)"]
-    A --> D[("parquet + models<br/>baked into the image")]
-```
-
-Nothing is provider-specific: the backend is a single container listening on
-`$PORT` with `/health`, and the frontend is Next.js standalone output.
-
-### What makes it reliable
-
-1. **No training, download or preprocessing at request time.** Processed
-   parquet (12 MB) and trained models are baked into the image.
-2. **Start-up warms the caches** — BMS context, zone calibration, EMS portfolio
-   and the capacity bisection — so the first click is not the slow one.
-3. **Live where it is fast.** pandapower solves in ~40 ms and the convex
-   programs in ~2 ms, so both run live. Only the portfolio's cold path is
-   expensive, and warm-up absorbs it.
-4. **A demo cache as backstop.** `make cache` precomputes 14 results (~420 kB)
-   through the same code paths. Replayed results keep their originating engine
-   in provenance with `SIMULATION REPLAY` added.
-5. **Degradation is visible, not silent.** No processed data → fixture adapters
-   and a `SAMPLE FIXTURE` status bar. No models → seasonal-naive with the reason
-   on screen. No BOPTEST → RC engine, labelled.
-6. **Every panel fails independently.** A failed fetch shows the error and a
-   retry, keeps the previous data on screen, and never blanks the page.
-
-### Deploy the backend
+### Fly.io
 
 ```bash
-docker build -t ecotwin-api .
-docker run -p 8000:8000 \
-  -e ECOTWIN_CORS_ORIGINS="https://your-frontend.example" \
-  -e ECOTWIN_DEMO_MODE=true \
-  ecotwin-api
+fly launch --no-deploy --name ecotwin-api      # accept the detected Dockerfile
+fly scale memory 2048                          # LightGBM + pandapower want room
+fly deploy
+fly open /health                               # expect status: ok
 ```
 
-Container platforms inject `$PORT`; the image honours it.
+### Render / Railway / Cloud Run
 
-### Deploy the frontend
-
-`NEXT_PUBLIC_*` is inlined at **build** time, so the API URL must be a build
-argument — a compose service name will not reach a browser:
+Point the service at the repository root `Dockerfile`. It listens on `$PORT`
+and needs no volume: the data ships in the image.
 
 ```bash
-docker build -t ecotwin-web \
-  --build-arg NEXT_PUBLIC_API_BASE=https://your-api.example \
-  apps/web
+gcloud run deploy ecotwin-api \
+  --source . --region europe-west1 \
+  --memory 2Gi --cpu 2 --timeout 120 --allow-unauthenticated
 ```
 
-On Vercel: root directory `apps/web`, and set `NEXT_PUBLIC_API_BASE` as a build
-environment variable.
+### Check it before moving on
 
-### Sizing, measured
+```bash
+curl -s https://<your-api>/health | jq .components
+# {"api":"ok","data":"ok","models":"ok","pandapower":"ok","boptest":"local"}
 
-| | Image | Memory | Note |
-|---|---:|---:|---|
-| api | 1.11 GB | ~700 MB | The scientific stack is nearly all of it: pandas, scipy, LightGBM, pandapower, CVXPY |
-| web | 333 MB | ~120 MB | Next.js standalone output; no toolchain in the runtime layer |
+curl -s https://<your-api>/interview/verify | jq .ready     # must be true
+```
 
-The backend image is large and that is mostly unavoidable with this stack.
-Vendored test suites, `.pyx` sources and byte-code caches are stripped after
-install, which is worth 18% (1.36 GB → 1.11 GB). Going further would mean a multi-stage build
-against a slimmer base, which is a real option but not one worth the fragility
-here.
+`boptest: "local"` is expected and correct: the hosted deployment has no
+BOPTEST instance, so the zone simulator is the in-process RC engine and every
+result is labelled with it. `local Docker mode` (`make up-boptest`) runs
+BOPTEST where it is reachable.
 
-**Start-up takes ~16 s**, almost all of it warming caches: the BMS context and
-zone calibration, then the EMS portfolio for all three scenarios including the
-per-facility transformer-capacity bisection. The health check allows 45 s before
-it starts probing. The pay-off is that the portfolio responds in ~1.4 s rather
-than ~11 s on the first click — and scenario contexts are warmed too, because
-warming only the baseline leaves the scenario a demo actually runs cold.
+---
 
-One backend worker on purpose: the services hold warmed per-asset caches and a
-second worker would double memory for throughput a demo does not need.
+## 2. Frontend on Vercel
 
-## Configuration
+```bash
+npm i -g vercel
+cd apps/web
+vercel link                                    # once, to create the project
+vercel env add NEXT_PUBLIC_API_BASE production # paste the backend URL
+vercel --prod
+```
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `ECOTWIN_DEMO_MODE` | `true` | Prefer precomputed results, never start a long job |
-| `ECOTWIN_INTERVIEW_MODE` | `true` | Curated data, stable scenarios, no experimental surface |
-| `ECOTWIN_CORS_ORIGINS` | localhost:3000 | Comma-separated browser origins |
-| `ECOTWIN_BOPTEST_URL` | empty | BOPTEST REST base URL; empty uses the RC engine |
-| `ECOTWIN_LOG_LEVEL` | `INFO` | |
-| `ECOTWIN_ROOT` | repo root | Override when running from outside the repo |
-| `NEXT_PUBLIC_API_BASE` | localhost:8000 | Build-time API URL for the browser |
+Or through the dashboard: import the repository, set **Root Directory** to
+`apps/web`, and add the environment variable.
 
-No secrets: the prototype talks to no authenticated service.
+| Setting | Value |
+|---|---|
+| Root directory | `apps/web` |
+| Framework | Next.js (detected) |
+| Build command | `next build` (in `vercel.json`) |
+| `NEXT_PUBLIC_API_BASE` | `https://<your-api>` — no trailing slash |
 
-## Health and observability
+`NEXT_PUBLIC_API_BASE` is inlined at build time, so **changing it requires a
+redeploy**, not just an environment edit.
 
-- `GET /health` — adapters, model count, data mode, whether BOPTEST is
-  reachable, and whether the demo cache is present.
-- `GET /status` — what the status bar shows, including the notes it displays
-  when something is degraded.
-- `GET /sources` — the full citation registry and what was actually used.
-- Every response carries `X-Response-Time-Ms`.
+### CORS
 
-## Operational notes
+The backend allows every origin by default (`ECOTWIN_CORS_ORIGINS` unset), so
+a fresh Vercel deployment works immediately. To lock it down:
 
-- **`next start` leaves a `next-server` holding port 3000.** A subsequent start
-  fails with `EADDRINUSE` and the browser keeps getting the *previous* build's
-  chunks — which looks exactly like a frontend bug. `scripts/dev_restart.sh`
-  frees the ports first. This cost real time; it is written down so it does not
-  cost it again.
-- **`POST /demo/reset`** drops every service and adapter cache. Use it between
-  demo runs, or press *Reset demo* in the status bar.
-- **Disk:** the raw dataset is ~1.4 GB and is not vendored. Processed parquet is
-  ~13 MB and is committed, so a fresh clone runs without downloading anything.
+```bash
+fly secrets set ECOTWIN_CORS_ORIGINS=https://ecotwin.vercel.app
+```
 
-## Future production deployment
+### Avoiding CORS entirely (optional)
 
-Out of scope here, and deliberately so:
+Add a rewrite to `apps/web/vercel.json` and set
+`NEXT_PUBLIC_API_BASE=/api`, so the browser only ever talks to your Vercel
+domain:
 
-- **Kubernetes** — a Deployment per service, an HPA on the API, and the parquet
-  moved to object storage with a PVC cache.
-- **PostgreSQL / TimescaleDB** — the adapter contract already returns frames, so
-  this is a new adapter rather than a rewrite.
-- **Model registry and scheduled retraining** — model cards are already emitted
-  as JSON next to each artefact, which is the input a registry needs.
-- **Authentication** — none exists; every endpoint is public and read-only.
+```json
+"rewrites": [
+  { "source": "/api/:path*", "destination": "https://<your-api>/:path*" }
+]
+```
+
+This is not committed, because a rewrite pointing at a host that does not
+exist yet is a broken deployment rather than a default.
+
+---
+
+## 3. Verify the deployment
+
+```bash
+curl -s https://<your-api>/interview/verify | jq '.ready, .failed'
+E2E_BASE_URL=https://<your-app>.vercel.app \
+E2E_API_BASE=https://<your-api> \
+  npx playwright test --config apps/web/playwright.config.ts
+```
+
+The end-to-end test drives all twelve curated steps, runs the optimiser and
+asserts the transformer comes back under 100%. If it passes against the
+deployed URLs, the demo works from a cold browser on the public internet —
+which is the only definition of "deployed" worth having.
+
+---
+
+## Expected behaviour of a healthy public deployment
+
+| | |
+|---|---|
+| Zone simulation | EcoTwin RC engine, labelled as such. Not BOPTEST. |
+| First load | Preload runs once; the system bar reports how long it took |
+| Control Lab | Live solve, ~0.5 s warm |
+| EMS optimisation | Live solve, ~0.1 s warm |
+| If a heavy solve fails | A recorded result for the *same scenario*, banner-marked SIMULATION REPLAY |
+| If the dataset is absent | Everything reads SAMPLE FIXTURE; no value can be mistaken for real |
+
+---
+
+## What is deliberately not here
+
+No Kubernetes, no message bus, no managed database. At six facilities and one
+container they would be architecture theatre. `docs/interview_questions.md`
+covers what would actually change at a thousand sites — and the answer starts
+with the storage layer, not the orchestrator.

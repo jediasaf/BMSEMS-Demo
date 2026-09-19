@@ -416,6 +416,7 @@
       }
     },
     "served_by": "model",
-    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest."
+    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest.",
+    "injection": null
   }
 }
