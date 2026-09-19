@@ -158,3 +158,21 @@ def test_parameters_are_reported_for_review() -> None:
     assert "ua_per_m2" in result.parameters
     assert "time_constants_hours" in result.parameters
     assert result.parameters["integrator"] == "explicit Euler"
+
+
+def test_boptest_client_lives_in_its_own_module_and_never_mislabels() -> None:
+    """Structural, on purpose: in-process engines and the network client are
+    separate modules, and the client only ever claims to be BOPTEST."""
+    from core.adapters.building.boptest import BoptestEngine
+
+    engine = BoptestEngine(base_url="")
+    assert engine.engine is SimulationEngine.BOPTEST
+    assert engine.available() is False, "no URL configured means not available"
+
+
+def test_an_unreachable_boptest_falls_back_without_claiming_boptest(monkeypatch) -> None:
+    monkeypatch.setenv("BOPTEST_URL", "http://127.0.0.1:1")
+    engine = get_simulation_engine(prefer_boptest=True)
+    assert engine.engine is SimulationEngine.ECOTWIN_RC
+    result = _run(23.0)
+    assert result.engine is not SimulationEngine.BOPTEST
