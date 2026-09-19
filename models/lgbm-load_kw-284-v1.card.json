@@ -4,7 +4,7 @@
   "target": "load_kw",
   "unit": "kW",
   "family": "LightGBM gradient-boosted trees",
-  "trained_at": "2026-09-19T08:53:55+00:00",
+  "trained_at": "2026-09-19T09:18:46+00:00",
   "training_cutoff": "2017-08-24 00:00:00",
   "n_features": 33,
   "metrics": {

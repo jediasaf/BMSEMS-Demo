@@ -562,8 +562,8 @@ def main() -> int:
             "min_prior_dense_days": MIN_PRIOR_DENSE_DAYS,
             "feature_lookback_days": FEATURE_LOOKBACK_DAYS,
             "rule": (
-                f"longest window of {DEMO_WINDOW_CANDIDATES[0]}.."
-                f"{DEMO_WINDOW_CANDIDATES[-1]} days keeping >= {MIN_DEMO_SITES} sites "
+                f"longest window of {min(DEMO_WINDOW_CANDIDATES)}-"
+                f"{max(DEMO_WINDOW_CANDIDATES)} days keeping >= {MIN_DEMO_SITES} sites "
                 f"at >= {DENSE_DAY_COVERAGE:.0%} joint load+weather completeness and "
                 f">= {MIN_PRIOR_DENSE_DAYS} dense days of prior history and a "
                 f"contiguous {FEATURE_LOOKBACK_DAYS}-day dense feature lookback, "
