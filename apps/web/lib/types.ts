@@ -463,6 +463,7 @@ export interface OptimiseResponse extends ReplayMeta {
   network_before: Partial<NetworkStateDto>;
   network_after: Partial<NetworkStateDto>;
   provenance: { optimisation: Provenance; network: Provenance; injection: Provenance | null };
+  acceptance?: AcceptanceVerdict;
   verification_note: string;
 }
 
@@ -544,12 +545,58 @@ export interface DataQualityResponse {
   source: Record<string, unknown>;
 }
 
+export interface SplitMetrics {
+  label: string;
+  n: number;
+  start: string;
+  end: string;
+  mae_kw: number;
+  rmse_kw: number;
+  mape_pct: number;
+  wape_pct: number;
+  r2: number;
+  baseline_mae_kw: number;
+  baseline_name: string;
+  skill_vs_baseline_pct: number;
+  interval_coverage_pct: number;
+  raw_interval_coverage_pct: number;
+  mean_interval_width_kw: number;
+  interval_target_pct: number;
+}
+
+export interface ModelCard {
+  model_id: string;
+  asset_id: string;
+  target: string;
+  unit: string;
+  family: string;
+  trained_at: string;
+  training_cutoff: string | null;
+  n_features: number;
+  conformal_offset: number;
+  interval_method: string;
+  leakage_control: string;
+  notes: string[];
+  top_features: { feature: string; label: string; importance: number }[];
+  metrics: {
+    n_train: number;
+    n_calib: number;
+    train_start: string;
+    train_end: string;
+    calib_start: string;
+    calib_end: string;
+    conformal_offset_kw: number;
+    backtest: SplitMetrics;
+    live: SplitMetrics | null;
+  };
+}
+
 export interface ModelCardResponse {
   asset_id: string;
   served_by: 'model' | 'seasonal_naive';
   gate_reason: string;
   model_id: string;
-  card: Record<string, unknown> | null;
+  card: ModelCard | null;
 }
 
 export interface DatasetInfo {

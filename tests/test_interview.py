@@ -89,6 +89,7 @@ def test_the_demo_verifies(client) -> None:
         "bms_baseline_stays_quiet",
         "ems_scenario_exceeds_transformer_capacity",
         "ems_optimiser_returns_below_capacity",
+        "ems_post_action_network_accepted",
         "ems_baseline_has_no_violation",
     ],
 )

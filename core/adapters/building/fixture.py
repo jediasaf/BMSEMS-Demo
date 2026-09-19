@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from core.adapters.building.base import BuildingSourceAdapter, SiteDescriptor
+from core.common.ids import as_numeric_id
 from core.enums import DataMode
 
 SEED = 20240312
@@ -104,7 +105,7 @@ class FixtureBuildingAdapter(BuildingSourceAdapter):
         start: datetime | None = None,
         end: datetime | None = None,
     ) -> pd.DataFrame:
-        frame = _synthesise(int(site_id), FIXTURE_DAYS, FIXTURE_START)
+        frame = _synthesise(as_numeric_id(site_id, kind="site"), FIXTURE_DAYS, FIXTURE_START)
         descriptor = self.site(site_id)
         dow = frame.index.dayofweek
         frame["is_day_off"] = [bool(descriptor.day_off.get(int(d), False)) for d in dow]

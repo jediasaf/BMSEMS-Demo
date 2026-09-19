@@ -67,7 +67,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Scrolling region beneath a PageHeader. */
+/**
+ * Scrolling region beneath a PageHeader.
+ *
+ * `tabIndex={0}` is deliberate: a region that scrolls but cannot be focused
+ * is unreachable for anyone driving the page from the keyboard, because there
+ * is nothing to press the arrow keys against.
+ */
 export function Workspace({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-0 flex-1 overflow-y-auto p-2.5">{children}</div>;
+  return (
+    <div
+      className="focus-ring min-h-0 flex-1 overflow-y-auto p-2.5"
+      tabIndex={0}
+      role="region"
+      aria-label="Workspace"
+    >
+      {children}
+    </div>
+  );
 }

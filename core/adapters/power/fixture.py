@@ -9,6 +9,7 @@ import pandas as pd
 from core.adapters.building.fixture import FIXTURE_DAYS, FIXTURE_START, _synthesise
 from core.adapters.power.base import FacilityDescriptor, PowerSourceAdapter
 from core.adapters.power.facility import size_transformer
+from core.common.ids import as_numeric_id
 from core.enums import DataMode
 
 FIXTURE_FACILITIES = (901, 902, 903, 904, 905, 906)
@@ -53,7 +54,7 @@ class FixturePowerAdapter(PowerSourceAdapter):
         start: datetime | None = None,
         end: datetime | None = None,
     ) -> pd.DataFrame:
-        fid = int(facility_id)
+        fid = as_numeric_id(facility_id, kind="facility")
         frame = _synthesise(fid, FIXTURE_DAYS, FIXTURE_START)
         frame["load_kw"] = frame["load_kw"] * SCALE.get(fid, 1.0)
         frame["energy_wh_interval"] = frame["load_kw"] * 1000.0 / 4.0

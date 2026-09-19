@@ -19,7 +19,6 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000',
-    viewport: { width: 1600, height: 900 },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
@@ -28,6 +27,11 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        // 1280x720, the Desktop Chrome default and the narrower of the two
+        // widths this is likely to be shown at. Declaring it here rather than
+        // above the spread, where it was silently overridden: the demo should
+        // be tested at the size that stresses the layout, not the roomy one.
+        viewport: { width: 1280, height: 720 },
         // The image ships Chromium at a fixed path and blocks downloads.
         launchOptions: process.env.PLAYWRIGHT_CHROMIUM_PATH
           ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }

@@ -44,7 +44,7 @@ api: ## Run the backend on :8000
 
 .PHONY: web
 web: ## Run the frontend on :3000
-	cd apps/web && npm run dev
+	cd apps/web && NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000 npm run dev
 
 .PHONY: test
 test: ## Run the Python test suite
@@ -67,7 +67,10 @@ check: lint test ## Lint and test
 
 .PHONY: demo
 demo: ## Build the frontend, restart both servers, and verify the interview path
-	cd apps/web && npm run build
+	# NEXT_PUBLIC_* is inlined at BUILD time. Setting it only when starting the
+	# server does nothing, and the result is a frontend that cannot reach its
+	# own API -- so it is set here, where the build happens.
+	cd apps/web && NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000 npm run build
 	bash scripts/dev_restart.sh
 	@curl -fsS http://127.0.0.1:8000/interview/verify | \
 		$(PY) -c "import json,sys; b=json.load(sys.stdin); \

@@ -85,7 +85,7 @@ const STEPS: TourStep[] = [
   },
   {
     title: 'Verify with a second load flow',
-    body: 'The before and after transformer figures are two independent pandapower solves at the worst instant — not the optimiser marking its own homework. The transformer comes back inside nameplate and every bus returns to the EN 50160 band.',
+    body: 'The before and after transformer figures are two independent pandapower solves at the worst instant — not the optimiser marking its own homework. Below them is the network verdict: seven criteria read off the post-action load flow, including that the EV energy was deferred rather than shed. It is allowed to reject the dispatch, and a rejection claims nothing.',
     href: '/ems/scenario-lab',
     emsScenario: 'ems_ev_surge',
   },

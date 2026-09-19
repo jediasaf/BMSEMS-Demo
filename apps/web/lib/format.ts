@@ -158,3 +158,8 @@ export function loadingTone(pctValue: number): Severity {
   if (pctValue >= 70) return 'MEDIUM';
   return 'LOW';
 }
+
+/** `1 finding`, `2 findings`. Regular nouns only, which is all this UI has. */
+export function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}

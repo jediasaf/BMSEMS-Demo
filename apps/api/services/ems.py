@@ -19,6 +19,7 @@ from core.adapters.power.facility import ASSUMED_POWER_FACTOR
 from core.adapters.power.pandapower_adapter import (
     LOADING_CRITICAL_PCT,
     LOADING_WARN_PCT,
+    VOLTAGE_LIMITS,
     NetworkState,
     PandapowerNetwork,
     disaggregate,
@@ -48,6 +49,101 @@ EV_CATCHUP_SHARE = 0.55
 #: recover the energy it curtails, and the honest answer becomes "infeasible"
 #: for a problem that is perfectly feasible over a realistic operating window.
 RISK_HORIZON_STEPS = 12 * STEPS_PER_HOUR
+
+#: EV energy must be conserved to within this fraction of the deferred total.
+#: The equality is a hard constraint inside the program; this is the tolerance
+#: for re-checking it *outside* the solver, against the numbers actually served.
+EV_ENERGY_TOLERANCE = 1e-3
+
+
+def network_acceptance(
+    *,
+    solved: bool,
+    before: NetworkState,
+    after: NetworkState,
+    ev_reduction_kw: list[float],
+    ev_recovery_kw: list[float],
+) -> dict[str, Any]:
+    """Judge the dispatch on the post-action load flow, not on the solver.
+
+    A solver that returns ``optimal`` has told you its own linear program is
+    satisfied. It has not told you the network is. These criteria are read off
+    the second pandapower solve -- an independent AC load flow over the
+    optimised dispatch -- plus one arithmetic re-check of the energy equality
+    against the arrays that are actually served to the client.
+
+    Every criterion can fail, and a failure is reported as a failure: an
+    optimisation that leaves the transformer over its nameplate or a bus
+    outside EN 50160 is not a success with a caveat.
+    """
+    v_min, v_max = VOLTAGE_LIMITS
+    deferred = float(sum(ev_reduction_kw)) / STEPS_PER_HOUR
+    recovered = float(sum(ev_recovery_kw)) / STEPS_PER_HOUR
+    imbalance = abs(deferred - recovered)
+    tolerance = max(EV_ENERGY_TOLERANCE * max(deferred, 1.0), 1e-6)
+
+    criteria = [
+        {
+            "criterion": "the optimisation converged",
+            "passed": bool(solved),
+            "detail": "a dispatch exists to verify" if solved else "no dispatch to verify",
+        },
+        {
+            "criterion": "the post-action load flow converged",
+            "passed": bool(after.converged),
+            "detail": ("AC load flow solved" if after.converged else "load flow diverged"),
+        },
+        {
+            "criterion": f"transformer loading stays at or below {LOADING_CRITICAL_PCT:.0f}%",
+            "passed": after.transformer_loading_pct <= LOADING_CRITICAL_PCT,
+            "detail": f"{after.transformer_loading_pct:.1f}% after dispatch",
+        },
+        {
+            "criterion": f"every bus stays inside the EN 50160 band ({v_min:.2f}-{v_max:.2f} pu)",
+            "passed": v_min <= after.min_bus_voltage_pu <= v_max,
+            "detail": f"lowest bus {after.min_bus_voltage_pu:.3f} pu",
+        },
+        {
+            "criterion": "the load flow reports no violations",
+            "passed": not after.violations,
+            "detail": ("; ".join(after.violations) if after.violations else "none"),
+        },
+        {
+            "criterion": "loading is lower than before the dispatch",
+            "passed": after.transformer_loading_pct <= before.transformer_loading_pct + 1e-6,
+            "detail": (
+                f"{before.transformer_loading_pct:.1f}% -> " f"{after.transformer_loading_pct:.1f}%"
+            ),
+        },
+        {
+            "criterion": "EV energy is conserved, not shed",
+            "passed": imbalance <= tolerance,
+            "detail": f"{deferred:.2f} kWh deferred, {recovered:.2f} kWh recovered",
+        },
+    ]
+    failed = [c["criterion"] for c in criteria if not c["passed"]]
+    return {
+        "accepted": not failed,
+        "verdict": "accepted" if not failed else "rejected",
+        "criteria": criteria,
+        "failed": failed,
+        "reason": (
+            "The independent post-action load flow confirms the network is "
+            "inside every checked limit, so the dispatch stands as an advisory "
+            "recommendation."
+            if not failed
+            else (
+                "The post-action load flow rejected the dispatch: "
+                + "; ".join(failed)
+                + ". No constraint resolution is claimed."
+            )
+        ),
+        "note": (
+            "Verified against a second pandapower solve, not against the "
+            "optimiser's own estimate. Advisory only: the prototype has no "
+            "code path to a real controller."
+        ),
+    }
 
 
 @dataclass
@@ -534,6 +630,13 @@ class EmsService:
                     else None
                 ),
             },
+            "acceptance": network_acceptance(
+                solved=result.solved,
+                before=before,
+                after=after,
+                ev_reduction_kw=result.ev_reduction_kw,
+                ev_recovery_kw=result.ev_recovery_kw,
+            ),
             "verification_note": (
                 "The transformer figures above are two separate pandapower solves at "
                 "the worst instant, before and after the proposed dispatch. They are "
@@ -720,6 +823,21 @@ class EmsService:
         until: pd.Timestamp | None = None,
         scenario_id: str = "ems_normal_day",
     ) -> list[Insight]:
+        """A copy of the cached detection for this facility and scenario."""
+        return list(self._insights(facility_id, until, scenario_id))
+
+    @lru_cache(maxsize=32)
+    def _insights(
+        self,
+        facility_id: str,
+        until: pd.Timestamp | None = None,
+        scenario_id: str = "ems_normal_day",
+    ) -> list[Insight]:
+        """Deterministic in its arguments, and the portfolio calls it six times.
+
+        Uncached, the six per-facility detections dominated the EMS landing
+        page: ~1.45 s of classifier work, repeated identically on every load.
+        """
         ctx = self.context(facility_id, scenario_id)
         if ctx.window.empty:
             return []

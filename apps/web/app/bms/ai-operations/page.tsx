@@ -13,7 +13,7 @@ import { RecommendationCard } from '@/components/RecommendationCard';
 import { TimeSeriesChart, type ChartSeriesConfig } from '@/components/TimeSeriesChart';
 import { EmptyNote, ErrorNote, Panel, Pill, Skeleton } from '@/components/Primitives';
 import { ModelExplanationDrawer } from '@/features/bms/ModelExplanationDrawer';
-import { SEVERITY_STYLE } from '@/lib/format';
+import { SEVERITY_STYLE, plural } from '@/lib/format';
 
 /**
  * The operations centre: feed on the left, the selected finding in the middle,
@@ -146,7 +146,7 @@ export default function AiOperationsPage() {
             {/* LEFT — chronological feed */}
             <Panel
               title="Insight feed"
-              subtitle={insights.data ? `${insights.data.length} findings` : undefined}
+              subtitle={insights.data ? plural(insights.data.length, 'finding') : undefined}
               flush
               className="min-h-[24rem]"
               bodyClassName="overflow-y-auto"

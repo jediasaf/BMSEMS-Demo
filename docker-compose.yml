@@ -24,7 +24,11 @@ services:
     ports:
       - "8000:8000"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      # /healthz, not /health: the liveness probe runs every 15 s for the life
+      # of the container, and /health solves a load flow to prove pandapower
+      # works. Correct once, wasteful on a loop. Start-up warm-up completes
+      # before uvicorn accepts a request, so a 200 here already means ready.
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
       interval: 15s
       timeout: 5s
       retries: 6

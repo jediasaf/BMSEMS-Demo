@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import logging
+import time
 from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends
 
 from apps.api.config import Settings, get_settings
+from apps.api.errors import public_detail
 from apps.api.schemas.common import HealthResponse, SystemStatus
+from apps.api.schemas.params import ModuleName
 from core.adapters.building import get_building_adapter
 from core.adapters.building.power_laws import demo_window, load_selection
 from core.adapters.building.simulation import get_simulation_engine
@@ -17,6 +21,8 @@ from core.common import paths
 from core.enums import DataMode, SimulationEngine
 from core.provenance.sources import SOURCES
 from core.scenarios import list_scenarios
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["system"])
 
@@ -39,7 +45,7 @@ def _pandapower_state() -> tuple[str, str | None]:
         ems = get_ems_service()
         state, _split, _stamp = ems.network_state(ems.default_facility_id())
     except Exception as exc:  # pragma: no cover - reported, never raised
-        return "failed", str(exc)
+        return "failed", public_detail(exc)
     return ("ok", None) if state.converged else ("degraded", "load flow did not converge")
 
 
@@ -234,7 +240,7 @@ def dataset() -> dict[str, Any]:
                 len(pd.read_parquet(paths.HOLIDAYS_PARQUET, columns=["site_id"]))
             )
     except Exception as exc:  # pragma: no cover - defensive
-        return {"available": False, "reason": str(exc)}
+        return {"available": False, "reason": public_detail(exc)}
 
     counts["total_records"] = sum(v for k, v in counts.items() if k.endswith("_records"))
     return {
@@ -297,13 +303,26 @@ def _scenario_payload(s: Any) -> dict[str, Any]:
 
 
 @router.get("/scenarios")
-def scenarios(module: str | None = None) -> dict[str, Any]:
+def scenarios(module: ModuleName = None) -> dict[str, Any]:
     return {"scenarios": [_scenario_payload(s) for s in list_scenarios(module)]}
+
+
+#: Shortest interval between two cache-clearing resets, in seconds.
+#:
+#: The reset is global and expensive: it drops every warmed cache, and the
+#: next request pays a ~15 s rebuild. That is correct for the one operator who
+#: means it and wrong for a public endpoint anyone can call in a loop, so a
+#: second reset inside the window is acknowledged and skipped rather than
+#: served. The demo's own reset is client-side state; it does not need this
+#: endpoint to have run.
+RESET_COOLDOWN_S = 30.0
+_last_reset: float = 0.0
 
 
 @router.post("/demo/reset")
 def reset_demo() -> dict[str, Any]:
     """Drop every cache so the next request rebuilds from the source files."""
+    global _last_reset
     from apps.api.services import demo_cache
     from apps.api.services.bms import get_bms_service
     from apps.api.services.crossmodule import get_crossmodule_service
@@ -312,11 +331,26 @@ def reset_demo() -> dict[str, Any]:
     from core.adapters.building.registry import reset_adapter_cache as reset_building
     from core.adapters.power.registry import reset_adapter_cache as reset_power
 
+    since = time.monotonic() - _last_reset
+    if _last_reset and since < RESET_COOLDOWN_S:
+        return {
+            "reset": False,
+            "at": datetime.now(UTC),
+            "warmed": True,
+            "note": (
+                f"Caches were cleared {since:.0f}s ago and are already rebuilt; "
+                f"a further reset is available in {RESET_COOLDOWN_S - since:.0f}s. "
+                "The demo's own reset is client-side and is unaffected."
+            ),
+        }
+
     bms = get_bms_service()
     ems = get_ems_service()
     bms.context.cache_clear()
     bms.zone_params.cache_clear()
+    bms._insights.cache_clear()
     ems.context.cache_clear()
+    ems._insights.cache_clear()
     ems._networks.clear()
     ems._caps.clear()
     get_bms_service.cache_clear()
@@ -326,8 +360,24 @@ def reset_demo() -> dict[str, Any]:
     reset_power()
     _load_tables.cache_clear()
     demo_cache.reset_cache()
+
+    # Rebuild immediately rather than leaving the cost on whoever clicks next.
+    # A reset is followed by someone looking at the product, and the first
+    # thing they see should not be the slow path.
+    warmed = False
+    try:
+        service = get_bms_service()
+        service.context(service.default_site_id())
+        ems = get_ems_service()
+        ems.context(ems.default_facility_id())
+        warmed = True
+    except Exception as exc:  # pragma: no cover - a cold cache is not an error
+        log.warning("post-reset warm-up skipped: %s", public_detail(exc))
+
+    _last_reset = time.monotonic()
     return {
         "reset": True,
         "at": datetime.now(UTC),
+        "warmed": warmed,
         "note": "All service and adapter caches cleared; next request rebuilds from disk.",
     }

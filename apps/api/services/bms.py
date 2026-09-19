@@ -502,10 +502,29 @@ class BmsService:
     ) -> list[Insight]:
         """Findings inside the replay window.
 
+        A copy of the cached result: the detection below is a pure function of
+        the arguments, but the list it returns is not the caller's to mutate.
+        """
+        return list(self._insights(site_id, until, scenario_id))
+
+    @lru_cache(maxsize=32)
+    def _insights(
+        self,
+        site_id: str,
+        until: pd.Timestamp | None = None,
+        scenario_id: str = "bms_normal_day",
+    ) -> list[Insight]:
+        """Findings inside the replay window.
+
         Scoring runs over the *whole* history, not just the window: the robust
         baseline is a 7-day rolling median/MAD, and a 3-day window would leave
         it undefined for most of the period. Findings are then filtered to the
         window.
+
+        Cached because it is deterministic in its arguments and is the single
+        most expensive thing behind the overview and portfolio screens -- the
+        classifier runs per anomalous step, and it was running again on every
+        request for an answer that cannot have changed.
         """
         ctx = self.context(site_id, scenario_id)
         if ctx.window.empty:

@@ -618,7 +618,7 @@
     "target_kw": 140.592,
     "status": "optimal",
     "solver": "CLARABEL",
-    "solve_time_s": 0.006
+    "solve_time_s": 0.0062
   },
   "constraints": [
     "site demand \u2264 140.6 kW (3% below the 145 kW cap)",
@@ -740,6 +740,50 @@
       "url": null,
       "notes": null
     }
+  },
+  "acceptance": {
+    "accepted": true,
+    "verdict": "accepted",
+    "criteria": [
+      {
+        "criterion": "the optimisation converged",
+        "passed": true,
+        "detail": "a dispatch exists to verify"
+      },
+      {
+        "criterion": "the post-action load flow converged",
+        "passed": true,
+        "detail": "AC load flow solved"
+      },
+      {
+        "criterion": "transformer loading stays at or below 100%",
+        "passed": true,
+        "detail": "71.6% after dispatch"
+      },
+      {
+        "criterion": "every bus stays inside the EN 50160 band (0.90-1.10 pu)",
+        "passed": true,
+        "detail": "lowest bus 0.972 pu"
+      },
+      {
+        "criterion": "the load flow reports no violations",
+        "passed": true,
+        "detail": "none"
+      },
+      {
+        "criterion": "loading is lower than before the dispatch",
+        "passed": true,
+        "detail": "71.6% -> 71.6%"
+      },
+      {
+        "criterion": "EV energy is conserved, not shed",
+        "passed": true,
+        "detail": "0.00 kWh deferred, 0.00 kWh recovered"
+      }
+    ],
+    "failed": [],
+    "reason": "The independent post-action load flow confirms the network is inside every checked limit, so the dispatch stands as an advisory recommendation.",
+    "note": "Verified against a second pandapower solve, not against the optimiser's own estimate. Advisory only: the prototype has no code path to a real controller."
   },
   "verification_note": "The transformer figures above are two separate pandapower solves at the worst instant, before and after the proposed dispatch. They are not the optimiser's own estimate.",
   "injection": {

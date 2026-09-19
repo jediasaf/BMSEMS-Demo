@@ -9,6 +9,7 @@ import { Workspace } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { TimeSeriesChart, type ChartSeriesConfig } from '@/components/TimeSeriesChart';
 import { BeforeAfterPanel, type ComparisonRow } from '@/components/BeforeAfterPanel';
+import { AcceptanceCriteria } from '@/components/AcceptanceCriteria';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import { ReplayNotice } from '@/components/ReplayNotice';
 import { ErrorNote, Field, Panel, Pill, Skeleton } from '@/components/Primitives';
@@ -409,40 +410,7 @@ export default function ControlLabPage() {
                   </Pill>
                 }
               >
-                <p
-                  className={cn(
-                    'text-2xs leading-relaxed',
-                    result.acceptance.accepted ? 'text-ink-300' : 'text-status-critical',
-                  )}
-                >
-                  {result.acceptance.reason}
-                </p>
-                <ul className="mt-2 space-y-1 border-t border-base-700 pt-2">
-                  {result.acceptance.criteria.map((criterion) => (
-                    <li
-                      key={criterion.criterion}
-                      className="flex items-baseline justify-between gap-2 text-3xs"
-                    >
-                      <span className="flex min-w-0 items-baseline gap-1.5">
-                        <span
-                          className={cn(
-                            'shrink-0 font-mono',
-                            criterion.passed ? 'text-accent' : 'text-status-critical',
-                          )}
-                        >
-                          {criterion.passed ? '✓' : '✗'}
-                        </span>
-                        <span className="text-ink-400">{criterion.criterion}</span>
-                      </span>
-                      <span className="tabular shrink-0 font-mono text-ink-200">
-                        {criterion.detail}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2 border-t border-base-700 pt-2 text-3xs leading-relaxed text-ink-600">
-                  {result.acceptance.note}
-                </p>
+                <AcceptanceCriteria verdict={result.acceptance} />
               </Panel>
 
               <Panel

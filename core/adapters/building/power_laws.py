@@ -24,6 +24,7 @@ import pandas as pd
 
 from core.adapters.building.base import BuildingSourceAdapter, SiteDescriptor
 from core.common import paths
+from core.common.ids import as_numeric_id
 from core.enums import DataMode
 
 
@@ -126,7 +127,7 @@ class PowerLawsBuildingAdapter(BuildingSourceAdapter):
         end: datetime | None = None,
     ) -> pd.DataFrame:
         load, weather, holidays = _load_tables()
-        sid = int(site_id)
+        sid = as_numeric_id(site_id, kind="site")
         frame = load[load["site_id"] == sid].set_index("timestamp").sort_index()
         if frame.empty:
             raise KeyError(f"no processed data for site {site_id}")

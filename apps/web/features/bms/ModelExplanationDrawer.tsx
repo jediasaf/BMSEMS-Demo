@@ -6,45 +6,7 @@ import { api } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { num } from '@/lib/format';
 import { Button, ErrorNote, Pill, Skeleton } from '@/components/Primitives';
-
-interface SplitMetrics {
-  label: string;
-  n: number;
-  start: string;
-  end: string;
-  mae_kw: number;
-  rmse_kw: number;
-  wape_pct: number;
-  r2: number;
-  baseline_mae_kw: number;
-  baseline_name: string;
-  skill_vs_baseline_pct: number;
-  interval_coverage_pct: number;
-  raw_interval_coverage_pct: number;
-  interval_target_pct: number;
-  mean_interval_width_kw: number;
-}
-
-interface Card {
-  model_id: string;
-  family: string;
-  trained_at: string;
-  training_cutoff: string | null;
-  n_features: number;
-  metrics: {
-    n_train: number;
-    n_calib: number;
-    train_start: string;
-    train_end: string;
-    conformal_offset_kw: number;
-    backtest: SplitMetrics;
-    live: SplitMetrics | null;
-  };
-  top_features: { feature: string; label: string; importance: number }[];
-  notes: string[];
-  interval_method: string;
-  leakage_control: string;
-}
+import type { ModelCard, SplitMetrics } from '@/lib/types';
 
 export function ModelExplanationDrawer({ siteId }: { siteId: string }) {
   const [open, setOpen] = useState(false);
@@ -61,7 +23,7 @@ export function ModelExplanationDrawer({ siteId }: { siteId: string }) {
 
 function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
   const { data, error, loading, reload } = useAsync(() => api.bms.modelCard(siteId), [siteId]);
-  const card = data?.card as unknown as Card | null;
+  const card: ModelCard | null = data?.card ?? null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
@@ -167,6 +129,14 @@ function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
                     <Row label="Cutoff" value={card.training_cutoff ?? 'none'} />
                     <Row label="Fit rows" value={num(card.metrics.n_train, 0)} />
                     <Row label="Calibration rows" value={num(card.metrics.n_calib, 0)} />
+                    <Row
+                      label="Fit window"
+                      value={`${card.metrics.train_start.slice(0, 10)} → ${card.metrics.train_end.slice(0, 10)}`}
+                    />
+                    <Row
+                      label="Calibration window"
+                      value={`${card.metrics.calib_start.slice(0, 10)} → ${card.metrics.calib_end.slice(0, 10)}`}
+                    />
                     <Row label="Features" value={num(card.n_features, 0)} />
                   </dl>
                 </Section>

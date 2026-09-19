@@ -55,13 +55,13 @@ body {
     @apply truncate text-2xs font-semibold uppercase tracking-[0.13em] text-ink-300;
   }
   .panel-sub {
-    @apply truncate text-2xs normal-case tracking-normal text-ink-500;
+    @apply truncate text-2xs normal-case tracking-normal text-ink-400;
   }
   .panel-body {
     @apply min-w-0 flex-1 p-2.5;
   }
   .label {
-    @apply text-3xs font-medium uppercase tracking-[0.1em] text-ink-500;
+    @apply text-3xs font-medium uppercase tracking-[0.1em] text-ink-400;
   }
   .tabular {
     font-variant-numeric: tabular-nums;

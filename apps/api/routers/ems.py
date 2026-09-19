@@ -6,8 +6,10 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 
+from apps.api.errors import public_detail
+from apps.api.schemas.params import AssetId, ScenarioId
 from apps.api.services import demo_cache
 from apps.api.services.ems import get_ems_service
 from apps.api.services.quality import build_report
@@ -46,16 +48,16 @@ def facilities() -> dict[str, Any]:
 
 @router.get("/portfolio")
 def portfolio(
-    at: datetime | None = None, scenario_id: str = Query("ems_normal_day")
+    at: datetime | None = None, scenario_id: ScenarioId = "ems_normal_day"
 ) -> dict[str, Any]:
     return get_ems_service().portfolio(at=naive_instant(at), scenario_id=scenario_id)
 
 
 @router.get("/network")
 def network(
-    facility_id: str | None = None,
+    facility_id: AssetId = None,
     at: datetime | None = None,
-    scenario_id: str = Query("ems_normal_day"),
+    scenario_id: ScenarioId = "ems_normal_day",
 ) -> dict[str, Any]:
     service = get_ems_service()
     fid = facility_id or service.default_facility_id()
@@ -64,7 +66,7 @@ def network(
             fid, at=naive_instant(at), scenario_id=scenario_id
         )
     except KeyError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=public_detail(exc)) from exc
     ctx = service.context(fid, scenario_id)
     return {
         "facility_id": fid,
@@ -95,9 +97,9 @@ def network(
 
 @router.get("/risk")
 def risk(
-    facility_id: str | None = None,
+    facility_id: AssetId = None,
     at: datetime | None = None,
-    scenario_id: str = Query("ems_normal_day"),
+    scenario_id: ScenarioId = "ems_normal_day",
 ) -> dict[str, Any]:
     service = get_ems_service()
     return service.peak_risk(
@@ -107,9 +109,9 @@ def risk(
 
 @router.post("/optimise")
 def optimise(
-    facility_id: str | None = None,
+    facility_id: AssetId = None,
     at: datetime | None = None,
-    scenario_id: str = Query("ems_ev_surge"),
+    scenario_id: ScenarioId = "ems_ev_surge",
 ) -> dict[str, Any]:
     service = get_ems_service()
     facility = facility_id or service.default_facility_id()
@@ -133,14 +135,14 @@ def optimise(
 
 @router.get("/insights", response_model=list[Insight])
 def insights(
-    facility_id: str | None = None, scenario_id: str = Query("ems_normal_day")
+    facility_id: AssetId = None, scenario_id: ScenarioId = "ems_normal_day"
 ) -> list[Insight]:
     service = get_ems_service()
     return service.insights(facility_id or service.default_facility_id(), scenario_id=scenario_id)
 
 
 @router.get("/data-quality")
-def data_quality(facility_id: str | None = None) -> dict[str, Any]:
+def data_quality(facility_id: AssetId = None) -> dict[str, Any]:
     service = get_ems_service()
     fid = facility_id or service.default_facility_id()
     ctx = service.context(fid)

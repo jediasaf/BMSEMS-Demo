@@ -6,8 +6,10 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 
+from apps.api.errors import public_detail
+from apps.api.schemas.params import AssetId, HorizonHours, RecommendationId, ScenarioId
 from apps.api.services import demo_cache
 from apps.api.services.bms import get_bms_service
 from apps.api.services.quality import build_report
@@ -50,16 +52,16 @@ def sites() -> dict[str, Any]:
 
 @router.get("/overview")
 def overview(
-    site_id: str | None = None,
+    site_id: AssetId = None,
     at: datetime | None = None,
-    scenario_id: str = Query("bms_normal_day"),
+    scenario_id: ScenarioId = "bms_normal_day",
 ) -> dict[str, Any]:
     service = get_bms_service()
     site = site_id or service.default_site_id()
     try:
         ctx = service.context(site, scenario_id)
     except KeyError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=public_detail(exc)) from exc
     kpis: list[KpiValue] = service.kpis(site, at=naive_instant(at), scenario_id=scenario_id)
     timeline = service.timeline(site, scenario_id)
     insights = service.insights(site, scenario_id=scenario_id)
@@ -80,24 +82,20 @@ def overview(
 
 
 @router.get("/timeline")
-def timeline(
-    site_id: str | None = None, scenario_id: str = Query("bms_normal_day")
-) -> dict[str, Any]:
+def timeline(site_id: AssetId = None, scenario_id: ScenarioId = "bms_normal_day") -> dict[str, Any]:
     service = get_bms_service()
     return service.timeline(site_id or service.default_site_id(), scenario_id)
 
 
 @router.get("/insights", response_model=list[Insight])
-def insights(
-    site_id: str | None = None, scenario_id: str = Query("bms_normal_day")
-) -> list[Insight]:
+def insights(site_id: AssetId = None, scenario_id: ScenarioId = "bms_normal_day") -> list[Insight]:
     service = get_bms_service()
     return service.insights(site_id or service.default_site_id(), scenario_id=scenario_id)
 
 
 @router.get("/recommendations", response_model=list[Recommendation])
 def recommendations(
-    site_id: str | None = None, scenario_id: str = Query("bms_normal_day")
+    site_id: AssetId = None, scenario_id: ScenarioId = "bms_normal_day"
 ) -> list[Recommendation]:
     service = get_bms_service()
     return service.recommendations(site_id or service.default_site_id(), scenario_id=scenario_id)
@@ -105,9 +103,9 @@ def recommendations(
 
 @router.post("/recommendations/{recommendation_id}/validate")
 def validate_recommendation(
-    recommendation_id: str,
-    site_id: str | None = None,
-    scenario_id: str = Query("bms_normal_day"),
+    recommendation_id: RecommendationId,
+    site_id: AssetId = None,
+    scenario_id: ScenarioId = "bms_normal_day",
 ) -> dict[str, Any]:
     """Run the safety gate. Nothing is ever written outside a simulator."""
     service = get_bms_service()
@@ -136,9 +134,9 @@ def validate_recommendation(
 
 @router.get("/assets")
 def assets(
-    site_id: str | None = None,
+    site_id: AssetId = None,
     at: datetime | None = None,
-    scenario_id: str = Query("bms_normal_day"),
+    scenario_id: ScenarioId = "bms_normal_day",
 ) -> dict[str, Any]:
     service = get_bms_service()
     site = site_id or service.default_site_id()
@@ -150,9 +148,9 @@ def assets(
 
 @router.get("/control-lab")
 def control_lab(
-    site_id: str | None = None,
-    hours: int = Query(24, ge=4, le=48),
-    scenario_id: str = Query("bms_normal_day"),
+    site_id: AssetId = None,
+    hours: HorizonHours = 24,
+    scenario_id: ScenarioId = "bms_normal_day",
 ) -> dict[str, Any]:
     service = get_bms_service()
     site = site_id or service.default_site_id()
@@ -177,7 +175,7 @@ def control_lab(
 
 
 @router.get("/model-card")
-def model_card(site_id: str | None = None) -> dict[str, Any]:
+def model_card(site_id: AssetId = None) -> dict[str, Any]:
     service = get_bms_service()
     site = site_id or service.default_site_id()
     ctx = service.context(site)
@@ -191,7 +189,7 @@ def model_card(site_id: str | None = None) -> dict[str, Any]:
 
 
 @router.get("/data-quality")
-def data_quality(site_id: str | None = None) -> dict[str, Any]:
+def data_quality(site_id: AssetId = None) -> dict[str, Any]:
     service = get_bms_service()
     site = site_id or service.default_site_id()
     ctx = service.context(site)

@@ -110,6 +110,42 @@ model cannot see it.
 
 ---
 
+### Why CVXPY?
+
+Because both optimisation problems are genuinely convex, and saying so in the
+model is worth more than any solver speed.
+
+The BMS problem is a linear program over a linearised two-node zone model:
+cooling power and setpoint are the decision variables, the comfort band is a
+box with a priced slack, and installed plant capacity is a hard cap. The EMS
+problem is a linear program over flexible load, where "the vehicles still get
+their kilowatt-hours" is a hard equality and "recovery cannot precede
+curtailment" is a cumulative-sum inequality. Neither needs a heuristic.
+
+CVXPY buys three things that matter more than raw performance here:
+
+* **The constraint is readable as the constraint.** `cp.cumsum(r) <= cp.cumsum(e)`
+  is the causality rule, written once. A reviewer can check the model against
+  the physics without reading a solver loop.
+* **Disciplined convex programming rejects a model that is not convex**, at
+  construction. That caught a formulation error for me rather than returning a
+  plausible wrong answer.
+* **Infeasible means infeasible.** When the plant genuinely cannot hold the
+  band, the program says so instead of returning the nearest thing that looks
+  fine. That is why unmet cooling is an explicit priced variable rather than a
+  silent relaxation — the result reports how much cooling it could not deliver.
+
+Both solve in milliseconds on ECOS/OSQP, which is incidental. The reason to
+use a modelling layer is that the model is the thing being reviewed.
+
+**What I gave up:** the true zone model is nonlinear (COP moves with outdoor
+air, and the plant saturates). The optimiser plans against a linearisation and
+is therefore sometimes wrong — which is exactly why its proposal is re-run
+through the nonlinear simulator, and why that simulator is allowed to reject
+it. The EMS answer gets the same treatment from a second load flow.
+
+---
+
 ### Why not connect directly to EcoStruxure?
 
 Because I do not have a customer environment, and inventing one would be the
@@ -321,6 +357,41 @@ unit for the energy counter, so kW is a hypothesis — Wh per 15-minute interval
 — that I validated by checking power density lands in a plausible 3–120 W/m²
 band, excluding the sites that failed rather than rescaling them. Every kW
 series in the product is therefore DERIVED, and the popover says exactly that.
+
+---
+
+### Why does the public demo use cached BOPTEST output?
+
+It does not, and I would correct the premise before answering.
+
+There are three possible states for the zone simulation, and the platform
+always reports which one it is in:
+
+| State | When | What the UI says |
+|---|---|---|
+| Live BOPTEST | `ECOTWIN_BOPTEST_URL` is set and reachable — local Docker mode | `Live BOPTEST engine` |
+| Live RC engine | The hosted deployment, which has no BOPTEST container | `EcoTwin RC engine` |
+| Simulation replay | A live solve failed and a recording for *that same scenario* exists | `SIMULATION REPLAY`, with the original engine named |
+
+The hosted demo runs in the second state: an in-process two-node RC model,
+solved live on every request in about 0.3 s. It is not a recording, and it is
+never labelled BOPTEST. `SimulationResult.engine` carries the engine that
+actually ran and provenance repeats it, so there is no path by which an RC
+result can present itself as a Modelica one.
+
+The third state exists because the two expensive paths — the zone simulation
+and the flexible-load optimisation — are the ones most likely to fail in a
+hosted deployment and the ones an audience is most likely to be looking at
+when they do. When that happens the API serves a recording produced earlier by
+the *same code path*, and it is relabelled before it is served: provenance
+becomes `SIMULATION REPLAY`, the payload carries `served_from: "demo_cache"`,
+and a banner appears. The cache key includes the scenario, so a hot-day
+request can never be answered with a normal-day recording — a miss is a miss
+and the error stands.
+
+So the honest summary is: nothing in the public demo is a cached BOPTEST run,
+because there is no BOPTEST in the public demo. What is cached is a fallback,
+it is produced by real computation, and it announces itself.
 
 ---
 
