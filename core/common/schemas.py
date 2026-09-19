@@ -162,7 +162,11 @@ class AssetNode(BaseModel):
     metrics: dict[str, float] = Field(default_factory=dict)
     units: dict[str, str] = Field(default_factory=dict)
     status: Severity = Severity.INFO
-    source_type: SourceType = SourceType.MEASURED
+    #: Where this node's metrics come from. A full provenance record rather
+    #: than a bare category, so the tree answers the same questions as every
+    #: other value on screen -- and so a node cannot claim MEASURED while
+    #: displaying a figure that was derived.
+    provenance: Provenance
     has_anomaly: bool = False
     detail: str | None = None
     children: list[AssetNode] = Field(default_factory=list)

@@ -27,20 +27,80 @@ def _model_count() -> int:
     return len(list(paths.MODELS_DIR.glob("*.joblib")))
 
 
+def _pandapower_state() -> tuple[str, str | None]:
+    """Solve the default facility's network, rather than assume it solves.
+
+    A load-flow model that imports fine and diverges on contact is exactly the
+    failure a health check exists to find before an audience does.
+    """
+    try:
+        from apps.api.services.ems import get_ems_service
+
+        ems = get_ems_service()
+        state, _split, _stamp = ems.network_state(ems.default_facility_id())
+    except Exception as exc:  # pragma: no cover - reported, never raised
+        return "failed", str(exc)
+    return ("ok", None) if state.converged else ("degraded", "load flow did not converge")
+
+
+def _boptest_state(settings: Settings) -> str:
+    """live, cached, or local -- and never a word the deployment cannot back up.
+
+    "cached" means a recorded BOPTEST run is being replayed. With no such
+    recording the honest answer is "local": an in-process RC model, labelled
+    with its own engine everywhere it appears.
+    """
+    engine = get_simulation_engine(prefer_boptest=bool(settings.boptest_url))
+    if engine.engine is SimulationEngine.BOPTEST:
+        return "live"
+    if engine.engine is SimulationEngine.REPLAY:
+        return "cached"
+    return "local"
+
+
 @router.get("/health", response_model=HealthResponse)
+@router.get("/api/health", response_model=HealthResponse, include_in_schema=False)
 def health(settings: Settings = Depends(get_settings)) -> HealthResponse:
     building = get_building_adapter()
     power = get_power_adapter()
     engine = get_simulation_engine(prefer_boptest=bool(settings.boptest_url))
     models = _model_count()
+    network_state, network_error = _pandapower_state()
+    real_data = building.data_mode is DataMode.REAL_DATA
+
     checks = {
         "processed_data": paths.LOAD_PARQUET.exists(),
         "selection": paths.SELECTION_JSON.exists(),
         "models": models > 0,
         "boptest_configured": bool(settings.boptest_url),
         "boptest_reachable": engine.engine is SimulationEngine.BOPTEST,
+        "load_flow_converges": network_state == "ok",
     }
-    degraded = building.data_mode is DataMode.SAMPLE_FIXTURE or models == 0
+    components = {
+        "api": "ok",
+        "data": "ok" if real_data else "fixture",
+        "models": "ok" if models else "missing",
+        "pandapower": network_state,
+        "boptest": _boptest_state(settings),
+    }
+
+    notes: list[str] = []
+    if not real_data:
+        notes.append(
+            "No source files present; values are SAMPLE FIXTURE and are synthetic. "
+            "Run scripts/download_data.sh and scripts/prepare_data.py."
+        )
+    if not models:
+        notes.append("No trained models; expected load falls back to a seasonal-naive reference.")
+    if components["boptest"] == "local":
+        notes.append(
+            "BOPTEST is not reachable, so zone simulation uses the in-process EcoTwin "
+            "RC engine. Results are labelled with the engine that produced them."
+        )
+    if network_error:
+        notes.append(f"pandapower: {network_error}")
+
+    degraded = not real_data or models == 0 or network_state != "ok"
     return HealthResponse(
         status="degraded" if degraded else "ok",
         version=settings.version,
@@ -50,7 +110,9 @@ def health(settings: Settings = Depends(get_settings)) -> HealthResponse:
         simulation_engine=engine.engine.value,
         models_loaded=models,
         demo_cache=(paths.DEMO_DIR / "index.json").exists(),
+        components=components,
         checks=checks,
+        notes=notes,
     )
 
 
