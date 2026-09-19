@@ -169,6 +169,39 @@ def test_the_optimiser_reports_what_it_assumed() -> None:
     assert result.constraints
 
 
+def test_cooling_never_exceeds_installed_capacity() -> None:
+    """The plant is finite, and a plan that needs more than it has is a wish.
+
+    Driven at 45 C with a small chiller, an unconstrained model would happily
+    plan its way to a comfortable zone. The constrained one cannot, and says
+    so through comfort slack instead of through an impossible power profile.
+    """
+    params = ZoneThermalParams(floor_area_m2=1200.0, cooling_capacity_w_m2=15.0)
+    problem = _bms_problem(
+        params=params,
+        outdoor_temp_c=np.full(HORIZON, 45.0),
+        occupancy=np.ones(HORIZON),
+    )
+    result = SetpointOptimiser().solve(problem)
+    assert result.solved
+    capacity_kw_e = params.cooling_capacity_w / 1000.0 / 1.2  # 1.2 is the COP floor
+    assert max(result.predicted_hvac_kw) <= capacity_kw_e + 1e-6
+    assert result.comfort_slack_kh > 0, "an undersized plant should report the shortfall"
+
+
+def test_the_optimiser_models_the_structure_not_just_the_air() -> None:
+    """A single-node model would be blind to thermal mass.
+
+    Starting the structure 6 K colder than the air is a real store of cooling.
+    An optimiser that only knows the air node cannot see it and plans the same
+    trajectory either way.
+    """
+    warm_structure = SetpointOptimiser().solve(_bms_problem(initial_mass_temp_c=29.0))
+    cold_structure = SetpointOptimiser().solve(_bms_problem(initial_mass_temp_c=17.0))
+    assert warm_structure.solved and cold_structure.solved
+    assert sum(warm_structure.predicted_hvac_kw) > sum(cold_structure.predicted_hvac_kw)
+
+
 # -- validation gate -------------------------------------------------------
 def _recommendation(point: str, current: float, proposed: float) -> Recommendation:
     return Recommendation(
@@ -223,3 +256,51 @@ def test_real_actuation_is_always_refused() -> None:
     assert not outcome.valid
     assert outcome.mode == "BLOCKED"
     assert any("never will be" in m for m in outcome.messages)
+
+
+# -- the simulator's veto --------------------------------------------------
+def _verdict(**overrides):
+    from apps.api.services.bms import acceptance_verdict
+
+    base = {"energy_kwh": 100.0, "peak_kw": 10.0, "comfort_violation_kh": 0.0}
+    ai = {"energy_kwh": 90.0, "peak_kw": 9.0, "comfort_violation_kh": 0.0}
+    ai.update(overrides)
+    delta = {k: ai[k] - base[k] for k in base}
+    delta_pct = {k: 100.0 * (ai[k] - base[k]) / base[k] if base[k] else None for k in base}
+    return acceptance_verdict(True, base, ai, delta, delta_pct)
+
+
+def test_a_genuine_improvement_is_accepted() -> None:
+    assert _verdict()["accepted"]
+
+
+def test_a_proposal_that_uses_more_energy_is_rejected() -> None:
+    verdict = _verdict(energy_kwh=101.0)
+    assert not verdict["accepted"]
+    assert any("energy" in reason for reason in verdict["failed"])
+    assert "no saving is claimed" in verdict["reason"]
+
+
+def test_a_proposal_that_raises_the_peak_is_rejected() -> None:
+    """The failure mode that actually occurred: energy down, peak far up."""
+    verdict = _verdict(energy_kwh=99.0, peak_kw=15.0)
+    assert not verdict["accepted"]
+    assert any("peak" in reason for reason in verdict["failed"])
+
+
+def test_a_proposal_that_costs_comfort_is_rejected() -> None:
+    verdict = _verdict(comfort_violation_kh=3.0)
+    assert not verdict["accepted"]
+    assert any("comfort" in reason for reason in verdict["failed"])
+
+
+def test_an_unsolved_optimisation_is_never_accepted() -> None:
+    from apps.api.services.bms import acceptance_verdict
+
+    kpis = {"energy_kwh": 100.0, "peak_kw": 10.0, "comfort_violation_kh": 0.0}
+    verdict = acceptance_verdict(False, kpis, kpis, {"energy_kwh": 0.0}, {"peak_kw": 0.0})
+    assert not verdict["accepted"]
+
+
+def test_the_gate_never_claims_it_actuated_anything() -> None:
+    assert "no code path to a real actuator" in _verdict()["note"]

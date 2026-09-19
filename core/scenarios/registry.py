@@ -23,7 +23,11 @@ SEED_BASE = 20240312
 
 @dataclass(frozen=True)
 class ScenarioInjection:
-    """What a scenario did, in numbers the UI can show verbatim."""
+    """What a scenario did, in numbers the UI can show verbatim.
+
+    Every field is computed from the frame the injection was applied to, so
+    the demo can state its own disturbance without anyone reading the code.
+    """
 
     scenario_id: str
     label: str
@@ -34,6 +38,15 @@ class ScenarioInjection:
     total_injection: float
     affected_steps: int
     seed: int
+    #: The asset the disturbance was applied to. A scenario is seeded per
+    #: asset, so naming it here is what makes the seed reproducible.
+    affected_asset: str = ""
+    #: First and last instant the injection is non-zero, ISO-8601, naive local
+    #: clock (the source publishes no offset).
+    injection_start: str | None = None
+    injection_end: str | None = None
+    #: Wall-clock extent of the injected disturbance.
+    duration_hours: float = 0.0
     detail: dict[str, float] = field(default_factory=dict)
 
 
@@ -48,6 +61,18 @@ class Scenario:
     teaches: str
     is_baseline: bool = False
     parameters: dict[str, float] = field(default_factory=dict)
+    #: The one scenario per module the guided interview demo runs. Exactly one
+    #: per module, asserted in the tests.
+    is_flagship: bool = False
+    #: Which measured channel the disturbance is added to.
+    injected_parameter: str = ""
+    #: The magnitude, in words, of what `parameters` says in numbers.
+    magnitude: str = ""
+    #: How long the disturbance lasts, in words.
+    duration: str = ""
+    #: The mechanism the scenario is expected to trigger. Deliberately a
+    #: mechanism and not a number: the number is whatever the models return.
+    expected_impact: str = ""
 
 
 BMS_SCENARIOS: tuple[Scenario, ...] = (
@@ -62,6 +87,13 @@ BMS_SCENARIOS: tuple[Scenario, ...] = (
         ),
         teaches="What the model expects when the building behaves.",
         is_baseline=True,
+        injected_parameter="none",
+        magnitude="none",
+        duration="none",
+        expected_impact=(
+            "No finding above the materiality floor. The reference case exists "
+            "so an empty insight feed can be shown to be correct rather than broken."
+        ),
     ),
     Scenario(
         scenario_id="bms_hot_day",
@@ -79,6 +111,20 @@ BMS_SCENARIOS: tuple[Scenario, ...] = (
             "deviation tracks degree-hours rather than the occupancy schedule."
         ),
         parameters={"temperature_offset_c": 7.0, "afternoon_emphasis_c": 3.0},
+        is_flagship=True,
+        injected_parameter=(
+            "outdoor_temp_c, and load_kw through the site's fitted cooling sensitivity"
+        ),
+        magnitude="+7.0 K baseline offset, +3.0 K further at 15:00",
+        duration="the whole replay window, weighted to each afternoon",
+        expected_impact=(
+            "The forecaster is given the real weather, so the extra cooling load "
+            "lands in the residual. The robust z-score crosses its threshold, an "
+            "over-consumption insight is raised with its possible causes, and a "
+            "constrained setpoint relaxation is proposed. The saving is whatever "
+            "the zone simulator returns for that setpoint -- it is not asserted "
+            "here and it is not asserted in the UI until the Control Lab has run."
+        ),
     ),
     Scenario(
         scenario_id="bms_sensor_drift",
@@ -95,6 +141,15 @@ BMS_SCENARIOS: tuple[Scenario, ...] = (
             "over-consumption, and why a materiality floor matters."
         ),
         parameters={"drift_pct_per_day": 9.0},
+        injected_parameter="load_kw",
+        magnitude="+9% of the measured load per day, accumulating",
+        duration="the whole replay window, growing linearly from zero",
+        expected_impact=(
+            "A one-sided residual that grows rather than tracking the occupancy "
+            "schedule, classified SENSOR_DRIFT rather than over-consumption. No "
+            "control action is proposed, because the right answer is to inspect "
+            "the instrument."
+        ),
     ),
 )
 
@@ -110,6 +165,13 @@ EMS_SCENARIOS: tuple[Scenario, ...] = (
         ),
         teaches="Normal transformer loading and the headroom actually available.",
         is_baseline=True,
+        injected_parameter="none",
+        magnitude="none",
+        duration="none",
+        expected_impact=(
+            "A converged load flow with every bus inside the EN 50160 band and "
+            "the transformer inside nameplate. No violation, and none invented."
+        ),
     ),
     Scenario(
         scenario_id="ems_peak_demand",
@@ -129,6 +191,14 @@ EMS_SCENARIOS: tuple[Scenario, ...] = (
             "transformer was never sized for."
         ),
         parameters={"uplift_pct": 38.0, "centre_hour": 15.0, "width_hours": 3.5},
+        injected_parameter="facility demand, as an additive uplift on every feeder",
+        magnitude="+38% of measured demand at the 15:00 centre of the bell",
+        duration="roughly 12:00-18:00, a 3.5 h Gaussian width",
+        expected_impact=(
+            "Transformer loading rises but stays inside nameplate, because the "
+            "rating was derived from the site's own P99 with headroom. The "
+            "instructive result is the one where nothing breaks."
+        ),
     ),
     Scenario(
         scenario_id="ems_ev_surge",
@@ -147,6 +217,18 @@ EMS_SCENARIOS: tuple[Scenario, ...] = (
             "or the optimiser charges vehicles that have not arrived."
         ),
         parameters={"charger_kw": 120.0, "start_hour": 13.0, "duration_hours": 4.0},
+        is_flagship=True,
+        injected_parameter="the flexible feeder (F4), as additive EV charging load",
+        magnitude="120 kW nameplate, ramping over 30 min and tapering over 45 min",
+        duration="13:00-17:00 each day of the window",
+        expected_impact=(
+            "The load flow puts the transformer past 100% of its calibrated "
+            "capacity and pulls the LV bus down. The linear program defers EV "
+            "charging into the evening -- conserving its energy as a hard "
+            "equality and never recovering before it curtailed -- and buys HVAC "
+            "flexibility within a comfort budget. A second, independent load "
+            "flow reports the result."
+        ),
     ),
 )
 
@@ -183,6 +265,22 @@ def _hour_of_day(index: pd.DatetimeIndex) -> np.ndarray:
 
 def _bell(hours: np.ndarray, centre: float, width: float) -> np.ndarray:
     return np.exp(-0.5 * ((hours - centre) / max(width, 1e-6)) ** 2)
+
+
+def _extent(index: pd.DatetimeIndex, injection: np.ndarray) -> tuple[str | None, str | None, float]:
+    """First and last instant the injection is live, and how many hours it runs.
+
+    The UI states the disturbance's own extent rather than the replay window,
+    so it is read off the series instead of off the parameters.
+    """
+    live = np.flatnonzero(~np.isclose(injection, 0.0))
+    if live.size == 0:
+        return None, None, 0.0
+    # Hours the injection is actually non-zero, not the span between its first
+    # and last instant: a session that repeats on each day of the window would
+    # otherwise report the whole window as its duration.
+    hours = live.size * 0.25
+    return index[int(live[0])].isoformat(), index[int(live[-1])].isoformat(), round(hours, 2)
 
 
 # --------------------------------------------------------------------------
@@ -251,6 +349,7 @@ def apply_bms_scenario(
         raise KeyError(f"no BMS handler for {scenario_id!r}")
 
     injection = out["injection_kw"].to_numpy()
+    first, last, hours = _extent(out.index, injection)
     return out, ScenarioInjection(
         scenario_id=scenario_id,
         label=scenario.name,
@@ -261,6 +360,10 @@ def apply_bms_scenario(
         total_injection=round(float(np.nansum(injection)) / 4.0, 3),
         affected_steps=int(np.count_nonzero(~np.isclose(injection, 0.0))),
         seed=seed,
+        affected_asset=asset_id,
+        injection_start=first,
+        injection_end=last,
+        duration_hours=hours,
         detail={k: round(v, 4) for k, v in detail.items()},
     )
 
@@ -327,6 +430,7 @@ def apply_ems_scenario(
         raise KeyError(f"no EMS handler for {scenario_id!r}")
 
     injection = out["injection_kw"].to_numpy()
+    first, last, hours = _extent(out.index, injection)
     return out, ScenarioInjection(
         scenario_id=scenario_id,
         label=scenario.name,
@@ -337,5 +441,9 @@ def apply_ems_scenario(
         total_injection=round(float(np.nansum(injection)) / 4.0, 3),
         affected_steps=int(np.count_nonzero(~np.isclose(injection, 0.0))),
         seed=seed,
+        affected_asset=asset_id,
+        injection_start=first,
+        injection_end=last,
+        duration_hours=hours,
         detail={k: round(float(v), 4) for k, v in detail.items()},
     )

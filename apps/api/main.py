@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from apps.api.config import get_settings
-from apps.api.routers import bms, crossmodule, ems, system
+from apps.api.routers import bms, crossmodule, ems, interview, system
 
 settings = get_settings()
 logging.basicConfig(
@@ -103,6 +103,7 @@ app.include_router(system.router)
 app.include_router(bms.router)
 app.include_router(ems.router)
 app.include_router(crossmodule.router)
+app.include_router(interview.router)
 
 
 @app.get("/", tags=["system"])

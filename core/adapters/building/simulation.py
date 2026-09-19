@@ -251,6 +251,23 @@ class BuildingSimulationEngine(ABC):
 # --------------------------------------------------------------------------
 # RC engine
 # --------------------------------------------------------------------------
+def solar_shape(stamp: datetime) -> float:
+    """Daylight shape, as a clipped sinusoid over the solar day.
+
+    Shared by the simulator and by the optimiser's linearisation: two
+    different solar profiles would mean the optimiser was planning against a
+    building the simulator is not running.
+    """
+    hour = stamp.hour + stamp.minute / 60.0
+    return float(np.clip(np.sin(np.pi * (hour - 6.5) / 11.0), 0.0, 1.0))
+
+
+def solar_gain_w(stamp: datetime, params: ZoneThermalParams) -> float:
+    """Solar gain at an instant. No irradiance series is published for these
+    sites, so this is the honest minimum and is reported as an assumption."""
+    return params.solar_gain_w_m2 * params.floor_area_m2 * solar_shape(stamp)
+
+
 def cop_cooling(outdoor_c: float, params: ZoneThermalParams) -> float:
     """Chiller COP falls as it rejects heat into a hotter ambient."""
     return float(
@@ -311,9 +328,7 @@ class RcThermalEngine(BuildingSimulationEngine):
             # Solar gain follows a clipped sinusoid over daylight hours; without
             # an irradiance series this is the honest minimum, and it is
             # reported in `parameters` as an assumption.
-            hour = stamp.hour + stamp.minute / 60.0
-            solar_shape = float(np.clip(np.sin(np.pi * (hour - 6.5) / 11.0), 0.0, 1.0))
-            q_solar = params.solar_gain_w_m2 * params.floor_area_m2 * solar_shape
+            q_solar = solar_gain_w(stamp, params)
 
             ua_total = params.ua_total(occupancy)
             # Free response of the zone over one step, i.e. what the air node

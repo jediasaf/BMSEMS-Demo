@@ -43,6 +43,22 @@ def has_models() -> bool:
     return paths.MODELS_DIR.exists() and any(paths.MODELS_DIR.glob("*.joblib"))
 
 
+@pytest.fixture(scope="session")
+def client():
+    """One in-process app for the whole session.
+
+    Start-up warms the service caches, which takes a few seconds against the
+    real dataset; paying that once per session rather than once per module
+    keeps the suite honest about what it is measuring.
+    """
+    from fastapi.testclient import TestClient
+
+    from apps.api.main import app
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+
 requires_real_data = pytest.mark.skipif(
     not processed_data_available(),
     reason="processed dataset not present; run scripts/prepare_data.py",

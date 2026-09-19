@@ -24,6 +24,7 @@ from core.adapters.building.simulation import (
     SimulationResult,
     ZoneThermalParams,
     get_simulation_engine,
+    solar_gain_w,
 )
 from core.adapters.power.pandapower_adapter import disaggregate, estimate_hvac_sensitivity
 from core.common.schemas import (
@@ -44,6 +45,14 @@ from core.scenarios import ScenarioInjection, apply_bms_scenario, get_scenario
 log = logging.getLogger(__name__)
 
 #: Nominal occupied cooling setpoint the building is assumed to run today.
+#: How much worse than the baseline a re-simulated proposal may come back and
+#: still be offered. Energy is the headline claim, so it gets no allowance
+#: beyond solver noise; comfort gets a small one because the optimiser is
+#: allowed to sit at the edge of the band.
+ENERGY_TOLERANCE_KWH = 0.0
+PEAK_TOLERANCE_PCT = 1.0
+COMFORT_TOLERANCE_KH = 0.25
+
 BASELINE_OCCUPIED_SETPOINT_C = 23.0
 BASELINE_UNOCCUPIED_SETPOINT_C = 27.0
 #: The Control Lab models the building as one conditioned thermal zone. The
@@ -72,6 +81,73 @@ class BmsContext:
     @property
     def window(self) -> pd.DataFrame:
         return self.frame.loc[self.window_start : self.window_end]
+
+
+def acceptance_verdict(
+    solved: bool,
+    base_kpis: dict[str, float],
+    ai_kpis: dict[str, float],
+    delta: dict[str, float],
+    delta_pct: dict[str, float | None],
+) -> dict[str, Any]:
+    """The simulator's verdict on the optimiser's proposal.
+
+    "Simulate before you actuate" is only a safety property if the
+    simulation can say no. The optimiser plans against a linear model of
+    the zone; where that model is wrong, the nonlinear re-simulation is
+    what finds out, and a proposal that comes back worse than doing
+    nothing must not be presented as an improvement.
+    """
+    energy = delta.get("energy_kwh", 0.0)
+    peak_pct = delta_pct.get("peak_kw")
+    comfort_added = ai_kpis.get("comfort_violation_kh", 0.0) - base_kpis.get(
+        "comfort_violation_kh", 0.0
+    )
+    criteria = [
+        {
+            "criterion": "the optimisation converged",
+            "passed": bool(solved),
+            "detail": "a proposal exists to judge" if solved else "no proposal to judge",
+        },
+        {
+            "criterion": "energy is not worse than the baseline",
+            "passed": energy <= ENERGY_TOLERANCE_KWH,
+            "detail": f"{energy:+.2f} kWh over the horizon",
+        },
+        {
+            "criterion": f"peak is not worse by more than {PEAK_TOLERANCE_PCT:.0f}%",
+            "passed": peak_pct is None or peak_pct <= PEAK_TOLERANCE_PCT,
+            "detail": ("no baseline peak" if peak_pct is None else f"{peak_pct:+.2f}%"),
+        },
+        {
+            "criterion": (
+                f"comfort loss stays within {COMFORT_TOLERANCE_KH:.2f} K·h of the baseline"
+            ),
+            "passed": comfort_added <= COMFORT_TOLERANCE_KH,
+            "detail": f"{comfort_added:+.3f} K·h added",
+        },
+    ]
+    failed = [c["criterion"] for c in criteria if not c["passed"]]
+    return {
+        "accepted": not failed,
+        "verdict": "accepted" if not failed else "rejected",
+        "criteria": criteria,
+        "failed": failed,
+        "reason": (
+            "The re-simulated proposal improves on the baseline within the "
+            "comfort allowance, so it stands as an advisory recommendation."
+            if not failed
+            else (
+                "The simulator rejected the proposal: "
+                + "; ".join(failed)
+                + ". The baseline schedule stands, and no saving is claimed."
+            )
+        ),
+        "note": (
+            "Advisory only. Nothing here is written to a controller; the "
+            "prototype has no code path to a real actuator."
+        ),
+    }
 
 
 class BmsService:
@@ -743,14 +819,20 @@ class BmsService:
             prefer_boptest=prefer_boptest,
         )
 
+        params = self.zone_params(site_id)
         problem = SetpointProblem(
             outdoor_temp_c=inputs["outdoor"],
             occupancy=inputs["occupancy"],
             baseline_setpoint_c=baseline_setpoints,
             baseline_zone_temp_c=np.asarray(baseline.zone_temp_c),
-            params=self.zone_params(site_id),
+            params=params,
             comfort=ComfortBand(),
             initial_zone_temp_c=baseline.zone_temp_c[0],
+            initial_mass_temp_c=(baseline.mass_temp_c[0] if baseline.mass_temp_c else None),
+            # The same solar profile the simulator runs, from the same helper.
+            solar_gain_w=np.array(
+                [solar_gain_w(ts.to_pydatetime(), params) for ts in inputs["index"]]
+            ),
         )
         optimisation = SetpointOptimiser().solve(problem)
         optimised_result = self.simulate(
@@ -775,6 +857,8 @@ class BmsService:
             for key in base_kpis
             if key in ai_kpis
         }
+
+        acceptance = self._acceptance(optimisation.solved, base_kpis, ai_kpis, delta, delta_pct)
 
         engine_provenance = simulated(
             baseline.engine,
@@ -821,6 +905,7 @@ class BmsService:
                 "max_step_change_k": optimisation.max_step_change_k,
                 "comfort_slack_kh": optimisation.comfort_slack_kh,
             },
+            "acceptance": acceptance,
             "parameters": baseline.parameters,
             "provenance": engine_provenance.model_dump(mode="json"),
             "comparison_note": (
@@ -829,6 +914,16 @@ class BmsService:
                 "trajectory; every KPI above is the simulator's answer."
             ),
         }
+
+    def _acceptance(
+        self,
+        solved: bool,
+        base_kpis: dict[str, float],
+        ai_kpis: dict[str, float],
+        delta: dict[str, float],
+        delta_pct: dict[str, float | None],
+    ) -> dict[str, Any]:
+        return acceptance_verdict(solved, base_kpis, ai_kpis, delta, delta_pct)
 
     # -- recommendations --------------------------------------------------
     def recommendations(

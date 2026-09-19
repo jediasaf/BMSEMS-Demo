@@ -7,19 +7,11 @@ that the whole stack answers, with provenance attached to every value.
 from __future__ import annotations
 
 import pytest
-from fastapi.testclient import TestClient
 
-from apps.api.main import app
 from core.enums import SourceType
 from tests.conftest import requires_models, requires_real_data
 
 VALID_BADGES = {t.value for t in SourceType}
-
-
-@pytest.fixture(scope="module")
-def client():
-    with TestClient(app) as test_client:
-        yield test_client
 
 
 def _check_provenance(provenance: dict) -> None:
