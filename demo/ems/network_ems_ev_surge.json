@@ -416,6 +416,26 @@
       }
     },
     "served_by": "model",
-    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest."
+    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest.",
+    "injection": {
+      "scenario_id": "ems_ev_surge",
+      "label": "EV Charging Surge",
+      "description": "A block of EV charging load is added to the flexible feeder during the afternoon. It is additive: the measured site demand is untouched and both series are charted.",
+      "metric": "load_kw",
+      "unit": "kW",
+      "peak_injection": 126.751,
+      "total_injection": 1214.9,
+      "affected_steps": 45,
+      "seed": 20288320,
+      "affected_asset": "227",
+      "injection_start": "2017-08-24T13:15:00",
+      "injection_end": "2017-08-26T16:45:00",
+      "duration_hours": 11.25,
+      "detail": {
+        "charger_kw": 120.0,
+        "start_hour": 13.0,
+        "duration_hours": 4.0
+      }
+    }
   }
 }

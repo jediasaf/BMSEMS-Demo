@@ -12,7 +12,7 @@
     "series": [
       {
         "series_id": "actual",
-        "label": "Measured load",
+        "label": "Metered load",
         "unit": "kW",
         "timestamps": [
           "2017-08-24 00:00:00",
@@ -3890,7 +3890,7 @@
           "label": "Normal miss for this asset (MAD)",
           "contribution": 1.448,
           "direction": "flat",
-          "detail": "rolling 3-day median absolute deviation"
+          "detail": "reference-period, hour-of-day conditioned, at 01:45"
         }
       ],
       "linked_recommendation_id": null

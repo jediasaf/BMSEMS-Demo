@@ -416,6 +416,25 @@
       }
     },
     "served_by": "model",
-    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest."
+    "gate_reason": "Model beats the lag_96 baseline by 3.4% on backtest.",
+    "injection": {
+      "scenario_id": "ems_peak_demand",
+      "label": "Peak Demand",
+      "description": "A broad afternoon uplift applied to the site's demand, representing the coincidence of cooling load, occupancy and process demand that produces the monthly maximum.",
+      "metric": "load_kw",
+      "unit": "kW",
+      "peak_injection": 28.714,
+      "total_injection": 687.494,
+      "affected_steps": 289,
+      "seed": 20299123,
+      "affected_asset": "227",
+      "injection_start": "2017-08-24T00:00:00",
+      "injection_end": "2017-08-27T00:00:00",
+      "duration_hours": 72.25,
+      "detail": {
+        "uplift_pct": 38.0,
+        "centre_hour": 15.0
+      }
+    }
   }
 }

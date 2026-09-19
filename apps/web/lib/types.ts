@@ -314,6 +314,11 @@ export interface ControlLabResult {
     comfort_slack_kh: number;
   };
   acceptance: AcceptanceVerdict;
+  /** 'demo_cache' when the live computation was unavailable and a recording
+   *  was served instead. Always accompanied by `replay_note`. */
+  served_from?: 'live' | 'demo_cache';
+  replay_note?: string;
+  recorded_at?: string | null;
   parameters: Record<string, unknown>;
   provenance: Provenance;
   comparison_note: string;
@@ -422,7 +427,13 @@ export interface RiskResponse {
   gate_reason: string;
 }
 
-export interface OptimiseResponse {
+export interface ReplayMeta {
+  served_from?: 'live' | 'demo_cache';
+  replay_note?: string;
+  recorded_at?: string | null;
+}
+
+export interface OptimiseResponse extends ReplayMeta {
   facility_id: string;
   scenario_id: string;
   risk: RiskResponse;

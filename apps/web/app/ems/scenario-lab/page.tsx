@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { TimeSeriesChart, type ChartSeriesConfig } from '@/components/TimeSeriesChart';
 import { TransitionStat } from '@/components/BeforeAfterPanel';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
+import { ReplayNotice } from '@/components/ReplayNotice';
 import {
   Button,
   EmptyNote,
@@ -295,6 +296,9 @@ export default function ScenarioLabPage() {
           )}
 
           {risk.error && <ErrorNote message={risk.error} onRetry={risk.reload} />}
+          {optimisation?.served_from === 'demo_cache' && (
+            <ReplayNotice note={optimisation.replay_note} recordedAt={optimisation.recorded_at} />
+          )}
           {optimiseError && <ErrorNote message={optimiseError} onRetry={runOptimisation} />}
           {!risk.data && risk.loading && <Skeleton className="h-40" />}
 
