@@ -12,16 +12,16 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from apps.api.services.timeparse import naive_instant
 from apps.api.services.expected import ExpectedLoadService, ExpectedSeries
+from apps.api.services.timeparse import naive_instant
 from core.adapters.building import BuildingSourceAdapter, get_building_adapter
 from core.adapters.building.power_laws import demo_window
 from core.adapters.building.simulation import (
+    STEPS_PER_HOUR,
     ComfortBand,
     RcThermalEngine,
     SimulationRequest,
     SimulationResult,
-    STEPS_PER_HOUR,
     ZoneThermalParams,
     get_simulation_engine,
 )
@@ -456,11 +456,7 @@ class BmsService:
             max_insights=400,
         )
         end = pd.Timestamp(until) if until is not None else ctx.window_end
-        inside = [
-            i
-            for i in found
-            if ctx.window_start <= pd.Timestamp(i.timestamp) <= end
-        ]
+        inside = [i for i in found if ctx.window_start <= pd.Timestamp(i.timestamp) <= end]
         inside.sort(key=lambda i: pd.Timestamp(i.timestamp))
         return inside
 
@@ -557,9 +553,11 @@ class BmsService:
             metrics={
                 "load_kw": round(site_load, 2),
                 "floor_area_m2": area,
-                "outdoor_temp_c": round(float(latest.get("outdoor_temp_c", float("nan"))), 2)
-                if latest is not None
-                else 0.0,
+                "outdoor_temp_c": (
+                    round(float(latest.get("outdoor_temp_c", float("nan"))), 2)
+                    if latest is not None
+                    else 0.0
+                ),
             },
             units={"load_kw": "kW", "floor_area_m2": "m²", "outdoor_temp_c": "°C"},
             source_type=SourceType.MEASURED,
@@ -724,9 +722,7 @@ class BmsService:
         scenario_id: str = "bms_normal_day",
     ) -> dict[str, Any]:
         """Baseline vs AI control, both scored by the same simulator."""
-        inputs = self.control_lab_inputs(
-            site_id, start=start, hours=hours, scenario_id=scenario_id
-        )
+        inputs = self.control_lab_inputs(site_id, start=start, hours=hours, scenario_id=scenario_id)
         baseline_setpoints = self.baseline_setpoints(inputs["occupancy"])
         baseline = self.simulate(
             site_id,
@@ -760,11 +756,11 @@ class BmsService:
             key: round(ai_kpis[key] - base_kpis[key], 4) for key in base_kpis if key in ai_kpis
         }
         delta_pct = {
-            key: round(
-                100.0 * (ai_kpis[key] - base_kpis[key]) / base_kpis[key], 2
+            key: (
+                round(100.0 * (ai_kpis[key] - base_kpis[key]) / base_kpis[key], 2)
+                if abs(base_kpis[key]) > 1e-9
+                else None
             )
-            if abs(base_kpis[key]) > 1e-9
-            else None
             for key in base_kpis
             if key in ai_kpis
         }
@@ -785,7 +781,7 @@ class BmsService:
             "engine": baseline.engine.value,
             "engine_label": baseline.engine_version,
             "is_boptest": baseline.engine is SimulationEngine.BOPTEST,
-            "timestamps": [ts for ts in baseline.timestamps],
+            "timestamps": list(baseline.timestamps),
             "baseline": {
                 "label": "Baseline schedule",
                 "kpis": base_kpis,
@@ -865,9 +861,7 @@ class BmsService:
             # excess and the building is not about to fill up.
             if insight.deviation is None or insight.deviation <= 0:
                 continue
-            proposed = BASELINE_OCCUPIED_SETPOINT_C + (
-                1.0 if occupancy_change <= 5.0 else 0.5
-            )
+            proposed = BASELINE_OCCUPIED_SETPOINT_C + (1.0 if occupancy_change <= 5.0 else 0.5)
             factors = [
                 FeatureContribution(
                     feature="occupancy_proxy",
@@ -880,11 +874,9 @@ class BmsService:
                     feature="outdoor_temp_c",
                     label="Outdoor air temperature",
                     contribution=round(outdoor_trend, 2),
-                    direction="up"
-                    if outdoor_trend > 0.5
-                    else "down"
-                    if outdoor_trend < -0.5
-                    else "flat",
+                    direction=(
+                        "up" if outdoor_trend > 0.5 else "down" if outdoor_trend < -0.5 else "flat"
+                    ),
                     detail=f"{outdoor_now:.1f} °C, {outdoor_trend:+.1f} K over 6 h",
                 ),
                 FeatureContribution(
@@ -906,9 +898,10 @@ class BmsService:
                 ),
             ]
 
-            recommendation_id = "rec-" + hashlib.sha1(
-                f"{site_id}|{insight.insight_id}|setpoint".encode()
-            ).hexdigest()[:10]
+            recommendation_id = (
+                "rec-"
+                + hashlib.sha1(f"{site_id}|{insight.insight_id}|setpoint".encode()).hexdigest()[:10]
+            )
             out.append(
                 Recommendation(
                     recommendation_id=recommendation_id,
@@ -964,9 +957,7 @@ class BmsService:
                                 "to obtain simulated energy, peak and comfort effects"
                             ),
                         ),
-                        basis=(
-                            "No number is claimed until the simulator has run both cases."
-                        ),
+                        basis=("No number is claimed until the simulator has run both cases."),
                     ),
                     simulatable=True,
                     source_insight_id=insight.insight_id,

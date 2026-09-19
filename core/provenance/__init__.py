@@ -4,12 +4,12 @@ from core.provenance.model import (
     Provenance,
     ProvenancedSeries,
     ProvenancedValue,
-    measured,
     derived,
+    injected,
+    measured,
+    optimised,
     predicted,
     simulated,
-    optimised,
-    injected,
 )
 from core.provenance.sources import SOURCES, SourceDescriptor, source
 

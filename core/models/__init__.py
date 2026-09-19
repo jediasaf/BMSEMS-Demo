@@ -3,8 +3,8 @@
 from core.models.anomaly import AnomalyConfig, ResidualAnomalyDetector, ResidualStats
 from core.models.features import FEATURE_SPEC, FeatureBuilder, build_features
 from core.models.forecast import (
-    ForecastModel,
     ForecastMetrics,
+    ForecastModel,
     LoadForecaster,
     load_forecaster,
 )

@@ -33,8 +33,8 @@ MIN_LAG_STEPS = STEPS_PER_DAY
 MAX_LAG_DAYS = 5
 
 LAG_STEPS: tuple[int, ...] = (
-    STEPS_PER_DAY,          # same time yesterday
-    STEPS_PER_DAY + 1,      # +15 min, smooths a one-step phase shift
+    STEPS_PER_DAY,  # same time yesterday
+    STEPS_PER_DAY + 1,  # +15 min, smooths a one-step phase shift
     STEPS_PER_DAY * 2,
     STEPS_PER_DAY * 3,
     STEPS_PER_DAY * 4,

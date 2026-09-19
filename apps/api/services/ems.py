@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from apps.api.services.timeparse import naive_instant
 from apps.api.services.expected import ExpectedLoadService, ExpectedSeries
+from apps.api.services.timeparse import naive_instant
 from core.adapters.building.power_laws import demo_window
 from core.adapters.power import PowerSourceAdapter, get_power_adapter
 from core.adapters.power.facility import ASSUMED_POWER_FACTOR
@@ -142,9 +142,7 @@ class EmsService:
         return self._networks[facility_id]
 
     @lru_cache(maxsize=32)
-    def context(
-        self, facility_id: str, scenario_id: str = "ems_normal_day"
-    ) -> EmsContext:
+    def context(self, facility_id: str, scenario_id: str = "ems_normal_day") -> EmsContext:
         raw = self.adapter.load_frame(facility_id)
         start, end = self.replay_window()
         expected = self.expected_service.expected(raw, asset_id=facility_id)
@@ -253,9 +251,7 @@ class EmsService:
         ctx = self.context(facility_id, scenario_id)
         window = ctx.window
         stamp = (
-            naive_instant(at)
-            if at is not None
-            else self.default_instant(facility_id, scenario_id)
+            naive_instant(at) if at is not None else self.default_instant(facility_id, scenario_id)
         )
         stamp = min(max(stamp, window.index[0]), window.index[-1])
         split = self.split_at(ctx, stamp)
@@ -272,9 +268,7 @@ class EmsService:
         ctx = self.context(facility_id, scenario_id)
         window = ctx.window
         stamp = (
-            naive_instant(at)
-            if at is not None
-            else self.default_instant(facility_id, scenario_id)
+            naive_instant(at) if at is not None else self.default_instant(facility_id, scenario_id)
         )
         stamp = min(max(stamp, window.index[0]), window.index[-1])
 
@@ -309,9 +303,7 @@ class EmsService:
         split_at_peak = disaggregate(
             float(forecast.iloc[peak_pos]),
             base_kw=ctx.base_kw,
-            outdoor_temp_c=float(
-                ctx.frame.loc[peak_time].get("outdoor_temp_c", float("nan"))
-            ),
+            outdoor_temp_c=float(ctx.frame.loc[peak_time].get("outdoor_temp_c", float("nan"))),
             base_temperature_c=18.0,
             hvac_sensitivity_kw_per_k=ctx.hvac_sensitivity_kw_per_k,
             flexible_kw=float(injected_kw.iloc[peak_pos]),
@@ -379,9 +371,7 @@ class EmsService:
                 disaggregate(
                     float(f),
                     base_kw=ctx.base_kw,
-                    outdoor_temp_c=float(
-                        ctx.frame.loc[ts].get("outdoor_temp_c", float("nan"))
-                    ),
+                    outdoor_temp_c=float(ctx.frame.loc[ts].get("outdoor_temp_c", float("nan"))),
                     base_temperature_c=18.0,
                     hvac_sensitivity_kw_per_k=ctx.hvac_sensitivity_kw_per_k,
                 ).hvac_kw
@@ -530,9 +520,9 @@ class EmsService:
                         "EV energy is conserved over the horizon.",
                     ],
                 ).model_dump(mode="json"),
-                "network": self._network_provenance(
-                    worst_time.to_pydatetime()
-                ).model_dump(mode="json"),
+                "network": self._network_provenance(worst_time.to_pydatetime()).model_dump(
+                    mode="json"
+                ),
                 "injection": (
                     injected(
                         units="kW",
@@ -609,9 +599,11 @@ class EmsService:
                     "current_demand_kw": round(demand, 2),
                     "expected_demand_kw": round(expected, 2) if np.isfinite(expected) else None,
                     "deviation_kw": round(deviation, 2) if np.isfinite(deviation) else None,
-                    "deviation_pct": round(100.0 * deviation / expected, 1)
-                    if np.isfinite(deviation) and abs(expected) > 1e-6
-                    else None,
+                    "deviation_pct": (
+                        round(100.0 * deviation / expected, 1)
+                        if np.isfinite(deviation) and abs(expected) > 1e-6
+                        else None
+                    ),
                     "predicted_peak_kw": risk["predicted_peak_kw"],
                     "predicted_peak_at": risk["predicted_peak_at"],
                     "predicted_peak_loading_pct": risk["predicted_peak_loading_pct"],
@@ -696,7 +688,7 @@ class EmsService:
         ]
 
         return {
-            "generated_at": datetime.now(timezone.utc),
+            "generated_at": datetime.now(UTC),
             "scenario_id": scenario_id,
             "kpis": kpis,
             "facilities": rows,

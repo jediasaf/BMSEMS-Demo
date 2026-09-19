@@ -1,0 +1,217 @@
+{
+  "available": true,
+  "link": {
+    "facility_id": "227",
+    "risk_level": "OVERLOAD RISK",
+    "predicted_peak_kw": 200.8,
+    "predicted_peak_loading_pct": 138.54,
+    "predicted_peak_at": "2017-08-25 16:00:00",
+    "transformer_id": "TR-01",
+    "contributors": [
+      {
+        "feeder": "F4_FLEXIBLE",
+        "kw": 123.17,
+        "share_pct": 61.3,
+        "flexible": true
+      },
+      {
+        "feeder": "F3_OFFICE",
+        "kw": 39.34,
+        "share_pct": 19.6,
+        "flexible": false
+      },
+      {
+        "feeder": "F2_LIGHTING",
+        "kw": 28.49,
+        "share_pct": 14.2,
+        "flexible": false
+      },
+      {
+        "feeder": "F1_HVAC",
+        "kw": 9.8,
+        "share_pct": 4.9,
+        "flexible": true
+      }
+    ],
+    "hvac_contribution_kw": 9.8,
+    "hvac_share_pct": 4.9,
+    "building_analysis_available": true,
+    "bms_site_id": "227",
+    "call_to_action": "Open the BMS analysis for this asset and test an HVAC action against the building simulator."
+  },
+  "facility_id": "227",
+  "scenario_id": "ems_ev_surge",
+  "building": {
+    "engine": "ECOTWIN_RC",
+    "engine_label": "ecotwin-rc-1.0",
+    "is_boptest": false,
+    "baseline_kpis": {
+      "energy_kwh": 127.398,
+      "peak_kw": 12.531,
+      "comfort_violation_kh": 0.0,
+      "comfort_violation_steps": 0.0,
+      "mean_zone_temp_c": 22.89,
+      "cop_mean": 3.497
+    },
+    "ai_kpis": {
+      "energy_kwh": 113.595,
+      "peak_kw": 11.701,
+      "comfort_violation_kh": 0.0243,
+      "comfort_violation_steps": 1.0,
+      "mean_zone_temp_c": 23.33,
+      "cop_mean": 3.497
+    },
+    "delta": {
+      "energy_kwh": -13.803,
+      "peak_kw": -0.83,
+      "comfort_violation_kh": 0.0243,
+      "comfort_violation_steps": 1.0,
+      "mean_zone_temp_c": 0.44,
+      "cop_mean": 0.0
+    },
+    "delta_pct": {
+      "energy_kwh": -10.83,
+      "peak_kw": -6.62,
+      "comfort_violation_kh": null,
+      "comfort_violation_steps": null,
+      "mean_zone_temp_c": 1.92,
+      "cop_mean": 0.0
+    },
+    "optimisation": {
+      "status": "optimal",
+      "solved": true,
+      "solver": "CLARABEL",
+      "solve_time_s": 0.0154,
+      "constraints": [
+        "setpoint within [20.0, 26.0] \u00b0C",
+        "step change \u2264 1.0 K per 15 min",
+        "zone temperature inside the active comfort band (soft, penalised)",
+        "linearised zone dynamics"
+      ],
+      "notes": [
+        "Linearised about the baseline trajectory; the proposal is re-run through the full nonlinear simulator before any KPI is reported.",
+        "Weights: peak 6.0, comfort 260.0, movement 3.0."
+      ],
+      "max_step_change_k": 1.0,
+      "comfort_slack_kh": 0.0016
+    }
+  },
+  "hvac_reduction": {
+    "at_peak_kw": 0.873,
+    "requested_kw": 0.873,
+    "clipped": false,
+    "peak_reduction_kw": 3.997,
+    "mean_reduction_kw": 0.575,
+    "energy_kwh": 13.803,
+    "aligned_at": "2017-08-24 16:00:00",
+    "provenance": {
+      "source_type": "SIMULATED",
+      "source_key": "ecotwin_rc",
+      "source_name": "EcoTwin RC thermal engine",
+      "publisher": "EcoTwin AI",
+      "field": null,
+      "dataset_id": null,
+      "engine": "ECOTWIN_RC",
+      "engine_label": "EcoTwin RC thermal engine",
+      "model_id": null,
+      "processing": "ecotwin-rc-1.0: 24 h at 15-minute steps, identical weather and occupancy inputs for both cases",
+      "units": "mixed",
+      "timestamp": null,
+      "quality": "GOOD",
+      "is_fixture": false,
+      "assumptions": [
+        "EcoTwin RC thermal engine, not BOPTEST.",
+        "Solar gain is a clipped daylight sinusoid: the source publishes no irradiance series.",
+        "Envelope parameters are derived from published floor area using standard commercial-office figures.",
+        "Plant is an ideal-load model limited by installed capacity. Heating and cooling setpoints are scheduled separately, with at least a 2 K deadband between them."
+      ],
+      "url": null,
+      "notes": null
+    }
+  },
+  "power_impact": {
+    "instant": "2017-08-25 16:00:00",
+    "before": {
+      "transformer_loading_pct": 139.376,
+      "lv_bus_voltage_pu": 0.95828,
+      "losses_kw": 5.2048,
+      "status": "CRITICAL",
+      "total_load_kw": 200.804,
+      "feeder_load_kw": {
+        "F1_HVAC": 9.8036,
+        "F2_LIGHTING": 28.4893,
+        "F3_OFFICE": 39.3424,
+        "F4_FLEXIBLE": 123.1683
+      }
+    },
+    "after": {
+      "transformer_loading_pct": 138.738,
+      "lv_bus_voltage_pu": 0.95848,
+      "losses_kw": 5.1612,
+      "status": "CRITICAL",
+      "total_load_kw": 199.931,
+      "feeder_load_kw": {
+        "F1_HVAC": 9.8036,
+        "F2_LIGHTING": 28.1228,
+        "F3_OFFICE": 38.8363,
+        "F4_FLEXIBLE": 123.1683
+      }
+    },
+    "delta_loading_pct": -0.638,
+    "provenance": {
+      "source_type": "SIMULATED",
+      "source_key": "pandapower",
+      "source_name": "pandapower load flow",
+      "publisher": "Fraunhofer IEE / University of Kassel",
+      "field": null,
+      "dataset_id": null,
+      "engine": "PANDAPOWER",
+      "engine_label": "pandapower",
+      "model_id": null,
+      "processing": "balanced AC Newton-Raphson load flow over the EcoTwin LV model",
+      "units": "%",
+      "timestamp": "2017-08-25T16:00:00",
+      "quality": "GOOD",
+      "is_fixture": false,
+      "assumptions": [
+        "Transformer rating is DERIVED from the observed peak; the source publishes no nameplate data.",
+        "Displacement power factor assumed 0.95.",
+        "Feeder split is a documented disaggregation, not measured sub-metering."
+      ],
+      "url": "https://www.pandapower.org/",
+      "notes": null
+    }
+  },
+  "chain": [
+    {
+      "step": "Power risk",
+      "module": "EMS",
+      "detail": "TR-01 forecast to reach 138.5% at 16:00.",
+      "source_type": "SIMULATED"
+    },
+    {
+      "step": "Building analysis",
+      "module": "BMS",
+      "detail": "HVAC contributes 9.8 kW (5% of site demand) at that instant.",
+      "source_type": "DERIVED"
+    },
+    {
+      "step": "AI recommendation",
+      "module": "BMS",
+      "detail": "Setpoint trajectory proposed by the convex optimiser under comfort, rate and range constraints.",
+      "source_type": "OPTIMISED"
+    },
+    {
+      "step": "Control simulation",
+      "module": "BMS",
+      "detail": "ecotwin-rc-1.0 ran baseline and proposal: 0.9 kW less HVAC power at the risk instant.",
+      "source_type": "SIMULATED"
+    },
+    {
+      "step": "Power impact",
+      "module": "EMS",
+      "detail": "Load flow re-solved: 139.4% \u2192 138.7% transformer loading.",
+      "source_type": "SIMULATED"
+    }
+  ]
+}

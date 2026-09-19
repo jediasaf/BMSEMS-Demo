@@ -40,6 +40,7 @@ can check the physics rather than take the number on trust.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 from abc import ABC, abstractmethod
@@ -287,9 +288,7 @@ class RcThermalEngine(BuildingSimulationEngine):
         params = request.params or ZoneThermalParams(floor_area_m2=2000.0)
         horizon = request.horizon()
         if not (len(request.outdoor_temp_c) == len(request.occupancy) == horizon):
-            raise ValueError(
-                "setpoints, outdoor temperature and occupancy must share a length"
-            )
+            raise ValueError("setpoints, outdoor temperature and occupancy must share a length")
 
         t_air = float(request.initial_air_temp_c)
         t_mass = float(request.initial_mass_temp_c)
@@ -308,8 +307,8 @@ class RcThermalEngine(BuildingSimulationEngine):
             occupancy = float(np.clip(request.occupancy[step], 0.0, 1.0))
             setpoint = float(request.setpoints_c[step])
 
-            q_internal = params.internal_gain_w_m2 * params.floor_area_m2 * (
-                0.25 + 0.75 * occupancy
+            q_internal = (
+                params.internal_gain_w_m2 * params.floor_area_m2 * (0.25 + 0.75 * occupancy)
             )
             # Solar gain follows a clipped sinusoid over daylight hours; without
             # an irradiance series this is the honest minimum, and it is
@@ -370,9 +369,7 @@ class RcThermalEngine(BuildingSimulationEngine):
                 params.auxiliary_minimum if occupancy > 0.15 else 0.0,
                 min(load_fraction, 1.0),
             )
-            auxiliary_w = (
-                params.auxiliary_fraction * params.cooling_capacity_w * airflow_fraction
-            )
+            auxiliary_w = params.auxiliary_fraction * params.cooling_capacity_w * airflow_fraction
             total_electrical_w = electrical_w + auxiliary_w
 
             d_air = (q_free + q_hvac) / params.c_air
@@ -506,22 +503,16 @@ class BoptestEngine(BuildingSimulationEngine):
                         "reaTSetCoo_u": request.setpoints_c[step] + 273.15,
                         "reaTSetCoo_activate": 1,
                     }
-                    response = client.post(
-                        f"{self.base_url}/advance/{testid}", json=payload
-                    )
+                    response = client.post(f"{self.base_url}/advance/{testid}", json=payload)
                     response.raise_for_status()
                     point = response.json()["payload"]
                     zone_temp.append(float(point.get("reaTZon_y", 293.15)) - 273.15)
                     power.append(float(point.get("reaPHeaPum_y", 0.0)) / 1000.0)
                     outdoor.append(float(request.outdoor_temp_c[step]))
-                    timestamps.append(
-                        request.start + timedelta(minutes=STEP_MINUTES * step)
-                    )
+                    timestamps.append(request.start + timedelta(minutes=STEP_MINUTES * step))
             finally:
-                try:
+                with contextlib.suppress(Exception):
                     client.put(f"{self.base_url}/stop/{testid}")
-                except Exception:
-                    pass
 
         violation_kh = 0.0
         violations = 0

@@ -38,6 +38,7 @@ claim that four sub-meters exist.
 from __future__ import annotations
 
 import logging
+import math
 import warnings
 from dataclasses import dataclass, field
 from typing import Any
@@ -64,7 +65,20 @@ VOLTAGE_LIMITS = (0.90, 1.10)
 LOADING_WARN_PCT = 85.0
 LOADING_CRITICAL_PCT = 100.0
 
-#: Feeder cable selections, with catalogue values for XLPE aluminium at 0.4 kV.
+#: Design share of the transformer rating each feeder is sized for. They sum to
+#: more than 1 on purpose: feeders do not peak together, so each is sized for
+#: its own maximum rather than for a pro-rata slice of the total.
+FEEDER_DESIGN_SHARE: dict[str, float] = {
+    "F1_HVAC": 0.45,
+    "F2_LIGHTING": 0.30,
+    "F3_OFFICE": 0.35,
+    "F4_FLEXIBLE": 0.45,
+}
+
+#: Base cable selections, with catalogue values for XLPE aluminium at 0.4 kV.
+#: A single run of these carries a small facility; larger ones get parallel
+#: circuits of the same cable, which is what is actually installed rather than
+#: an implausibly large single conductor.
 FEEDER_CABLES: dict[str, dict[str, float]] = {
     "F1_HVAC": {"length_km": 0.055, "r_ohm_per_km": 0.253, "x_ohm_per_km": 0.08, "max_i_ka": 0.29},
     "F2_LIGHTING": {
@@ -93,6 +107,20 @@ FEEDER_LABELS = {
     "F3_OFFICE": "Office and IT",
     "F4_FLEXIBLE": "EV charging / flexible load",
 }
+
+
+def parallel_circuits(transformer_kva: float, feeder: str) -> int:
+    """How many parallel runs of the base cable this feeder needs.
+
+    Without this the model uses one cable size for every facility, and on a
+    large site the feeders bind long before the transformer does -- the load
+    flow then diverges at loads the transformer could comfortably carry, and
+    the calibrated capacity comes out at a fraction of nameplate.
+    """
+    cable = FEEDER_CABLES[feeder]
+    design_kva = transformer_kva * FEEDER_DESIGN_SHARE[feeder]
+    design_ka = design_kva / (math.sqrt(3.0) * NOMINAL_LV_KV * 1000.0)
+    return max(1, int(math.ceil(design_ka / cable["max_i_ka"])))
 
 
 @dataclass
@@ -210,6 +238,7 @@ class PandapowerNetwork:
         self.transformer_kva = float(transformer_kva)
         self._net: Any | None = None
         self._load_index: dict[str, int] = {}
+        self._parallel: dict[str, int] = {}
 
     # -- construction -----------------------------------------------------
     def build(self) -> Any:
@@ -243,15 +272,19 @@ class PandapowerNetwork:
 
         for feeder, cable in FEEDER_CABLES.items():
             bus = pp.create_bus(net, vn_kv=NOMINAL_LV_KV, name=feeder)
+            n = parallel_circuits(self.transformer_kva, feeder)
+            self._parallel[feeder] = n
             pp.create_line_from_parameters(
                 net,
                 from_bus=lv_bus,
                 to_bus=bus,
                 length_km=cable["length_km"],
-                r_ohm_per_km=cable["r_ohm_per_km"],
-                x_ohm_per_km=cable["x_ohm_per_km"],
-                c_nf_per_km=210.0,
-                max_i_ka=cable["max_i_ka"],
+                # Parallel runs share the current, so impedance divides and
+                # ampacity multiplies.
+                r_ohm_per_km=cable["r_ohm_per_km"] / n,
+                x_ohm_per_km=cable["x_ohm_per_km"] / n,
+                c_nf_per_km=210.0 * n,
+                max_i_ka=cable["max_i_ka"] * n,
                 name=f"LINE-{feeder}",
             )
             self._load_index[feeder] = pp.create_load(
@@ -265,7 +298,7 @@ class PandapowerNetwork:
         return net
 
     # -- solving ----------------------------------------------------------
-    def solve(self, split: FeederSplit) -> NetworkState:
+    def solve(self, split: FeederSplit, *, quiet: bool = False) -> NetworkState:
         net = self._net or self.build()
         tan_phi = float(np.tan(np.arccos(POWER_FACTOR)))
         for feeder, kw in split.as_dict().items():
@@ -279,7 +312,11 @@ class PandapowerNetwork:
             pp.runpp(net, algorithm="nr", max_iteration=50)
             converged = bool(net.converged)
         except Exception as exc:
-            log.warning("load flow failed for %s: %s", self.facility_id, exc)
+            # `quiet` is for the capacity bisection, which deliberately probes
+            # loads past the point where Newton-Raphson can find a solution.
+            # There, non-convergence is the answer, not a fault.
+            if not quiet:
+                log.warning("load flow failed for %s: %s", self.facility_id, exc)
             converged = False
 
         if not converged:
@@ -315,9 +352,7 @@ class PandapowerNetwork:
 
         violations: list[str] = []
         if transformer_loading >= LOADING_CRITICAL_PCT:
-            violations.append(
-                f"TR-01 loading {transformer_loading:.1f}% exceeds nameplate"
-            )
+            violations.append(f"TR-01 loading {transformer_loading:.1f}% exceeds nameplate")
         for name, value in lv_only.items():
             if not VOLTAGE_LIMITS[0] <= value <= VOLTAGE_LIMITS[1]:
                 violations.append(f"{name} voltage {value:.3f} pu outside EN 50160 band")
@@ -340,9 +375,7 @@ class PandapowerNetwork:
             lv_bus_voltage_pu=round(lv_bus_voltage, 5),
             min_bus_voltage_pu=round(min(lv_only.values()), 5) if lv_only else float("nan"),
             losses_kw=round(losses, 4),
-            feeder_loading_pct={
-                str(k).replace("LINE-", ""): v for k, v in line_loading.items()
-            },
+            feeder_loading_pct={str(k).replace("LINE-", ""): v for k, v in line_loading.items()},
             feeder_load_kw=split.as_dict(),
             bus_voltages_pu=voltages,
             line_loading_pct=line_loading,
@@ -354,7 +387,9 @@ class PandapowerNetwork:
                 f"Displacement power factor assumed {POWER_FACTOR} on every feeder.",
                 "Feeder split is a stated disaggregation of the measured total, not a "
                 "set of measured sub-meters.",
-                "Cable impedances are catalogue values for XLPE aluminium at 0.4 kV.",
+                "Cable impedances are catalogue values for XLPE aluminium at "
+                "0.4 kV; each feeder uses as many parallel runs as its design "
+                "share of the transformer rating requires.",
             ],
         )
 
@@ -376,6 +411,8 @@ class PandapowerNetwork:
         larger safety margin.
 
         ``reference`` fixes the *shape* of the feeder split; the total is scaled.
+        A probe that fails to converge is treated as beyond capacity, which is
+        what divergence at extreme loading means physically.
         """
         base_total = reference.total()
         if base_total <= 1e-6:
@@ -389,7 +426,7 @@ class PandapowerNetwork:
                 office_kw=reference.office_kw * scale,
                 flexible_kw=reference.flexible_kw * scale,
             )
-            state = self.solve(scaled)
+            state = self.solve(scaled, quiet=True)
             return state.transformer_loading_pct if state.converged else float("inf")
 
         low = base_total * 0.05
@@ -423,6 +460,10 @@ class PandapowerNetwork:
                     "id": feeder,
                     "label": FEEDER_LABELS[feeder],
                     "cable": FEEDER_CABLES[feeder],
+                    "parallel_circuits": self._parallel.get(
+                        feeder, parallel_circuits(self.transformer_kva, feeder)
+                    ),
+                    "design_share": FEEDER_DESIGN_SHARE[feeder],
                     "flexible": feeder in ("F1_HVAC", "F4_FLEXIBLE"),
                 }
                 for feeder in FEEDER_CABLES

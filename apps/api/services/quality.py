@@ -60,9 +60,7 @@ def build_report(
     sampling = float(deltas.median()) if len(deltas) else float(STEP_MINUTES)
 
     notes: list[str] = []
-    quality_counts = (
-        frame["quality"].value_counts().to_dict() if "quality" in frame else {}
-    )
+    quality_counts = frame["quality"].value_counts().to_dict() if "quality" in frame else {}
     interpolated = int(quality_counts.get("INTERPOLATED", 0))
     if interpolated:
         notes.append(

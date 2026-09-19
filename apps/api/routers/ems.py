@@ -56,7 +56,9 @@ def network(
     service = get_ems_service()
     fid = facility_id or service.default_facility_id()
     try:
-        state, split, stamp = service.network_state(fid, at=naive_instant(at), scenario_id=scenario_id)
+        state, split, stamp = service.network_state(
+            fid, at=naive_instant(at), scenario_id=scenario_id
+        )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     ctx = service.context(fid, scenario_id)
@@ -83,9 +85,7 @@ def network(
         },
         "split": split.as_dict(),
         "cap_kw": round(ctx.cap_kw, 2),
-        "provenance": service._network_provenance(stamp.to_pydatetime()).model_dump(
-            mode="json"
-        ),
+        "provenance": service._network_provenance(stamp.to_pydatetime()).model_dump(mode="json"),
     }
 
 
@@ -118,9 +118,7 @@ def insights(
     facility_id: str | None = None, scenario_id: str = Query("ems_normal_day")
 ) -> list[Insight]:
     service = get_ems_service()
-    return service.insights(
-        facility_id or service.default_facility_id(), scenario_id=scenario_id
-    )
+    return service.insights(facility_id or service.default_facility_id(), scenario_id=scenario_id)
 
 
 @router.get("/data-quality")

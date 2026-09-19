@@ -135,9 +135,7 @@ class PeakOptimiser:
         ev_available = np.clip(np.asarray(problem.ev.available_kw, dtype=float), 0, None)
         ev_headroom = np.clip(
             np.asarray(
-                problem.ev.headroom_kw
-                if problem.ev.headroom_kw is not None
-                else np.zeros(horizon),
+                problem.ev.headroom_kw if problem.ev.headroom_kw is not None else np.zeros(horizon),
                 dtype=float,
             ),
             0,
@@ -167,9 +165,7 @@ class PeakOptimiser:
             cp.cumsum(r) <= cp.cumsum(e),
         ]
         if problem.hvac.energy_budget_kwh is not None:
-            constraints.append(
-                cp.sum(h) / STEPS_PER_HOUR <= problem.hvac.energy_budget_kwh
-            )
+            constraints.append(cp.sum(h) / STEPS_PER_HOUR <= problem.hvac.energy_budget_kwh)
         if problem.hvac.ramp_kw is not None and horizon > 1:
             constraints.append(cp.abs(cp.diff(h)) <= problem.hvac.ramp_kw)
 
@@ -243,12 +239,14 @@ class PeakOptimiser:
                 f"site demand ≤ {target:.1f} kW "
                 f"({problem.safety_margin_pct:.0f}% below the {problem.cap_kw:.0f} kW cap)",
                 "HVAC reduction within the available flexibility at each step",
-                f"HVAC energy given up ≤ {problem.hvac.energy_budget_kwh:.1f} kWh"
-                if problem.hvac.energy_budget_kwh is not None
-                else "HVAC energy unbounded",
+                (
+                    f"HVAC energy given up ≤ {problem.hvac.energy_budget_kwh:.1f} kWh"
+                    if problem.hvac.energy_budget_kwh is not None
+                    else "HVAC energy unbounded"
+                ),
                 "EV curtailment within the charging load present at each step",
                 "every curtailed EV kWh recovered later within charger headroom",
-            "recovery never precedes curtailment (cumulative causality)",
+                "recovery never precedes curtailment (cumulative causality)",
             ],
             notes=[
                 "HVAC flexibility is a reduction bought from thermal mass and is "
