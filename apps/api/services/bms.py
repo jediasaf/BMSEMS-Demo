@@ -24,7 +24,7 @@ from core.adapters.building.simulation import (
     ZoneThermalParams,
     get_simulation_engine,
 )
-from core.adapters.power.pandapower_adapter import estimate_hvac_sensitivity
+from core.adapters.power.pandapower_adapter import disaggregate, estimate_hvac_sensitivity
 from core.common.schemas import (
     AssetNode,
     ExpectedImpact,
@@ -45,8 +45,13 @@ log = logging.getLogger(__name__)
 #: Nominal occupied cooling setpoint the building is assumed to run today.
 BASELINE_OCCUPIED_SETPOINT_C = 23.0
 BASELINE_UNOCCUPIED_SETPOINT_C = 27.0
-#: Share of a building's floor area modelled as the study zone in the Control Lab.
-STUDY_ZONE_AREA_SHARE = 0.18
+#: The Control Lab models the building as one conditioned thermal zone. The
+#: conditioned area is then *calibrated* against the site's own metered HVAC
+#: load (see ``zone_params``), so the simulated HVAC power is comparable with
+#: the HVAC feeder in the electrical model rather than an unrelated number.
+CALIBRATION_BOUNDS = (0.15, 1.60)
+#: Hours of the replay window used to calibrate.
+CALIBRATION_HOURS = 24
 
 
 @dataclass
@@ -563,10 +568,94 @@ class BmsService:
         )
 
     # -- zone thermal model ----------------------------------------------
+    @lru_cache(maxsize=16)
     def zone_params(self, site_id: str) -> ZoneThermalParams:
+        """Single-zone thermal parameters, calibrated to the metered HVAC load.
+
+        Starting from the published floor area, the conditioned area is scaled
+        until the simulator's baseline HVAC electrical power matches the HVAC
+        share the disaggregation estimates from this site's own weather
+        sensitivity. One free parameter, with a physical meaning -- the
+        conditioned area the measured load implies -- rather than a fudge
+        factor applied to the answer.
+
+        Without this the Control Lab and the network model would be talking
+        about different buildings, and the cross-module impact figure would be
+        meaningless.
+        """
         descriptor = self.adapter.site(site_id)
-        area = float(descriptor.surface_m2 or 2000.0) * STUDY_ZONE_AREA_SHARE
-        return ZoneThermalParams(floor_area_m2=max(area, 150.0))
+        published_area = float(descriptor.surface_m2 or 2000.0)
+        ctx = self.context(site_id)
+        base_params = ZoneThermalParams(floor_area_m2=published_area)
+
+        window = ctx.window.head(CALIBRATION_HOURS * STEPS_PER_HOUR)
+        if window.empty or ctx.hvac_sensitivity_kw_per_k <= 0:
+            return base_params
+
+        base_kw = float(np.nanpercentile(ctx.frame["load_kw"].dropna(), 10))
+        measured_hvac = np.array(
+            [
+                disaggregate(
+                    float(row["load_kw"]),
+                    base_kw=base_kw,
+                    outdoor_temp_c=float(row.get("outdoor_temp_c", float("nan"))),
+                    base_temperature_c=float(descriptor.base_temperature_c or 18.0),
+                    hvac_sensitivity_kw_per_k=ctx.hvac_sensitivity_kw_per_k,
+                ).hvac_kw
+                for _, row in window.iterrows()
+                if np.isfinite(row["load_kw"])
+            ]
+        )
+        target_kw = float(np.mean(measured_hvac)) if len(measured_hvac) else 0.0
+        if target_kw <= 0.5:
+            return base_params
+
+        inputs = self.control_lab_inputs(site_id, hours=CALIBRATION_HOURS)
+        probe = RcThermalEngine().simulate(
+            SimulationRequest(
+                asset_id=site_id,
+                zone_id="ZB",
+                start=inputs["index"][0].to_pydatetime(),
+                setpoints_c=[float(v) for v in self.baseline_setpoints(inputs["occupancy"])],
+                outdoor_temp_c=[float(v) for v in inputs["outdoor"]],
+                occupancy=[float(v) for v in inputs["occupancy"]],
+                params=base_params,
+                label="calibration",
+            )
+        )
+        simulated_kw = float(np.mean(probe.hvac_electrical_kw))
+        if simulated_kw <= 1e-6:
+            return base_params
+
+        # HVAC power scales close to linearly with conditioned area in this
+        # model, so one ratio step lands within a few percent.
+        ratio = float(np.clip(target_kw / simulated_kw, *CALIBRATION_BOUNDS))
+        log.info(
+            "zone calibration %s: metered HVAC %.2f kW vs simulated %.2f kW -> "
+            "conditioned area %.0f%% of published",
+            site_id,
+            target_kw,
+            simulated_kw,
+            ratio * 100,
+        )
+        return ZoneThermalParams(floor_area_m2=max(published_area * ratio, 120.0))
+
+    def calibration_report(self, site_id: str) -> dict[str, Any]:
+        descriptor = self.adapter.site(site_id)
+        params = self.zone_params(site_id)
+        published = float(descriptor.surface_m2 or 2000.0)
+        return {
+            "published_floor_area_m2": round(published, 1),
+            "conditioned_area_m2": round(params.floor_area_m2, 1),
+            "conditioned_share": round(params.floor_area_m2 / max(published, 1e-6), 4),
+            "method": (
+                "conditioned area scaled so the simulator's baseline HVAC power "
+                "matches the HVAC share estimated from this site's own metered "
+                "weather sensitivity"
+            ),
+            "bounds": list(CALIBRATION_BOUNDS),
+            "time_constants_hours": params.time_constants_hours(),
+        }
 
     def control_lab_inputs(
         self,
@@ -609,7 +698,7 @@ class BmsService:
         engine = get_simulation_engine(prefer_boptest=prefer_boptest)
         request = SimulationRequest(
             asset_id=site_id,
-            zone_id="Z1.01",
+            zone_id="ZB",
             start=inputs["index"][0].to_pydatetime(),
             setpoints_c=[float(v) for v in setpoints],
             outdoor_temp_c=[float(v) for v in inputs["outdoor"]],
