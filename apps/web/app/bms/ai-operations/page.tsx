@@ -94,7 +94,7 @@ export default function AiOperationsPage() {
         )}
       </Panel>
 
-      <div className="grid gap-3 xl:grid-cols-[1.25fr_1fr]">
+      <div className="grid items-start gap-3 xl:grid-cols-[1.25fr_1fr]">
         <div className="space-y-3">
           <Panel
             title="Residual deviation score"

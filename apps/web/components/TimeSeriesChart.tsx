@@ -48,6 +48,8 @@ export function TimeSeriesChart({
   markAreaLabel,
   cursorTime,
   legend = true,
+  yScale = false,
+  y2Scale = true,
 }: {
   configs: ChartSeriesConfig[];
   height?: number;
@@ -60,6 +62,9 @@ export function TimeSeriesChart({
   markAreaLabel?: string;
   cursorTime?: string;
   legend?: boolean;
+  /** Let the axis pick its own base. Temperatures squash to a sliver from 0. */
+  yScale?: boolean;
+  y2Scale?: boolean;
 }) {
   const option = useMemo(() => {
     const series: Record<string, unknown>[] = [];
@@ -195,6 +200,8 @@ export function TimeSeriesChart({
       {
         type: 'value',
         name: yAxisName,
+        // A kW axis reads better from zero; a temperature axis does not.
+        scale: yScale,
         nameGap: 12,
         nameTextStyle: { color: '#6b7a8d', fontSize: 10, align: 'left' },
         axisLabel: { color: '#6b7a8d', fontSize: 10 },
@@ -206,6 +213,7 @@ export function TimeSeriesChart({
       yAxes.push({
         type: 'value',
         name: y2AxisName,
+        scale: y2Scale,
         nameGap: 12,
         nameTextStyle: { color: '#6b7a8d', fontSize: 10, align: 'right' },
         axisLabel: { color: '#6b7a8d', fontSize: 10 },
@@ -258,6 +266,8 @@ export function TimeSeriesChart({
     markAreaLabel,
     cursorTime,
     legend,
+    yScale,
+    y2Scale,
   ]);
 
   return (

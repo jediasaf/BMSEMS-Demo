@@ -118,7 +118,7 @@ export default function PowerNetworkPage() {
 
       {network.error && <ErrorNote message={network.error} onRetry={network.reload} />}
 
-      <div className="grid gap-3 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid items-start gap-3 xl:grid-cols-[1.5fr_1fr]">
         <Panel
           title="Single line diagram"
           subtitle="pandapower AC load flow"

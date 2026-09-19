@@ -109,7 +109,7 @@ export default function BmsOverviewPage() {
       )}
       {data && <KpiRow kpis={data.kpis} />}
 
-      <div className="grid gap-3 xl:grid-cols-[2fr_1fr]">
+      <div className="grid items-start gap-3 xl:grid-cols-[2fr_1fr]">
         <Panel
           title="Building load"
           subtitle="measured · expected · outdoor air"

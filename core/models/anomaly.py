@@ -374,7 +374,11 @@ class ResidualAnomalyDetector:
                     label="Normal miss for this asset (MAD)",
                     contribution=round(float(peak["mad"]), 3),
                     direction="flat",
-                    detail=f"rolling {cfg.window // STEPS_PER_DAY}-day median absolute deviation",
+                    detail=(
+                        f"{stats.basis}, at {peak_idx:%H:%M}"
+                        if stats.basis.startswith("reference-period")
+                        else f"rolling {cfg.window // STEPS_PER_DAY}-day median absolute deviation"
+                    ),
                 ),
             ]
 
