@@ -56,6 +56,8 @@ log = logging.getLogger(__name__)
 STEP_MINUTES = 15
 STEP_SECONDS = STEP_MINUTES * 60
 STEPS_PER_HOUR = 60 // STEP_MINUTES
+#: How far below the comfort lower bound the heating setpoint sits by default.
+HEATING_SETPOINT_MARGIN_K = 0.5
 
 
 # --------------------------------------------------------------------------
@@ -100,10 +102,10 @@ class ZoneThermalParams:
     auxiliary_fraction: float = 0.13
     #: Minimum fan power as a share of design, whenever the zone is occupied.
     auxiliary_minimum: float = 0.3
-    #: Gap between the cooling setpoint and the heating setpoint, in K. Without
-    #: a deadband a zone can heat and cool within the same hour, which is the
-    #: single most common real-world waste mode and not something to simulate
-    #: into existence by accident.
+    #: Minimum separation enforced between the heating and cooling setpoints,
+    #: in K. Without a deadband a zone can heat and cool within the same hour,
+    #: which is the single most common real-world waste mode and not something
+    #: to simulate into existence by accident.
     deadband_k: float = 2.0
 
     @property
@@ -172,6 +174,11 @@ class SimulationRequest:
     setpoints_c: list[float]
     outdoor_temp_c: list[float]
     occupancy: list[float]
+    #: Heating setpoint per step. Defaults to the active comfort lower bound
+    #: minus a small margin, i.e. ordinary dual-setpoint control. Deriving it
+    #: as ``cooling - deadband`` instead makes a 27 C summer setback imply a
+    #: 25 C heating setpoint, and the plant heats the building in August.
+    heating_setpoints_c: list[float] | None = None
     initial_air_temp_c: float = 22.5
     initial_mass_temp_c: float = 22.5
     params: ZoneThermalParams | None = None
@@ -327,7 +334,12 @@ class RcThermalEngine(BuildingSimulationEngine):
             # proportional controller would leave a steady-state offset that
             # swamps the setpoint experiment this whole page exists to run.
             cool_setpoint = setpoint
-            heat_setpoint = setpoint - params.deadband_k
+            if request.heating_setpoints_c is not None:
+                heat_setpoint = float(request.heating_setpoints_c[step])
+            else:
+                lower, _ = request.comfort.bounds(occupancy > 0.15)
+                heat_setpoint = lower - HEATING_SETPOINT_MARGIN_K
+            heat_setpoint = min(heat_setpoint, cool_setpoint - params.deadband_k)
             q_hvac = 0.0
             if t_air > cool_setpoint or (q_free > 0 and t_air >= cool_setpoint):
                 target = cool_setpoint
@@ -366,12 +378,12 @@ class RcThermalEngine(BuildingSimulationEngine):
             d_air = (q_free + q_hvac) / params.c_air
             d_mass = ((t_air - t_mass) * params.h_mass) / params.c_mass
 
-            lower, upper = request.comfort.bounds(occupancy > 0.15)
-            if t_air > upper:
-                violation_kh += (t_air - upper) / STEPS_PER_HOUR
+            band_lower, band_upper = request.comfort.bounds(occupancy > 0.15)
+            if t_air > band_upper:
+                violation_kh += (t_air - band_upper) / STEPS_PER_HOUR
                 violation_steps += 1
-            elif t_air < lower:
-                violation_kh += (lower - t_air) / STEPS_PER_HOUR
+            elif t_air < band_lower:
+                violation_kh += (band_lower - t_air) / STEPS_PER_HOUR
                 violation_steps += 1
 
             timestamps.append(stamp)
@@ -415,8 +427,9 @@ class RcThermalEngine(BuildingSimulationEngine):
                 "irradiance series.",
                 "Envelope parameters are derived from published floor area using "
                 "standard commercial-office figures.",
-                "Plant is an ideal-load model limited by installed capacity, with a "
-                f"{params.deadband_k:g} K heating/cooling deadband.",
+                "Plant is an ideal-load model limited by installed capacity. "
+                "Heating and cooling setpoints are scheduled separately, with at "
+                f"least a {params.deadband_k:g} K deadband between them.",
             ],
         )
 

@@ -358,6 +358,53 @@ class PandapowerNetwork:
             ],
         )
 
+    def capacity_kw(
+        self,
+        reference: FeederSplit,
+        target_loading_pct: float = LOADING_CRITICAL_PCT,
+        tolerance_pct: float = 0.05,
+        max_iterations: int = 40,
+    ) -> float:
+        """Real power at which this transformer reaches ``target_loading_pct``.
+
+        Solved by bisection on the load flow rather than computed as
+        ``kVA x power_factor``. That shortcut ignores transformer losses and the
+        reactive flow the network actually draws, and the error is large enough
+        to matter: an optimiser told to hold 147 kW on a 160 kVA unit still
+        lands at 100.8% loading. Calibrating against the model the result will
+        be judged by removes the discrepancy instead of papering over it with a
+        larger safety margin.
+
+        ``reference`` fixes the *shape* of the feeder split; the total is scaled.
+        """
+        base_total = reference.total()
+        if base_total <= 1e-6:
+            return self.transformer_kva * POWER_FACTOR
+
+        def loading_at(total_kw: float) -> float:
+            scale = total_kw / base_total
+            scaled = FeederSplit(
+                hvac_kw=reference.hvac_kw * scale,
+                lighting_kw=reference.lighting_kw * scale,
+                office_kw=reference.office_kw * scale,
+                flexible_kw=reference.flexible_kw * scale,
+            )
+            state = self.solve(scaled)
+            return state.transformer_loading_pct if state.converged else float("inf")
+
+        low = base_total * 0.05
+        high = self.transformer_kva * 1.5
+        for _ in range(max_iterations):
+            mid = 0.5 * (low + high)
+            loading = loading_at(mid)
+            if abs(loading - target_loading_pct) <= tolerance_pct:
+                return float(mid)
+            if loading < target_loading_pct:
+                low = mid
+            else:
+                high = mid
+        return float(0.5 * (low + high))
+
     def topology(self) -> dict[str, Any]:
         """Single-line-diagram description for the UI."""
         return {
