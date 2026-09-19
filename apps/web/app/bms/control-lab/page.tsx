@@ -202,10 +202,10 @@ export default function ControlLabPage() {
         )}
       </Panel>
 
-      <div className="grid gap-3 xl:grid-cols-[1.4fr_1fr]">
+      <div className="grid items-start gap-3 xl:grid-cols-[1.4fr_1fr]">
         <div className="space-y-3">
           <Panel title="Zone temperature and setpoints" bodyClassName="p-2">
-            <TimeSeriesChart configs={tempConfigs} height={260} yAxisName="°C" />
+            <TimeSeriesChart configs={tempConfigs} height={260} yAxisName="°C" yScale />
           </Panel>
           <Panel title="HVAC electrical power" bodyClassName="p-2">
             <TimeSeriesChart configs={powerConfigs} height={200} yAxisName="kW" />

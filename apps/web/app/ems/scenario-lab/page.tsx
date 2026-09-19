@@ -168,7 +168,7 @@ export default function ScenarioLabPage() {
 
       {optimisation && (
         <>
-          <div className="grid gap-3 xl:grid-cols-[1.5fr_1fr]">
+          <div className="grid items-start gap-3 xl:grid-cols-[1.5fr_1fr]">
             <Panel
               title="Flexible-load dispatch"
               subtitle={`${optimisation.summary.solver} · ${num(optimisation.summary.solve_time_s * 1000, 1)} ms`}
@@ -177,7 +177,7 @@ export default function ScenarioLabPage() {
             >
               <TimeSeriesChart
                 configs={dispatchConfigs}
-                height={260}
+                height={340}
                 yAxisName="kW"
                 markLineValue={optimisation.summary.cap_kw}
                 markLineLabel={`${num(optimisation.summary.cap_kw, 0)} kW capacity`}
