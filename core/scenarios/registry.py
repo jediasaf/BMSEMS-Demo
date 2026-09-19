@@ -122,8 +122,11 @@ EMS_SCENARIOS: tuple[Scenario, ...] = (
             "produces the monthly maximum."
         ),
         teaches=(
-            "That peak risk is a coincidence problem: the same energy spread "
-            "differently never troubles the transformer."
+            "That a well-sized transformer survives its own peak day. The rating "
+            "was derived from the site's P99 with 25% headroom, so coincident "
+            "demand alone rarely reaches nameplate -- which is precisely what "
+            "sizing is for. Compare with EV Charging Surge, which is load the "
+            "transformer was never sized for."
         ),
         parameters={"uplift_pct": 38.0, "centre_hour": 15.0, "width_hours": 3.5},
     ),
@@ -138,8 +141,10 @@ EMS_SCENARIOS: tuple[Scenario, ...] = (
             "and both series are charted."
         ),
         teaches=(
-            "The flagship case: uncontrolled flexible load pushes the transformer "
-            "past its nameplate, and shifting rather than shedding resolves it."
+            "The flagship case. Unlike a peak day, this is load the transformer "
+            "was never sized for: it goes past nameplate, and the fix is to shift "
+            "the energy rather than shed it. Deferral must also precede recovery, "
+            "or the optimiser charges vehicles that have not arrived."
         ),
         parameters={"charger_kw": 120.0, "start_hour": 13.0, "duration_hours": 4.0},
     ),

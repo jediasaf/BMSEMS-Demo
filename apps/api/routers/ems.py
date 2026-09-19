@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from apps.api.services.ems import get_ems_service
 from apps.api.services.quality import build_report
+from apps.api.services.timeparse import naive_instant
 from core.common import paths
 from core.common.schemas import Insight
 
@@ -43,7 +44,7 @@ def facilities() -> dict[str, Any]:
 def portfolio(
     at: datetime | None = None, scenario_id: str = Query("ems_normal_day")
 ) -> dict[str, Any]:
-    return get_ems_service().portfolio(at=at, scenario_id=scenario_id)
+    return get_ems_service().portfolio(at=naive_instant(at), scenario_id=scenario_id)
 
 
 @router.get("/network")
@@ -55,7 +56,7 @@ def network(
     service = get_ems_service()
     fid = facility_id or service.default_facility_id()
     try:
-        state, split, stamp = service.network_state(fid, at=at, scenario_id=scenario_id)
+        state, split, stamp = service.network_state(fid, at=naive_instant(at), scenario_id=scenario_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     ctx = service.context(fid, scenario_id)
@@ -96,7 +97,7 @@ def risk(
 ) -> dict[str, Any]:
     service = get_ems_service()
     return service.peak_risk(
-        facility_id or service.default_facility_id(), at=at, scenario_id=scenario_id
+        facility_id or service.default_facility_id(), at=naive_instant(at), scenario_id=scenario_id
     )
 
 
@@ -108,7 +109,7 @@ def optimise(
 ) -> dict[str, Any]:
     service = get_ems_service()
     return service.optimise(
-        facility_id or service.default_facility_id(), at=at, scenario_id=scenario_id
+        facility_id or service.default_facility_id(), at=naive_instant(at), scenario_id=scenario_id
     )
 
 

@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from apps.api.services.bms import get_bms_service
 from apps.api.services.quality import build_report
+from apps.api.services.timeparse import naive_instant
 from core.common import paths
 from core.common.schemas import Insight, KpiValue, Recommendation
 from core.models.anomaly import summarise
@@ -55,7 +56,7 @@ def overview(
         ctx = service.context(site, scenario_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    kpis: list[KpiValue] = service.kpis(site, at=at, scenario_id=scenario_id)
+    kpis: list[KpiValue] = service.kpis(site, at=naive_instant(at), scenario_id=scenario_id)
     timeline = service.timeline(site, scenario_id)
     insights = service.insights(site, scenario_id=scenario_id)
     return {

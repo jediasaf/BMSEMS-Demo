@@ -12,6 +12,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from apps.api.services.timeparse import naive_instant
 from apps.api.services.expected import ExpectedLoadService, ExpectedSeries
 from core.adapters.building import BuildingSourceAdapter, get_building_adapter
 from core.adapters.building.power_laws import demo_window
@@ -214,7 +215,7 @@ class BmsService:
         window = ctx.window
         if window.empty:
             return []
-        stamp = pd.Timestamp(at) if at is not None else window.index[-1]
+        stamp = naive_instant(at) if at is not None else window.index[-1]
         stamp = min(max(stamp, window.index[0]), window.index[-1])
         row = window.loc[:stamp].iloc[-1]
         expected_row = ctx.expected.frame.loc[:stamp]

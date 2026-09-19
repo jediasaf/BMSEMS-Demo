@@ -30,6 +30,7 @@ Formulation (linear, solved by CVXPY to a global optimum)::
           0 <= e_t <= ev_available_t
           0 <= r_t <= ev_headroom_t
           sum(r_t) == sum(e_t)                   EV energy is conserved
+          cumsum(r)_t <= cumsum(e)_t             and cannot be recovered early
           sum(h_t) / 4 <= hvac_energy_budget_kwh
           |h_t - h_{t-1}| <= hvac_ramp_kw
 
@@ -159,6 +160,11 @@ class PeakOptimiser:
             peak >= cp.max(net),
             # EV load is deferred, never destroyed.
             cp.sum(r) == cp.sum(e),
+            # ... and deferral precedes recovery. Without this the solver
+            # happily "recovers" energy hours before it curtails any, which
+            # reads as charging cars that have not arrived yet. Energy balance
+            # alone does not imply causality.
+            cp.cumsum(r) <= cp.cumsum(e),
         ]
         if problem.hvac.energy_budget_kwh is not None:
             constraints.append(
@@ -242,11 +248,13 @@ class PeakOptimiser:
                 else "HVAC energy unbounded",
                 "EV curtailment within the charging load present at each step",
                 "every curtailed EV kWh recovered later within charger headroom",
+            "recovery never precedes curtailment (cumulative causality)",
             ],
             notes=[
                 "HVAC flexibility is a reduction bought from thermal mass and is "
                 "bounded by a comfort energy budget.",
-                "EV flexibility is a shift: total delivered energy is unchanged.",
+                "EV flexibility is a shift: total delivered energy is unchanged, and "
+                "no energy is recovered before it has been deferred.",
             ]
             + (
                 []
