@@ -188,6 +188,11 @@ the contributors at the peak.
 >
 > **168.3 kWh of EV charging deferred, peak 200.8 → 140.6 kW.**"
 
+**Click: `Run optimisation`.** The guided bar does not press it for you, and
+step 10 has nothing to talk about until you do. It is the only button in the
+demo that computes on demand — a convex solve and two load flows, about 80 ms
+— so press it while you are saying the sentence above, not before.
+
 ### Step 10 — verify
 
 > "The before and after transformer figures are **two independent pandapower

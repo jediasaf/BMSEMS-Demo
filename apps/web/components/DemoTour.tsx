@@ -79,7 +79,7 @@ const STEPS: TourStep[] = [
   },
   {
     title: 'Optimise: shift the energy, do not shed it',
-    body: 'A linear program defers EV charging and buys HVAC flexibility within a comfort budget. EV energy is conserved as a hard equality and recovery can never precede curtailment, or the optimiser would charge vehicles that have not arrived.',
+    body: 'Click Run optimisation — this is the one step that computes on demand, and watching it solve is the point. A linear program defers EV charging and buys HVAC flexibility within a comfort budget. EV energy is conserved as a hard equality and recovery can never precede curtailment, or the optimiser would charge vehicles that have not arrived.',
     href: '/ems/scenario-lab',
     emsScenario: 'ems_ev_surge',
   },
