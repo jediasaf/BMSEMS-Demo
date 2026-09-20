@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import logging
 import math
+import threading
 import warnings
 from dataclasses import dataclass, field
 from typing import Any
@@ -239,6 +240,23 @@ class PandapowerNetwork:
         self._net: Any | None = None
         self._load_index: dict[str, int] = {}
         self._parallel: dict[str, int] = {}
+        # One pandapower model per facility, shared by every caller -- and a
+        # load flow is not an atomic read. `solve` writes the loads into the
+        # model, runs Newton-Raphson, then reads the results back out. Two
+        # threads interleaving those three steps hand each other another
+        # scenario's answer: the API's background warm-up calibrates every
+        # facility while request handlers are already solving, and the
+        # transformer loading that comes back belongs to neither load.
+        #
+        # Observed: the capacity bisection, which is nothing but a sequence of
+        # solves, returned 131.683 kW where it should return 144.940, and
+        # 50.042 where it should return 91.013 -- from identical inputs, in the
+        # same process. Downstream that is the cap the EMS optimiser is held to
+        # and the denominator of every loading percentage on screen.
+        #
+        # Solves take single-digit milliseconds, so serialising them costs
+        # nothing worth measuring.
+        self._lock = threading.RLock()
 
     # -- construction -----------------------------------------------------
     def build(self) -> Any:
@@ -299,6 +317,10 @@ class PandapowerNetwork:
 
     # -- solving ----------------------------------------------------------
     def solve(self, split: FeederSplit, *, quiet: bool = False) -> NetworkState:
+        with self._lock:
+            return self._solve(split, quiet=quiet)
+
+    def _solve(self, split: FeederSplit, *, quiet: bool = False) -> NetworkState:
         net = self._net or self.build()
         tan_phi = float(np.tan(np.arccos(POWER_FACTOR)))
         for feeder, kw in split.as_dict().items():
@@ -413,10 +435,31 @@ class PandapowerNetwork:
         ``reference`` fixes the *shape* of the feeder split; the total is scaled.
         A probe that fails to converge is treated as beyond capacity, which is
         what divergence at extreme loading means physically.
+
+        The whole search holds the model's lock. A bisection is a sequence of
+        solves and only means anything if no other load lands in the model
+        between them; see ``__init__`` for what that cost when it was not
+        guaranteed.
         """
+        # A bisection is a sequence of solves that only means anything if no
+        # other load lands in the model between them, so the whole search holds
+        # the lock rather than each probe taking it in turn. The lock is
+        # reentrant, so the probes below still take it and still read correctly
+        # if this is ever called from somewhere that already holds it.
+        with self._lock:
+            return self._capacity_kw(reference, target_loading_pct, tolerance_pct, max_iterations)
+
+    def _capacity_kw(
+        self,
+        reference: FeederSplit,
+        target_loading_pct: float,
+        tolerance_pct: float,
+        max_iterations: int,
+    ) -> float:
         base_total = reference.total()
-        if base_total <= 1e-6:
-            return self.transformer_kva * POWER_FACTOR
+        nameplate_kw = self.transformer_kva * POWER_FACTOR
+        if not np.isfinite(base_total) or base_total <= 1e-6:
+            return nameplate_kw
 
         def loading_at(total_kw: float) -> float:
             scale = total_kw / base_total
@@ -431,6 +474,20 @@ class PandapowerNetwork:
 
         low = base_total * 0.05
         high = self.transformer_kva * 1.5
+        # Bisection only works if the bracket contains the answer. When the low
+        # end is already over the target it does not, and the loop below would
+        # walk `high` down onto `low` and return that -- a failure dressed up as
+        # a number. Say so and fall back to the nameplate estimate instead.
+        if loading_at(low) >= target_loading_pct:
+            log.warning(
+                "capacity bisection for %s: %.1f kW already loads the transformer "
+                "past %.0f%%; falling back to the nameplate estimate %.1f kW",
+                self.facility_id,
+                low,
+                target_loading_pct,
+                nameplate_kw,
+            )
+            return float(nameplate_kw)
         for _ in range(max_iterations):
             mid = 0.5 * (low + high)
             loading = loading_at(mid)
@@ -440,7 +497,22 @@ class PandapowerNetwork:
                 low = mid
             else:
                 high = mid
-        return float(0.5 * (low + high))
+        # Forty halvings of this bracket is a width of ~1e-10 kW, so reaching
+        # here means the probes were not telling a consistent story rather than
+        # that the search needed longer.
+        log.warning(
+            "capacity bisection for %s did not settle within %.2f%% of %.0f%% "
+            "after %d probes (bracket %.3f-%.3f kW); falling back to the "
+            "nameplate estimate %.1f kW",
+            self.facility_id,
+            tolerance_pct,
+            target_loading_pct,
+            max_iterations,
+            low,
+            high,
+            nameplate_kw,
+        )
+        return float(nameplate_kw)
 
     def topology(self) -> dict[str, Any]:
         """Single-line-diagram description for the UI."""

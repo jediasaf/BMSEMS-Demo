@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+
 import numpy as np
 import pytest
 
@@ -184,3 +186,85 @@ def test_calibrated_capacity_is_close_to_nameplate_at_every_scale(kva: float) ->
     # Below the naive figure (losses and reactive flow), but not far below:
     # a much smaller ratio means something other than the transformer binds.
     assert 0.85 <= cap / naive <= 1.0
+
+
+def test_the_model_survives_being_solved_from_two_threads() -> None:
+    """A load flow is not an atomic read, and this model is shared.
+
+    ``solve`` writes the loads in, runs Newton-Raphson, then reads the results
+    back out. The API warms every facility's capacity on a background thread
+    while request handlers are already solving, so those three steps interleave
+    for real. Before the lock, that handed callers another load's answer: the
+    capacity bisection returned 131.683 kW where it should return 144.940, and
+    50.042 where it should return 91.013, from identical inputs.
+
+    Each thread here checks its own answer against the single-threaded one, so
+    a torn read fails the test rather than merely looking odd.
+    """
+    net = PandapowerNetwork("t", 250.0)
+    net.build()
+
+    loads = [40.0, 80.0, 120.0, 160.0, 200.0]
+    expected = {kw: net.solve(_split(kw)).transformer_loading_pct for kw in loads}
+
+    wrong: list[str] = []
+
+    def hammer(kw: float) -> None:
+        for _ in range(12):
+            got = net.solve(_split(kw)).transformer_loading_pct
+            if not np.isclose(got, expected[kw], atol=1e-6):
+                wrong.append(f"{kw} kW read {got:.4f}, not {expected[kw]:.4f}")
+
+    threads = [threading.Thread(target=hammer, args=(kw,)) for kw in loads * 3]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not wrong, "\n".join(wrong[:10])
+
+
+def test_capacity_calibration_survives_concurrent_solves() -> None:
+    """The same, for the number the EMS optimiser is actually held to."""
+    net = PandapowerNetwork("t", 250.0)
+    net.build()
+    reference = _split(120.0)
+    expected = net.capacity_kw(reference)
+
+    caps: list[float] = []
+    noise = [True]
+
+    def solve_other_loads() -> None:
+        while noise[0]:
+            for kw in (10.0, 240.0, 5_000.0):
+                net.solve(_split(kw), quiet=True)
+
+    background = threading.Thread(target=solve_other_loads, daemon=True)
+    background.start()
+    try:
+        for _ in range(3):
+            caps.append(net.capacity_kw(reference))
+    finally:
+        noise[0] = False
+        background.join(timeout=10)
+
+    assert all(c == pytest.approx(expected, abs=1e-6) for c in caps), caps
+
+
+def test_capacity_says_so_rather_than_guessing_when_the_bracket_is_wrong(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A search that cannot find the answer must not return its last guess.
+
+    Bisection is only valid while the bracket contains the answer. A reference
+    that already overloads the transformer at 5% of itself breaks that, and
+    the old loop would walk the bracket down and return the collapsed
+    midpoint as though it were a measurement.
+    """
+    net = PandapowerNetwork("t", 100.0)
+    net.build()
+    # 5% of this reference is already far past a 100 kVA transformer.
+    reference = _split(40_000.0)
+    with caplog.at_level("WARNING"):
+        cap = net.capacity_kw(reference)
+    assert cap == pytest.approx(100.0 * POWER_FACTOR)
+    assert "nameplate" in caplog.text.lower()
