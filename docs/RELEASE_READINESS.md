@@ -128,11 +128,24 @@ Backend container, measured from the production image:
    `auto_stop_machines = false` and `min_machines_running = 1` are set and
    cannot override a trial limit.
 
-   The demo still works, because `auto_start_machines = true`: the first
-   request after an idle period wakes the machine and waits for it, which
-   costs the measured ~24 s cold start (19 s of that is cache warm-up). For an
-   interview that is a bad first click, so **add a card before the day**; no
-   configuration change can substitute for it.
+   `auto_start_machines = true` means a request still wakes it. What that
+   costs was worth fixing rather than accepting: a woken machine originally
+   took **94 s** to bind — init at 02:13:32, uvicorn's server process at
+   02:15:06 — none of it our code, all of it CPU-throttled imports of the
+   ~483 MB scientific stack read cold on a shared vCPU. Fly's router waits
+   about 8 s, so every click on a sleeping machine got an error while the
+   machine was still importing.
+
+   Two changes fixed it. The cache warm-up moved behind the lifespan yield, so
+   binding no longer waits on it; and the routers now import the service layer
+   inside the handlers that use it, so FastAPI starts on fastapi plus the
+   pydantic schemas alone (`import apps.api.main`: 5.10 s → 0.58 s, with none
+   of pandas, numpy, pyarrow, lightgbm, pandapower, cvxpy or sklearn loaded).
+
+   Measured after: **cold start to serving `/healthz` is 2 s**, twice in a
+   row. Well inside the router's window, so a woken machine answers the
+   request that woke it. A card still removes the wake entirely, and the first
+   *data* request on a cold machine still pays for loading what it needs.
 
 2. **BOPTEST is not live in the hosted deployment,** which `/health` reports
    as `boptest: local`. The zone simulator is the in-process RC engine, solved
