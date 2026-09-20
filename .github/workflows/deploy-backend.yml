@@ -54,8 +54,23 @@ jobs:
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Create the app if it does not exist
-        run: flyctl apps create "$APP" --machines || echo "app already exists"
+      # A Fly *deploy* token can deploy an existing app but cannot create one.
+      # That is the correct scope for CI, so this distinguishes the three
+      # cases rather than letting the next step fail with "app not found".
+      - name: Ensure the app exists
+        run: |
+          if flyctl status --app "$APP" >/dev/null 2>&1; then
+            echo "app $APP exists"; exit 0
+          fi
+          if flyctl apps create "$APP" --org "${FLY_ORG:-personal}" --machines; then
+            echo "created app $APP"; exit 0
+          fi
+          echo "::error::App '$APP' does not exist and this token cannot create it."
+          echo "A Fly deploy token can deploy an existing app but not create one."
+          echo "Create the app once, then re-run this workflow:"
+          echo "    flyctl apps create $APP --org personal"
+          echo "Or supply an org-scoped token instead: flyctl tokens create org"
+          exit 1
 
       # fly.toml is committed and carries the measured sizing: 1 GB, one
       # always-on machine, /healthz as the platform check.

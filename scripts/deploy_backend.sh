@@ -37,8 +37,18 @@ fi
 # -- 2. deploy --------------------------------------------------------------
 if [[ "$TARGET" == "fly" ]]; then
   say "Deploying $APP to Fly.io (1 GB, one always-on machine)"
-  "$FLY" apps create "$APP" 2>/dev/null || true
-  "$FLY" deploy --config fly.toml --app "$APP" --ha=false
+  # A deploy token can deploy an existing app but cannot create one, which is
+  # the right scope for automation -- so say that, rather than let the deploy
+  # fail with a bare "app not found".
+  if ! "$FLY" status --app "$APP" >/dev/null 2>&1; then
+    if ! "$FLY" apps create "$APP" --org "${FLY_ORG:-personal}" --machines; then
+      die "App '$APP' does not exist and this token cannot create it.
+  A Fly deploy token deploys an existing app; it cannot create one.
+  Create it once:  flyctl apps create $APP --org personal
+  Or use a broader token:  flyctl tokens create org"
+    fi
+  fi
+  "$FLY" deploy --config fly.toml --app "$APP" --remote-only --ha=false --yes
   BASE="https://${APP}.fly.dev"
 else
   say "Render deploys from render.yaml on push."
