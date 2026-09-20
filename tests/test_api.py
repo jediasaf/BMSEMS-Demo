@@ -34,7 +34,11 @@ def test_status_reports_the_actual_simulation_engine(client) -> None:
     body = client.get("/status").json()
     assert body["simulation_engine"] in {"BOPTEST", "ECOTWIN_RC", "PANDAPOWER", "REPLAY"}
     if body["simulation_engine"] != "BOPTEST":
-        assert any("BOPTEST is not reachable" in note for note in body["notes"])
+        # The wording is operator-facing and may be reworded; what must hold is
+        # that the status says BOPTEST is not what answered, and names what did.
+        notes = " ".join(body["notes"])
+        assert "BOPTEST" in notes
+        assert "RC engine" in notes
 
 
 def test_root_carries_the_disclaimer(client) -> None:

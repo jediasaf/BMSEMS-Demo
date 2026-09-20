@@ -37,7 +37,7 @@ export function KpiCard({
     >
       <div className="flex items-start justify-between gap-2">
         <span className="label truncate">{kpi.label}</span>
-        <ProvenanceBadge provenance={kpi.provenance} size="xs" showLabel={false} align="right" />
+        <ProvenanceBadge provenance={kpi.provenance} size="xs" align="right" />
       </div>
 
       <div className="mt-1.5 flex items-end justify-between gap-2">

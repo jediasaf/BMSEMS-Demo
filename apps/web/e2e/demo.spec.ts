@@ -177,7 +177,7 @@ test.describe('interview demo path', () => {
 
     // No invented alerts: the empty state says monitoring is running.
     await expect(page.getByText(/No operational intervention recommended/i)).toBeVisible();
-    await expect(page.getByText(/monitoring remains active/i)).toBeVisible();
+    await expect(page.getByText(/No action required/i)).toBeVisible();
 
     expect(errors, errors.join('\n')).toEqual([]);
   });

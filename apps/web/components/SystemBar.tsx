@@ -97,7 +97,11 @@ export function SystemBar() {
       {stamp && (
         <>
           <Rule />
-          <Segment label="Replay" value={fullTimestamp(stamp)} tone="info" mono />
+          {/* Labelled "Archive", not "Replay": the first question anyone asks is
+              why the clock says 2017. It says 2017 because that is where the
+              published dataset ends, and the label should answer that before
+              it is asked rather than look like a stale demo. */}
+          <Segment label="Archive" value={fullTimestamp(stamp)} tone="info" mono />
         </>
       )}
 

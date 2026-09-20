@@ -119,9 +119,7 @@ export function BuildingView({
             ))}
 
             <p className="rounded-panel border border-dashed border-base-600 bg-base-800/40 px-2.5 py-1.5 text-3xs leading-relaxed text-ink-500">
-              This source publishes no zone-level telemetry, so zones carry an equal share of the
-              metered total by floor area — which is why they read identically. Zone temperature and
-              occupancy exist only in the Control Lab, where a simulator produces them.
+              No zone telemetry in this source — zones are pro-rata by floor area.
             </p>
           </div>
         ) : (

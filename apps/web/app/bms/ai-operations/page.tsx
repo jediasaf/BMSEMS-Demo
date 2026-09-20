@@ -161,7 +161,7 @@ export default function AiOperationsPage() {
                 <div className="p-2.5">
                   <EmptyNote
                     title="Nothing exceeded the threshold"
-                    detail="Metered demand stayed inside the model's expected envelope over this window. AI monitoring is running; there is simply nothing above the materiality floor to report. Inject a scenario to see the detector respond."
+                    detail="Nothing above the materiality floor in this window."
                   />
                 </div>
               )}
@@ -236,7 +236,7 @@ export default function AiOperationsPage() {
                 <Panel title="AI recommendation">
                   <EmptyNote
                     title="No operational intervention recommended"
-                    detail="Conditions are within expected operating ranges and monitoring remains active. A recommendation follows a material over-consumption finding; inventing one to fill the panel would be worse than leaving it empty."
+                    detail="No action required. Recommendations follow a material finding."
                   />
                 </Panel>
               )}
