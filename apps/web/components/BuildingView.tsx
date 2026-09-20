@@ -96,36 +96,104 @@ export function BuildingView({
             </div>
 
             {floors.map((floor) => (
-              <div key={floor.node_id}>
-                <div className="mb-1 flex items-baseline gap-2">
-                  <span className="label">{floor.name}</span>
-                  <span className="tabular font-mono text-3xs text-ink-600">
-                    {num(floor.metrics.floor_area_m2, 0)} m²
-                  </span>
-                  <span className="ml-auto text-3xs text-prov-derived/80">pro-rata allocation</span>
-                </div>
-                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                  {floor.children.map((zone) => (
-                    <ZoneTile
-                      key={zone.node_id}
-                      zone={zone}
-                      siteLoad={siteLoadKw}
-                      active={selected === zone.node_id}
-                      onClick={() => onSelect?.(zone)}
-                    />
-                  ))}
-                </div>
-              </div>
+              <FloorRow
+                key={floor.node_id}
+                floor={floor}
+                siteLoad={siteLoadKw}
+                onSelect={onSelect}
+                selected={selected}
+              />
             ))}
-
-            <p className="rounded-panel border border-dashed border-base-600 bg-base-800/40 px-2.5 py-1.5 text-3xs leading-relaxed text-ink-500">
-              No zone telemetry in this source — zones are pro-rata by floor area.
-            </p>
           </div>
         ) : (
           <TreeNode node={root} depth={0} onSelect={onSelect} selected={selected} />
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * A floor, and its zones only in as much detail as they differ.
+ *
+ * With no zone telemetry in the source, every zone on a floor is the same
+ * pro-rata share of the same meter — so three tiles reading 26.8 kW, 381 m²,
+ * 33% were one fact printed three times, and the panel's largest block was
+ * its least informative. When the zones are indistinguishable the split is
+ * stated once and they collapse to chips, which stay clickable because the
+ * asset drawer is still the way to inspect one. A zone that is *not* like the
+ * others -- it carries an anomaly, or the allocation is uneven because the
+ * source does publish areas -- gets its tile back, because then the tiles are
+ * carrying information rather than filling space.
+ */
+function FloorRow({
+  floor,
+  siteLoad,
+  onSelect,
+  selected,
+}: {
+  floor: AssetNode;
+  siteLoad: number;
+  onSelect?: (node: AssetNode) => void;
+  selected?: string | null;
+}) {
+  const zones = floor.children;
+  const loads = zones.map((z) => z.metrics.allocated_load_kw ?? 0);
+  const areas = zones.map((z) => z.metrics.floor_area_m2 ?? 0);
+  const same = (xs: number[]) => xs.every((x) => Math.abs(x - (xs[0] ?? 0)) < 0.05);
+  const uniform =
+    zones.length > 1 && same(loads) && same(areas) && !zones.some((z) => z.has_anomaly);
+
+  return (
+    <div>
+      <div className="mb-1 flex items-baseline gap-2">
+        <span className="label">{floor.name}</span>
+        <span className="tabular font-mono text-3xs text-ink-600">
+          {num(floor.metrics.floor_area_m2, 0)} m²
+        </span>
+        <span className="ml-auto text-3xs text-prov-derived/80">pro-rata allocation</span>
+      </div>
+
+      {uniform ? (
+        <div className="rounded-panel border border-dashed border-base-600 bg-base-800/40 px-2.5 py-1.5">
+          <div className="tabular font-mono text-3xs text-ink-500">
+            {zones.length} zones · {num(loads[0] ?? 0, 1)} kW each · {num(areas[0] ?? 0, 0)} m² each
+            · {num(siteLoad > 0 ? ((loads[0] ?? 0) / siteLoad) * 100 : 0, 0)}% each
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {zones.map((zone) => (
+              <button
+                key={zone.node_id}
+                type="button"
+                onClick={() => onSelect?.(zone)}
+                className={cn(
+                  'focus-ring rounded-pill border px-1.5 py-[1px] font-mono text-3xs transition-colors',
+                  selected === zone.node_id
+                    ? 'border-accent/60 bg-accent/[0.10] text-accent'
+                    : 'border-base-600 bg-base-800/60 text-ink-400 hover:border-base-500 hover:text-ink-200',
+                )}
+              >
+                {zone.node_id}
+              </button>
+            ))}
+          </div>
+          <div className="mt-1.5 text-3xs leading-relaxed text-ink-600">
+            No zone telemetry in this source, so the zones differ only by name.
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          {zones.map((zone) => (
+            <ZoneTile
+              key={zone.node_id}
+              zone={zone}
+              siteLoad={siteLoad}
+              active={selected === zone.node_id}
+              onClick={() => onSelect?.(zone)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
