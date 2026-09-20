@@ -80,6 +80,94 @@ export class ApiError extends Error {
 
 type Query = Record<string, string | number | boolean | undefined | null>;
 
+/**
+ * Static snapshot mode.
+ *
+ * The demo is deterministic, so it can be recorded once and served as files
+ * from a CDN with no backend at all. `scripts/build_static_snapshot.py` writes
+ * one JSON file per request the product can make, keyed by the same path and
+ * query this module builds — the two have to agree exactly or the browser asks
+ * for a file nobody wrote.
+ *
+ * This is a replay, and the UI says so. Nothing here fakes liveness: each file
+ * carries the provenance it was served with plus a `_snapshot` block naming
+ * when it was recorded, and `SNAPSHOT_MODE` drives the banner that tells the
+ * viewer they are looking at a recording.
+ */
+export const SNAPSHOT_MODE = process.env.NEXT_PUBLIC_SNAPSHOT === '1';
+const SNAPSHOT_ROOT = '/snapshot';
+
+/** Replay steps are 15 minutes; the recording may keep only every Nth one. */
+const SNAPSHOT_STEP_MS = 15 * 60 * 1000;
+let snapshotStrideMs = SNAPSHOT_STEP_MS;
+let snapshotStart: number | null = null;
+
+/** Told to the client by index.json so `at` can be snapped to a recorded step. */
+export function configureSnapshot(start: string | undefined, stride: number | undefined) {
+  if (start) snapshotStart = Date.parse(start);
+  if (stride && stride > 0) snapshotStrideMs = stride * SNAPSHOT_STEP_MS;
+}
+
+export type SnapshotIndex = {
+  recorded_at?: string;
+  cursor_stride?: number;
+  start?: string;
+  entries?: number;
+};
+
+let snapshotIndex: Promise<SnapshotIndex | null> | null = null;
+
+/** The recording's own description of itself, fetched once and shared.
+ *
+ * Every request in snapshot mode waits on this, because the cursor cannot be
+ * snapped to a recorded step until the stride is known -- and a request made
+ * before it lands asks for a file that was never written.
+ */
+export function snapshotInfo(): Promise<SnapshotIndex | null> {
+  if (!snapshotIndex) {
+    snapshotIndex = fetch(`${SNAPSHOT_ROOT}/index.json`, {
+      headers: { accept: 'application/json' },
+    })
+      .then((r) => (r.ok ? (r.json() as Promise<SnapshotIndex>) : null))
+      .then((index) => {
+        if (index) configureSnapshot(index.start, index.cursor_stride);
+        return index;
+      })
+      .catch(() => null);
+  }
+  return snapshotIndex;
+}
+
+/** The nearest recorded cursor at or before `at`, so dragging never 404s. */
+function snapCursor(at: string): string {
+  const t = Date.parse(at);
+  if (snapshotStart === null || Number.isNaN(t)) return at;
+  const steps = Math.round((t - snapshotStart) / snapshotStrideMs);
+  const snapped = new Date(snapshotStart + Math.max(0, steps) * snapshotStrideMs);
+  // The recorder wrote naive local-style stamps, so mirror that format here.
+  return snapped.toISOString().slice(0, 19);
+}
+
+/** Mirror of `slug()` in scripts/build_static_snapshot.py.
+ *
+ * Deliberately not URLSearchParams: that percent-encodes the colons in a
+ * timestamp, the encoding survives into the filename, and the server then
+ * decodes it back before looking the file up — so it is never found. Both
+ * sides replace the awkward characters outright instead, and must keep
+ * producing byte-identical names.
+ */
+const snapshotSafe = (text: string) => text.replace(/[^A-Za-z0-9._-]/g, '-');
+
+function snapshotFile(path: string, query?: Query): string {
+  const entries = Object.entries(query ?? {})
+    .filter(([, v]) => v !== undefined && v !== null && v !== '' && String(v) !== 'None')
+    .map(([k, v]) => [k, k === 'at' ? snapCursor(String(v)) : String(v)] as [string, string])
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  const parts = [snapshotSafe(path.replace(/^\//, '').replace(/\//g, '_'))];
+  for (const [k, v] of entries) parts.push(`${snapshotSafe(k)}-${snapshotSafe(v)}`);
+  return `${SNAPSHOT_ROOT}/${parts.join('__')}.json`;
+}
+
 function withQuery(path: string, query?: Query): string {
   if (!query) return path;
   const params = new URLSearchParams();
@@ -104,13 +192,29 @@ async function request<T>(
 ): Promise<T> {
   // Fail loudly and immediately rather than firing a request at an origin
   // that cannot answer. Every caller already renders ApiError.
-  if (!API_BASE_CONFIGURED) throw new ApiError(API_BASE_ERROR, 0, path);
-  const url = `${API_BASE}${withQuery(path, query)}`;
+  // A recording answers every request as a plain file; there is no API base
+  // to be missing, so the not-configured check does not apply.
+  if (!SNAPSHOT_MODE && !API_BASE_CONFIGURED) throw new ApiError(API_BASE_ERROR, 0, path);
+  if (SNAPSHOT_MODE) await snapshotInfo();
+  const url = SNAPSHOT_MODE ? snapshotFile(path, query) : `${API_BASE}${withQuery(path, query)}`;
+  // The overview's cursor files carry only the KPIs; the timeline, insights
+  // and calibration do not move when the cursor does, so they live in one base
+  // file per scenario rather than being re-recorded at every step. Merge them
+  // back together here so callers see a single ordinary response.
+  const mergeBase =
+    SNAPSHOT_MODE && path === '/bms/overview' && query?.at
+      ? snapshotFile('/bms/overview__base', {
+          site_id: query.site_id,
+          scenario_id: query.scenario_id,
+        })
+      : null;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
-      method,
+      // Files are only ever GET. The live API distinguishes POST for the calls
+      // that compute something; the recording of that computation does not.
+      method: SNAPSHOT_MODE ? 'GET' : method,
       signal: controller.signal,
       headers: { accept: 'application/json' },
       cache: 'no-store',
@@ -125,7 +229,11 @@ async function request<T>(
       }
       throw new ApiError(detail, response.status, path);
     }
-    return (await response.json()) as T;
+    const body = (await response.json()) as T;
+    if (!mergeBase) return body;
+    const base = await fetch(mergeBase, { headers: { accept: 'application/json' } });
+    if (!base.ok) return body;
+    return { ...((await base.json()) as object), ...(body as object) } as T;
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (error instanceof DOMException && error.name === 'AbortError') {

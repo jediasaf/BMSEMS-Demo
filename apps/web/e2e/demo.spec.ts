@@ -183,6 +183,10 @@ test.describe('interview demo path', () => {
   });
 
   test('the backend agrees the demo is ready', async ({ request }) => {
+    // A snapshot build has no backend to ask. The recording carries the
+    // verdict from when it was taken, and scripts/verify_snapshot.py re-checks
+    // it; skipping here keeps this test about the live path it was written for.
+    test.skip(process.env.E2E_SNAPSHOT === '1', 'snapshot build has no backend');
     // A host that scales to zero answers the first request with a 502 while
     // the machine wakes, and this is the most expensive endpoint in the
     // product (~2 s warm, ~23 s from cold). Retry the wake, not the verdict:

@@ -81,6 +81,15 @@ demo: ## Build the frontend, restart both servers, and verify the interview path
 e2e: ## Drive the interview demo end to end in a browser
 	cd apps/web && npx playwright test
 
+.PHONY: snapshot
+snapshot: ## Record the whole demo as static JSON (no backend needed to serve it)
+	PYTHONPATH=. $(PY) scripts/build_static_snapshot.py --cursor-stride 4
+	$(PY) scripts/verify_snapshot.py
+
+.PHONY: static
+static: snapshot ## Record, then build the frontend that serves the recording
+	cd apps/web && NEXT_PUBLIC_SNAPSHOT=1 npm run build
+
 .PHONY: audit
 audit: ## Check that every visible metric carries provenance
 	$(PY) scripts/audit_provenance.py

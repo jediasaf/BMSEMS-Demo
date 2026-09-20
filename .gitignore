@@ -36,6 +36,10 @@ data/processed/_*.json
 apps/web/test-results/
 apps/web/playwright-report/
 
+# The static snapshot IS committed: a Git-driven Vercel build has no way
+# to run the Python pipeline, so the recording has to be in the tree.
+# Regenerate with `make snapshot`.
+
 # Vercel
 .vercel/
 apps/web/.vercel/
