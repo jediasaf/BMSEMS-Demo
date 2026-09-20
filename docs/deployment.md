@@ -4,13 +4,15 @@
 
 |                    |                                                                       |
 | ------------------ | --------------------------------------------------------------------- |
-| Frontend           | https://ecotwin-ai-zeta.vercel.app — deployed and publicly reachable |
-| Backend            | https://bmsems-demo.fly.dev — Fly.io `bmsems-demo`, ams, 1 GB, one always-on machine |
-| Frontend → backend | `NEXT_PUBLIC_API_BASE=https://bmsems-demo.fly.dev` |
+| Frontend           | https://ecotwin-ai-zeta.vercel.app — Vercel, static |
+| Backend            | none. The hosted demo is a **recording**; see *Two ways to host this* below |
+| Build variables    | `NEXT_PUBLIC_SNAPSHOT=1`, `NEXT_PUBLIC_API_BASE=""`, both set in `vercel.json` |
 
-The frontend is correct and complete; it is waiting on a backend URL. Nothing
-below is aspirational — the image builds, runs and passes `/interview/verify`
-locally, and the manifests are sized from measurements of that run.
+The container path documented in the rest of this file still works and is what
+`make demo` exercises: the image builds, runs and passes `/interview/verify`,
+and the manifests below are sized from measurements of that run. The Fly
+deployment it describes is no longer running — the free tier it was on stopped
+the machine after five minutes, which is why the hosted demo is a recording.
 
 ### Redeploying
 

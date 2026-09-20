@@ -181,18 +181,23 @@ Full diagrams in [`docs/architecture.md`](docs/architecture.md).
 
 ### Public demo
 
-|                        |                                                                                                                                                |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend               | https://ecotwin-ai-zeta.vercel.app — Vercel, **behind SSO Deployment Protection**                                                              |
-| Backend                | **not deployed yet**                                                                                                                           |
-| BMS zone simulation    | EcoTwin RC engine in-process (BOPTEST is not reachable from a hosted deployment). Labelled `ECOTWIN-RC-1.0` on every result, never as BOPTEST. |
-| EMS network            | pandapower, solved live on each request, labelled `SIMULATED`                                                                                  |
-| If a heavy solve fails | a recording for the _same_ scenario, banner-marked `SIMULATION REPLAY`                                                                         |
+|                     |                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend            | https://ecotwin-ai-zeta.vercel.app — Vercel, static                                                                                          |
+| Backend             | **none** — the hosted demo is a recording of a real run, served as files                                                                      |
+| Says so             | a `RECORDED` chip with the date in the status bar, a line on the About page, a `_snapshot` marker on every payload                            |
+| BMS zone simulation  | EcoTwin RC engine, labelled `ECOTWIN-RC-1.0` on every result, never as BOPTEST                                                                |
+| EMS network          | pandapower, labelled `SIMULATED` with the engine named                                                                                       |
 
-Until a backend URL is set in `NEXT_PUBLIC_API_BASE`, the deployed frontend
-shows an explicit **Not configured** state. It does not fall back to
-`localhost` — a production build that did would point every visitor's page at
-their own machine and look healthy while nothing worked.
+Every figure in the recording was produced by the engine named in its
+provenance, on a real run — including the unflattering ones: the network gate
+still rejects 18 of the 54 over-nameplate replay positions. Only the delivery
+changed. `make demo` runs the same code live.
+
+A build with no API base and no recording shows an explicit **Not
+configured** state rather than falling back to `localhost` — a production
+build that did would point every visitor's page at their own machine and look
+healthy while nothing worked.
 
 ### Local engineering mode
 

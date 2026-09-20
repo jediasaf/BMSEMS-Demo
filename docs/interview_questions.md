@@ -5,6 +5,64 @@ cost, the cost is stated rather than defended.
 
 ---
 
+### Why is the data from 2017?
+
+Because that is where the published dataset ends. *Power Laws: Forecasting
+Energy Consumption* is Schneider Electric's own competition data, released
+through DrivenData, and it spans 30 May 2013 to 20 Nov 2017. There is no
+later reading to show.
+
+The replay window is 24–27 Aug 2017: the last complete block in the archive,
+less the days the forecaster needs for its 96-step lags.
+
+I could have shifted every timestamp forward so the clock read today. I did
+not, because that is falsifying a measurement to improve a demo, and anyone
+who opened the source would find it. The status bar says `ARCHIVE 2017` and
+the data-source panel names the replayed window next to the full span.
+
+What is *not* old is the modelling. The forecaster is trained only on data
+before the window opens — backtest MAE 3.99 kW, R² 0.891 on site 227 — so
+every prediction on screen is genuinely out of sample. The age of the archive
+changes nothing about whether the method works; it only means I am
+demonstrating on public data rather than on a customer's.
+
+**Follow-up worth pre-empting:** "So could this run on live data?" The adapter
+layer is the only code that knows a source's field names. An EcoStruxure
+Building Operation or Power Monitoring Expert adapter replaces one module;
+the forecaster, detector, optimiser and simulator do not change. That is the
+point of the layer, and it is why the answer to "why 2017" is "because of the
+dataset", not "because of the architecture".
+
+---
+
+### Is this running live, or is it a recording?
+
+Both exist, and the product tells you which one you are looking at.
+
+The hosted link is a **recording**: `scripts/build_static_snapshot.py` drives
+the real API across every scenario and every replay position and writes each
+response to a file, so the demo needs no server. A `RECORDED` chip with the
+date sits in the status bar, the About page says so, and every payload carries
+a `_snapshot` marker.
+
+`make demo` is the live system: the LightGBM forecast, the RC zone
+simulation, the CVXPY solves and two pandapower load flows, all on request.
+Warm, the overview is 114 ms and the Control Lab 492 ms.
+
+The numbers are the same either way, because the recording was taken from the
+live system — and `scripts/verify_snapshot.py` re-checks that the recording
+still agrees with what the demo claims, so a stale recording fails a command
+rather than an audience.
+
+Why record at all: the backend needs ~550 MB of RAM and a filesystem, which
+means a container, which means a paid instance. The free tier it was on
+stopped the machine after five minutes, and a demo whose first click times
+out is not a demo. Recording removes the server from the critical path. The
+container path still exists — `Dockerfile`, `fly.toml`, `docs/deployment.md`
+— and is what I would run for anyone who wants to watch it compute.
+
+---
+
 ### Why LightGBM and not deep learning?
 
 Because the data does not justify anything larger, and I can defend every
