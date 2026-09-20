@@ -1,7 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { API_BASE, API_BASE_CONFIGURED, API_BASE_ERROR, api } from '@/lib/api';
+import {
+  API_BASE,
+  API_BASE_CONFIGURED,
+  API_BASE_ERROR,
+  SNAPSHOT_MODE,
+  api,
+  snapshotInfo,
+} from '@/lib/api';
 import { useDemo } from '@/lib/store';
 import { cn, fullTimestamp } from '@/lib/format';
 import { cursorTimestamp } from '@/lib/store';
@@ -17,6 +24,21 @@ export function SystemBar() {
   const { status, setStatus, window: replayWindow, cursor, interviewMode, preload } = useDemo();
 
   const [unreachable, setUnreachable] = useState<string | null>(null);
+  const [recordedAt, setRecordedAt] = useState<string | null>(null);
+
+  // In snapshot mode the recording describes itself. api.ts already reads the
+  // index -- it has to, to snap the cursor -- so this shares that one fetch
+  // rather than racing a second copy of it.
+  useEffect(() => {
+    if (!SNAPSHOT_MODE) return;
+    let cancelled = false;
+    snapshotInfo().then((index) => {
+      if (!cancelled && index?.recorded_at) setRecordedAt(index.recorded_at);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +64,8 @@ export function SystemBar() {
 
   // A build with no API base and a build whose API is down are different
   // faults with different fixes, so they get different messages.
-  if (!API_BASE_CONFIGURED) {
+  // A recording needs no API base, so the not-configured state does not apply.
+  if (!SNAPSHOT_MODE && !API_BASE_CONFIGURED) {
     return (
       <div className="flex h-sysbar shrink-0 items-center gap-2 border-b border-status-critical/40 bg-status-critical/[0.08] px-3 text-2xs">
         <StatusDot tone="critical" pulse />
@@ -94,6 +117,30 @@ export function SystemBar() {
         tone={status ? (status.simulation_engine === 'BOPTEST' ? 'normal' : 'info') : 'idle'}
         title={status?.notes.join('\n')}
       />
+      {SNAPSHOT_MODE && (
+        <>
+          <Rule />
+          {/* The viewer is owed this before anything else on the bar: these
+              numbers were computed by the real engines, but earlier, and they
+              are being read from files rather than solved now. */}
+          <span
+            title={
+              recordedAt
+                ? `Recorded ${recordedAt}. Same engines, same code paths — replayed, not solved live.`
+                : 'Recorded run — replayed, not solved live.'
+            }
+            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill border border-status-warning/45 bg-status-warning/10 px-1.5 py-[1px] text-3xs font-semibold uppercase tracking-[0.1em] text-status-warning"
+          >
+            <StatusDot tone="warning" />
+            Recorded
+            {recordedAt && (
+              <span className="tabular font-mono font-normal normal-case tracking-normal opacity-70">
+                · {recordedAt.slice(0, 10)}
+              </span>
+            )}
+          </span>
+        </>
+      )}
       {stamp && (
         <>
           <Rule />

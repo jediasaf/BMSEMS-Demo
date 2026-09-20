@@ -239,6 +239,22 @@ to seeded fixtures, every value is tagged `SAMPLE FIXTURE`, and the status bar
 says so. The app never shows an empty state and never passes a fixture off as a
 measurement.
 
+### Hosting it without a backend
+
+The demo is deterministic, so it can be recorded and served as files — which
+is what the public deployment does:
+
+```bash
+make snapshot   # record every response, then verify the recording
+make static     # record, then build the frontend that serves it
+```
+
+The hosted build is a **replay** and says so: a `Recorded` chip in the status
+bar, a line on the About page, a `_snapshot` marker on every payload. Nothing
+is fabricated — every figure came from the engines named in its provenance on
+a real run. Only the delivery changed. Run `make demo` to watch the same
+numbers being solved live.
+
 ### Tests, lint, types
 
 ```bash

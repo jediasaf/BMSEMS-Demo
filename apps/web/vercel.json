@@ -4,7 +4,7 @@
   "buildCommand": "next build",
   "build": {
     "env": {
-      "NEXT_PUBLIC_API_BASE": "https://bmsems-demo.fly.dev"
+      "NEXT_PUBLIC_SNAPSHOT": "1"
     }
   },
   "installCommand": "npm ci",

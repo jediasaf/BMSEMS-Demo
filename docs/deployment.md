@@ -80,6 +80,39 @@ from disk. Vercel's serverless function limit is 250 MB unzipped. This is not
 a near miss that could be trimmed; it is a long-lived process with a
 filesystem, which is what a container host is for.
 
+## Two ways to host this
+
+**Static recording (what the public demo runs).** The demo is deterministic:
+seeded scenarios, a fixed replay window, optimisers that return the same
+answer for the same inputs. So it can be recorded once and served as files.
+
+```bash
+make snapshot   # record every response the product can make, then check it
+make static     # record, then build the frontend that serves the recording
+```
+
+`scripts/build_static_snapshot.py` drives the real API in-process and writes
+`apps/web/public/snapshot/*.json`. The frontend reads those instead of a
+backend when built with `NEXT_PUBLIC_SNAPSHOT=1`, which `vercel.json` sets.
+
+What this buys: one platform, no container, no cold start, nothing to pay for,
+nothing to wake up. What it costs: the hosted demo is a **replay**, and the
+product says so — a `Recorded` chip in the status bar with the date, a line on
+the About page, and a `_snapshot` marker on every payload.
+`scripts/verify_snapshot.py` re-checks that the recording still holds up, so a
+stale recording fails a command rather than an audience.
+
+Nothing is fabricated by recording. Every figure was produced by the engines
+named in its provenance — LightGBM, the RC zone model, pandapower, CVXPY — on
+a real run. Only the delivery changed.
+
+**Live backend (what `make demo` runs, and what a container host would run).**
+Everything solves on request: the optimiser in ~140 ms, two pandapower load
+flows to check its answer. This is the mode to run in front of anyone who asks
+"is it actually computing?".
+
+The rest of this document covers that second mode.
+
 ## The shape of it
 
 EcoTwin is two processes, and only one of them belongs on Vercel.

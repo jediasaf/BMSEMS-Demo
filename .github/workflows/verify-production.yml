@@ -3,36 +3,174 @@
 # Deliberately runs on a GitHub runner rather than a developer's machine: the
 # question is whether the demo works for someone who is not us, from a network
 # we do not control. It needs no secrets -- it only reads public URLs.
+#
+# The hosted demo is a static recording, so `web` is the only thing checked by
+# default. Supply `api` to also run the live-backend battery against a
+# container deployment; leave it empty and that job is skipped rather than
+# failing against a host nobody is running.
 name: Verify production
 
 on:
   workflow_dispatch:
     inputs:
-      api:
-        description: Backend base URL
-        required: false
-        default: https://bmsems-demo.fly.dev
       web:
         description: Frontend base URL
         required: false
         default: https://ecotwin-ai-zeta.vercel.app
+      api:
+        description: Backend base URL (optional; empty = static deployment, skip the backend battery)
+        required: false
+        default: ""
 
 permissions:
   contents: read
 
 env:
-  API: ${{ inputs.api || 'https://bmsems-demo.fly.dev' }}
   WEB: ${{ inputs.web || 'https://ecotwin-ai-zeta.vercel.app' }}
+  API: ${{ inputs.api }}
 
 jobs:
+  # ---------------------------------------------------------------------
+  # The hosted demo: static files, no backend.
+  # ---------------------------------------------------------------------
+  recording:
+    runs-on: ubuntu-latest
+    steps:
+      - name: The site is up and says what it is
+        run: |
+          echo "## Hosted demo" >> "$GITHUB_STEP_SUMMARY"
+          curl -fsSL --max-time 30 "$WEB/bms" -o /tmp/page.html
+          echo "- \`$WEB/bms\` -> $(wc -c < /tmp/page.html) bytes" | tee -a "$GITHUB_STEP_SUMMARY"
+          # A recording presented as live is the one failure this project does
+          # not tolerate, so the marker is a hard requirement, not a nicety.
+          grep -qi 'Recorded' /tmp/page.html || {
+            echo "::error::the served page does not carry the Recorded marker"; exit 1; }
+          echo "- the page declares itself a recording" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: The recording is complete and self-describing
+        run: |
+          curl -fsS --max-time 30 "$WEB/snapshot/index.json" -o /tmp/index.json
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json
+          i = json.load(open('/tmp/index.json'))
+          entries = i.get('entries', {})
+          print(f"- recorded at: **{i.get('recorded_at')}**")
+          print(f"- files: **{len(entries)}**, {i.get('bytes', 0) / 1e6:.1f} MB")
+          print(f"- cursor stride: {i.get('cursor_stride')} x 15 min from {i.get('start')}")
+          assert len(entries) > 1000, f"only {len(entries)} files recorded"
+          PY
+
+      - name: A sample of every call shape resolves
+        run: |
+          echo "## Sampled files" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          while read -r f; do
+            code=$(curl -s -o /tmp/body.json -w '%{http_code}' --max-time 20 "$WEB/snapshot/$f")
+            marked=$(python3 -c "import json;print('yes' if '_snapshot' in json.load(open('/tmp/body.json')) else 'NO')" 2>/dev/null || echo "unparsed")
+            echo "- \`$f\` -> $code, recorded marker: $marked" | tee -a "$GITHUB_STEP_SUMMARY"
+            [ "$code" = "200" ] || fail=1
+          done <<'FILES'
+          status.json
+          replay-window.json
+          scenarios.json
+          interview_verify.json
+          bms_overview__base__scenario_id-bms_hot_day__site_id-227.json
+          bms_control-lab__hours-24__scenario_id-bms_hot_day__site_id-227.json
+          ems_risk__scenario_id-ems_ev_surge.json
+          ems_optimise__at-2017-08-25T12-00-00__facility_id-227__scenario_id-ems_ev_surge.json
+          FILES
+          exit $fail
+
+      - name: The recorded verdict is still a pass
+        run: |
+          curl -fsS --max-time 30 "$WEB/snapshot/interview_verify.json" -o /tmp/v.json
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, sys
+          b = json.load(open('/tmp/v.json'))
+          print(f"- recorded /interview/verify ready: **{b['ready']}** ({len(b['checks'])} checks)")
+          for c in b['checks']:
+              print(f"  - {'PASS' if c['passed'] else 'FAIL'} `{c['check']}` — {c['detail']}")
+          sys.exit(0 if b['ready'] else 1)
+          PY
+
+      - name: No backend is contacted, and no source maps are served
+        run: |
+          echo "## Bundle" >> "$GITHUB_STEP_SUMMARY"
+          grep -oE '/_next/static/[^"]+\.js' /tmp/page.html | sort -u | head -60 > /tmp/chunks
+          echo "- chunks scanned: $(wc -l < /tmp/chunks)" | tee -a "$GITHUB_STEP_SUMMARY"
+          : > /tmp/all.js
+          while read -r c; do curl -fsS --max-time 30 "$WEB$c" >> /tmp/all.js || true; done < /tmp/chunks
+          # The static build must not be pointed at a backend at all. A stale
+          # NEXT_PUBLIC_API_BASE would be dead weight aimed at a dead host.
+          if grep -qE 'https?://[a-z0-9.-]+\.fly\.dev' /tmp/all.js /tmp/page.html; then
+            echo "::error::the served bundle still references a backend host"; exit 1
+          fi
+          echo "- no backend host in the bundle" | tee -a "$GITHUB_STEP_SUMMARY"
+          maps=$(head -20 /tmp/chunks | while read -r c; do
+            curl -s -o /dev/null -w '%{http_code}\n' --max-time 20 "$WEB$c.map"; done | grep -c '^200$' || true)
+          echo "- .map files served: $maps (must be 0)" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$maps" = "0" ]
+
+      - name: Security headers
+        run: |
+          echo "## Headers" >> "$GITHUB_STEP_SUMMARY"
+          curl -sI --max-time 20 "$WEB/bms" | tr -d '\r' | tr 'A-Z' 'a-z' > /tmp/h
+          for h in x-content-type-options referrer-policy x-frame-options; do
+            v=$(awk -F': ' -v k="$h" 'tolower($1)==k{print $2}' /tmp/h)
+            echo "- \`$h\`: ${v:-<missing>}" | tee -a "$GITHUB_STEP_SUMMARY"
+            [ -n "$v" ]
+          done
+
+      - name: Latency
+        run: |
+          echo "## Latency (median of 3)" >> "$GITHUB_STEP_SUMMARY"
+          for p in "/bms" "/snapshot/status.json" \
+                   "/snapshot/bms_overview__base__scenario_id-bms_hot_day__site_id-227.json" \
+                   "/snapshot/ems_optimise__at-2017-08-25T12-00-00__facility_id-227__scenario_id-ems_ev_surge.json"; do
+            ts=""
+            for i in 1 2 3; do ts="$ts $(curl -s -o /dev/null -w '%{time_total}' --max-time 60 "$WEB$p")"; done
+            med=$(python3 -c "import statistics; print(f'{statistics.median([float(x) for x in '''$ts'''.split()])*1000:.0f}')")
+            echo "- \`$p\` — ${med} ms" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [recording]
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Drive the demo against the public deployment
+        env:
+          E2E_BASE_URL: ${{ inputs.web || 'https://ecotwin-ai-zeta.vercel.app' }}
+          E2E_SNAPSHOT: "1"
+        run: npx playwright test --reporter=list
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-failure
+          path: apps/web/test-results
+          retention-days: 7
+
+  # ---------------------------------------------------------------------
+  # The live container path. Only runs when someone supplies a backend URL.
+  # ---------------------------------------------------------------------
   backend:
     runs-on: ubuntu-latest
+    if: inputs.api != ''
     steps:
       - name: healthz
         run: |
           echo "## Backend" >> "$GITHUB_STEP_SUMMARY"
-          # A cold machine takes ~24 s to bind, of which 19 s is cache warm-up.
-          # Retry rather than race it; the latency step measures the warm path.
+          # A cold machine takes a couple of seconds to bind, longer if the
+          # host had scaled to zero. Retry rather than race it; the latency
+          # step measures the warm path.
           for i in $(seq 1 30); do
             code=$(curl -s -o /tmp/hz -w '%{http_code}' --max-time 20 "$API/healthz" || echo 000)
             [ "$code" = "200" ] && break
@@ -113,71 +251,8 @@ jobs:
             for i in 1 2 3; do
               ts="$ts $(curl -s -o /dev/null -w '%{time_total}' --max-time 240 "$API$p")"
             done
-            med=$(python3 -c "import statistics,sys; print(f'{statistics.median([float(x) for x in '''$ts'''.split()])*1000:.0f}')")
+            med=$(python3 -c "import statistics; print(f'{statistics.median([float(x) for x in '''$ts'''.split()])*1000:.0f}')")
             echo "- \`$p\` — ${med} ms" | tee -a "$GITHUB_STEP_SUMMARY"
           done
           post=$(curl -s -o /dev/null -X POST -w '%{time_total}' --max-time 240 "$API/ems/optimise?scenario_id=ems_ev_surge")
           echo "- \`POST /ems/optimise\` — $(python3 -c "print(f'{float($post)*1000:.0f}')") ms" | tee -a "$GITHUB_STEP_SUMMARY"
-
-  frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: The served bundle must not fall back to localhost
-        run: |
-          echo "## Frontend bundle" >> "$GITHUB_STEP_SUMMARY"
-          curl -fsS --max-time 30 "$WEB/bms" -o /tmp/page.html
-          echo "- page bytes: $(wc -c < /tmp/page.html)" | tee -a "$GITHUB_STEP_SUMMARY"
-          # Pull every JS chunk the page references and scan the lot.
-          grep -oE '/_next/static/[^"]+\.js' /tmp/page.html | sort -u | head -60 > /tmp/chunks
-          echo "- chunks scanned: $(wc -l < /tmp/chunks)" | tee -a "$GITHUB_STEP_SUMMARY"
-          : > /tmp/all.js
-          while read -r c; do curl -fsS --max-time 30 "$WEB$c" >> /tmp/all.js || true; done < /tmp/chunks
-
-          # The question is which base the build RESOLVES to, not which strings
-          # exist in it. `resolveApiBase` carries the development fallback as a
-          # literal in every build -- grepping for it proves nothing, and the
-          # unit tests already pin that production never returns it.
-          if grep -q 'is not set in this build' /tmp/page.html; then
-            echo "::error::NEXT_PUBLIC_API_BASE is not configured in this deployment."
-            echo "The page renders the 'Not configured' state, so no API is being called."
-            exit 1
-          fi
-          echo "- the build has an API base configured" | tee -a "$GITHUB_STEP_SUMMARY"
-
-          if ! grep -qF "$API" /tmp/all.js /tmp/page.html; then
-            echo "::error::the served bundle does not contain the expected backend URL $API"
-            exit 1
-          fi
-          echo "- the served bundle targets \`$API\`" | tee -a "$GITHUB_STEP_SUMMARY"
-
-      - name: No source maps are served
-        run: |
-          maps=$(grep -oE '/_next/static/[^"]+\.js' /tmp/page.html | sort -u | head -20 | while read -r c; do
-            curl -s -o /dev/null -w '%{http_code}\n' --max-time 20 "$WEB$c.map"; done | grep -c '^200$' || true)
-          echo "- .map files served: $maps (must be 0)" | tee -a "$GITHUB_STEP_SUMMARY"
-          [ "$maps" = "0" ]
-
-  e2e:
-    runs-on: ubuntu-latest
-    needs: [backend, frontend]
-    defaults:
-      run:
-        working-directory: apps/web
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: npm install --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
-      - name: Drive the demo against the public deployment
-        env:
-          E2E_BASE_URL: ${{ inputs.web || 'https://ecotwin-ai-zeta.vercel.app' }}
-          E2E_API_BASE: ${{ inputs.api || 'https://bmsems-demo.fly.dev' }}
-        run: npx playwright test --reporter=list
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-failure
-          path: apps/web/test-results
-          retention-days: 7

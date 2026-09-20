@@ -1,7 +1,7 @@
 'use client';
 
 import { ExternalLink } from 'lucide-react';
-import { api } from '@/lib/api';
+import { SNAPSHOT_MODE, api } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { Workspace } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
@@ -158,6 +158,16 @@ export default function AboutPage() {
                   <span className="text-ink-200">No real actuation.</span> Historical mode is
                   read-only and there is no code path to a real actuator.
                 </li>
+                {SNAPSHOT_MODE && (
+                  <li>
+                    <span className="text-status-warning">Not computing live.</span> This build is a
+                    recording. Every figure was produced by the engines named in its provenance —
+                    LightGBM, the RC zone model, pandapower, CVXPY — on a real run, then written to
+                    files so the demo needs no server. Run it locally with{' '}
+                    <span className="font-mono text-ink-300">make demo</span> to watch the same
+                    numbers being solved.
+                  </li>
+                )}
               </ul>
             </Panel>
 
