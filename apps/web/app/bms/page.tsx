@@ -218,7 +218,11 @@ export default function BmsOverviewPage() {
             <Panel
               title="Building view"
               subtitle={assets.data ? assets.data.root.name : undefined}
-              className="min-h-[340px]"
+              // Enough to stop the panel jumping when Hierarchy is taller than
+              // Zones, and no more: since the zones collapsed, matching the
+              // chart's height left a bordered box two-thirds empty, which
+              // reads as something that failed to load.
+              className="min-h-[248px]"
             >
               {assets.data ? (
                 <BuildingView

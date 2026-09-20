@@ -89,23 +89,29 @@ export function ReplayControl({ compact = false }: { compact?: boolean }) {
         />
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5">
-        {replayWindow.speeds.map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setSpeed(value)}
-            className={cn(
-              'focus-ring rounded-pill px-1.5 py-[1px] font-mono text-3xs transition-colors',
-              speed === value
-                ? 'bg-accent/15 text-accent'
-                : 'text-ink-500 hover:bg-base-750 hover:text-ink-200',
-            )}
-          >
-            {value}x
-          </button>
-        ))}
-      </div>
+      {/* One button, not one per speed. Four of them sat lit on the strip at
+          all times to express a setting that only matters while the clock is
+          running, and the one thing an operator console cannot afford is to
+          spend attention on a control nobody is using. Cycling keeps every
+          speed reachable and costs one element instead of four. */}
+      <button
+        type="button"
+        onClick={() => {
+          const speeds = replayWindow.speeds;
+          const next = speeds[(speeds.indexOf(speed) + 1) % Math.max(speeds.length, 1)];
+          if (next !== undefined) setSpeed(next);
+        }}
+        title={`Replay speed. Cycles through ${replayWindow.speeds.map((v) => `${v}x`).join(', ')}.`}
+        aria-label={`Replay speed, ${speed}x. Activate to change.`}
+        className={cn(
+          'focus-ring shrink-0 rounded-pill px-1.5 py-[1px] font-mono text-3xs transition-colors',
+          playing
+            ? 'bg-accent/15 text-accent'
+            : 'text-ink-500 hover:bg-base-750 hover:text-ink-200',
+        )}
+      >
+        {speed}x
+      </button>
     </div>
   );
 }
