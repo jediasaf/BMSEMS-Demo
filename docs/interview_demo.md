@@ -1,23 +1,35 @@
 # EcoTwin AI — interview demo script
 
-A five-minute run through both workflows. Everything below is produced by the
-running system; no slide, no recording, nothing hard-coded.
+A five-minute run through both workflows. No slides. Every number below was
+produced by the engines named in its provenance, and none of it is hardcoded.
 
-**Where to run it**
+**Which of the two modes you are in**
 
-The public frontend is https://ecotwin-ai-zeta.vercel.app. It is reachable,
-and with no backend deployed it says so: the system bar reads **Not
-configured** and every panel offers a retry rather than inventing a number.
-So **run the demo locally** until a backend is deployed.
+| | Hosted link | `make demo` |
+|---|---|---|
+| What it is | a **recording** of a real run, served as files | the real thing, solving on request |
+| Needs | a browser | Python, the dataset, ~1 GB of RAM |
+| First click | instant | instant once warm, a few seconds cold |
+| Can it be interrogated | click anything, drag the replay slider | that, plus change the code and re-run |
 
-**Before you start**
+Both show the same numbers, because the recording was taken from the live
+system. **Say which one you are in, in your first sentence.** A replay
+presented as a live computation is the one thing in this project that would
+be worth failing over, and the product says so itself: a `RECORDED` chip with
+the date sits in the status bar, and every payload carries a `_snapshot`
+marker.
+
+If you have five minutes and a laptop, run it live — "is it actually
+computing?" is the question the hosted link cannot answer on its own.
+
+**Running it live**
 
 ```bash
 make demo          # or: bash scripts/dev_restart.sh
 curl -s localhost:8000/interview/verify | jq .ready     # must print true
 ```
 
-`ready: true` means the eight claims this script makes have just been checked
+`ready: true` means the ten claims this script makes have just been checked
 against real computation. If it prints `false`, the failing check names which
 half of the story broke — read it before you start, not during.
 
@@ -38,9 +50,11 @@ scenario is seeded from `sha256(scenario_id | asset_id)`, not from `hash()`.
 
 > "EcoTwin AI is a portfolio prototype, not a Schneider Electric product. It
 > runs on Schneider's own published dataset — the Power Laws forecasting
-> competition, 267 anonymised sites at 15-minute resolution. Two operational
-> workflows over one provenance model: a building operator and a power
-> operator.
+> competition, 267 anonymised sites at 15-minute resolution. That dataset ends
+> in November 2017, so the clock reads 2017: I replay the archive against its
+> own timestamps rather than shifting them forward to look current. Two
+> operational workflows over one provenance model: a building operator and a
+> power operator.
 >
 > The bar across the top never goes quiet. It tells you where the data came
 > from, how many models are serving, which simulator is live, and where the
@@ -65,6 +79,16 @@ its own degradations before you ask.
 
 **Click:** any provenance badge. The popover gives source, publisher, field,
 units, processing and assumptions.
+
+> "Under the chart the dashboard answers the two questions an operator
+> actually has. **Forecast**: the highest point the model expects in the next
+> twelve hours, when it lands, and the 80% interval it came with — a point
+> estimate on its own would be the wrong thing to put in front of someone who
+> has to act on it. **Optimisation**: what the setpoint plan would save over
+> the next day, and whether the simulator accepted it."
+
+**Point at:** the interval, and the verdict pill. Both are the honest half of
+their panel.
 
 ### Step 2 — inject the disturbance
 
@@ -129,6 +153,12 @@ units, processing and assumptions.
 > that would be the easiest lie in the whole project. Capacity is calibrated
 > by bisection on the load flow, not by kVA × power factor: a 160 kVA unit
 > gives 144.9 kW of real demand at exactly 100% loading."
+
+> "Below the risk chart, the dispatch it implies: peak down 60 kW, the
+> transformer from 139% to 96%, and 168 kWh of charging **moved rather than
+> shed**. On a day with no overload that panel says there is nothing to
+> dispatch and names the loading it actually reaches — it does not run the
+> optimiser to print a row of zeroes."
 
 ### Step 7 — the EV surge
 
@@ -216,6 +246,12 @@ The demo is built to degrade in public rather than fail.
 | A panel errors | Red "Panel unavailable" with the message and a Retry | "Each panel fails alone. The rest of the page is still true." |
 | No processed dataset | Everything reads `SAMPLE FIXTURE` | "Deterministic synthetic stand-in. Every value carries SAMPLE FIXTURE in provenance — it cannot be mistaken for real." |
 | A model failed its quality gate | Row marked `naive`, gate reason in the tooltip | "The model is only served if it beats the strongest naive baseline by 1%. Otherwise you get seasonal-naive and a reason." |
+| You are on the hosted link and someone asks whether it is live | `RECORDED` chip with the date, in the status bar | "It is a recording of a real run — same engines, same code paths, written to files so the demo needs no server. `make demo` runs it live in about a minute if you want to watch it compute." |
+
+The recording cannot degrade the way the live system can: the failures in the
+first four rows are live-mode failures. What a recording *can* do is go stale,
+which is why `scripts/verify_snapshot.py` re-checks it against the same claims
+`/interview/verify` checks.
 
 If the guided bar gets out of step, click **Reset demo**: it restores the
 route, the replay cursor, both scenarios, every selection and every computed
