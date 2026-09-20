@@ -8,6 +8,7 @@ came from.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator
@@ -28,9 +29,8 @@ logging.basicConfig(
 log = logging.getLogger("ecotwin")
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Warm the caches at start-up so the first demo click is not the slow one."""
+def _warm_caches() -> None:
+    """Fill the caches the demo reads, so the first click is not the slow one."""
     from apps.api.services.bms import get_bms_service
     from apps.api.services.ems import get_ems_service
 
@@ -63,7 +63,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         )
     except Exception as exc:  # pragma: no cover - never block start-up
         log.warning("warm-up skipped: %s", exc)
-    yield
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Accept connections immediately; warm the caches behind that.
+
+    The warm-up takes about 19 s against the real dataset. Doing it before
+    yielding means uvicorn does not bind until it finishes, and on a host that
+    scales to zero the router gives up long before that -- Fly's proxy waits
+    about 8 s, so a woken machine refused the very request that woke it.
+
+    Binding first inverts that: `/healthz` answers in milliseconds, the router
+    connects, and the caches fill on a worker thread. A request that arrives
+    mid-warm-up computes what it needs itself; the caches are keyed and
+    idempotent, so the worst case is duplicated work, never a wrong answer.
+    """
+    task = asyncio.create_task(asyncio.to_thread(_warm_caches))
+    try:
+        yield
+    finally:
+        task.cancel()
 
 
 app = FastAPI(
