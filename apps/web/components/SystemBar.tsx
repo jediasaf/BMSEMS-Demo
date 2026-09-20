@@ -163,7 +163,14 @@ export function SystemBar() {
         ) : null}
         {interviewMode && (
           <span
-            title={PRELOAD_TITLE[preload.state]}
+            title={
+              // In a recording nothing is being warmed now, so the live
+              // figure belongs in the tooltip where it can say whose it is.
+              SNAPSHOT_MODE && preload.state === 'ready'
+                ? 'Every curated step is already recorded. On the live backend this preload ' +
+                  `took ${(preload.ms / 1000).toFixed(1)} s.`
+                : PRELOAD_TITLE[preload.state]
+            }
             className={cn(
               'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill border px-1.5 py-[1px] text-3xs font-semibold uppercase tracking-[0.1em]',
               preload.state === 'failed'
@@ -178,7 +185,9 @@ export function SystemBar() {
             Interview
             {preload.state === 'ready' && (
               <span className="tabular font-mono font-normal normal-case tracking-normal opacity-70">
-                · warm {(preload.ms / 1000).toFixed(1)}s
+                {/* "warm 9.7s" would claim this build just spent 9.7 s warming
+                    a cache. It did not; it read a file. */}
+                {SNAPSHOT_MODE ? '· ready' : `· warm ${(preload.ms / 1000).toFixed(1)}s`}
               </span>
             )}
             {preload.state === 'loading' && (
