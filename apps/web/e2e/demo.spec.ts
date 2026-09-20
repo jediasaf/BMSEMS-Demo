@@ -176,8 +176,45 @@ test.describe('interview demo path', () => {
     await page.waitForLoadState('networkidle').catch(() => undefined);
 
     // No invented alerts: the empty state says monitoring is running.
-    await expect(page.getByText(/No operational intervention recommended/i)).toBeVisible();
-    await expect(page.getByText(/No action required/i)).toBeVisible();
+    await expect(page.getByText(/No fault to act on/i)).toBeVisible();
+    await expect(page.getByText(/Recommendations follow a material finding/i)).toBeVisible();
+    // And the standing setpoint plan is still offered, because a quiet day is
+    // not the same as a day with nothing to gain. The two panels sit next to
+    // each other, so they must not read as contradicting one another.
+    await expect(page.getByRole('heading', { name: /^Optimisation$/i })).toBeVisible();
+
+    expect(errors, errors.join('\n')).toEqual([]);
+  });
+
+  test('the dashboard says what is coming and what to do about it', async ({ page }) => {
+    const errors = watchForErrors(page);
+
+    await page.goto('/bms');
+    await page
+      .getByRole('button', { name: /Hot Day/i })
+      .first()
+      .click();
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+
+    // Forward-looking: a predicted peak with the interval it came with, not a
+    // point estimate on its own.
+    const forecast = page.locator('section', {
+      has: page.getByRole('heading', { name: /^Forecast$/i }),
+    });
+    await expect(forecast.getByText(/Predicted peak/i)).toBeVisible();
+    await expect(forecast.getByText(/^-?[\d,.]+ kW$/).first()).toBeVisible();
+    await expect(forecast.getByText(/80% interval/i)).toBeVisible();
+    await expect(forecast.getByText(/^[\d,.]+–[\d,.]+$/).first()).toBeVisible();
+
+    // Actionable: what the optimiser would do, and whether the simulator
+    // accepted it. A verdict is required -- an optimiser that cannot be told
+    // no is not a gate.
+    const optimisation = page.locator('section', {
+      has: page.getByRole('heading', { name: /^Optimisation$/i }),
+    });
+    await expect(optimisation.getByText(/HVAC energy/i)).toBeVisible();
+    await expect(optimisation.getByText(/^[+-][\d.]+%$/).first()).toBeVisible();
+    await expect(optimisation.getByText(/^(Accepted|Rejected)$/i)).toBeVisible();
 
     expect(errors, errors.join('\n')).toEqual([]);
   });

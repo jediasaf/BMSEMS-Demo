@@ -58,13 +58,14 @@ computing?".
 | Types | `tsc --noEmit` | clean |
 | Frontend lint | `next lint` | clean |
 | Production build | `next build` | 9 routes, all static, no browser source maps |
-| Browser suite | `playwright test` | 8 passed against the **recorded build**, built exactly as Vercel builds it (no `.env.local`, blank API base), with no backend running: the twelve demo steps, reset, the honest normal day, the API-base rules, and a sweep that fails on any missing file or console error. The ninth test asks a live backend for its verdict and skips when there is none. |
+| Browser suite | `playwright test` | **9 passed against the recorded build**, built exactly as Vercel builds it (no `.env.local`, blank API base), with no backend running; and **9 passed against the live backend** (`make demo`). Each mode skips the one test that only applies to the other. Covers the twelve demo steps, reset, the honest normal day, the forecast and optimisation panels, the API-base rules, and a sweep that fails on any missing file or console error. |
 | Recording | `scripts/verify_snapshot.py` | consistent: recorded verdict `ready` with 10/10 checks, every payload marked as a recording, both gates still reached |
 | Provenance | `make audit` | every audited metric carries a badge from the closed vocabulary |
 | Demo readiness | `GET /interview/verify` | `ready: true`, 10/10 checks |
 | Thread safety | `pytest tests/test_network.py` | the load-flow model is solved from several threads at once and every read matches the single-threaded answer |
 | Known limitation | both gates still say no somewhere | the network gate rejects 18 of 54 over-nameplate replay positions; the recording keeps those rejections rather than only the flattering ones |
 | Accessibility | axe-core, WCAG 2.0/2.1 A + AA, all seven routes | no violations |
+| Warm latency, live | `make demo`, median of three | overview 114 ms · Control Lab 492 ms · portfolio 36 ms · risk 22 ms · `POST /ems/optimise` 76 ms |
 
 ## What the demo claims, and what checks it
 

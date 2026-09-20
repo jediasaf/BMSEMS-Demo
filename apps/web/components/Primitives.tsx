@@ -225,6 +225,36 @@ export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () 
   );
 }
 
+/** A labelled figure with an optional second line: the unit of a summary row. */
+export function Stat({
+  label,
+  value,
+  sub,
+  tone,
+  title,
+}: {
+  label: string;
+  value: string;
+  sub?: ReactNode;
+  tone?: string;
+  title?: string;
+}) {
+  return (
+    <div className="min-w-0" title={title}>
+      <div className="label truncate">{label}</div>
+      <div
+        className={cn(
+          'tabular mt-1 truncate text-[19px] font-semibold leading-none',
+          tone ?? 'text-ink-100',
+        )}
+      >
+        {value}
+      </div>
+      {sub && <div className="tabular mt-1 truncate text-3xs text-ink-500">{sub}</div>}
+    </div>
+  );
+}
+
 export function EmptyNote({ title, detail }: { title: string; detail?: string }) {
   return (
     <div className="rounded-panel border border-dashed border-base-600 bg-base-800/40 px-3 py-4 text-center">
