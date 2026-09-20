@@ -13,6 +13,7 @@ is re-derived by `make check`, `make audit`, `make snapshot`, `make demo` and
 | | |
 |---|---|
 | Branch | `claude/zen-ptolemy-5hf381` |
+| Commit | `1e8e99d` |
 | Hosted demo | https://ecotwin-ai-zeta.vercel.app — Vercel, static, no backend |
 | What is hosted | a **recording**: 1389 files, 10.3 MB, taken 2026-09-20T10:14Z |
 | Live mode | `make demo` — FastAPI plus the whole science stack, every answer solved on request |
