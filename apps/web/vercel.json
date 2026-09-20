@@ -4,7 +4,8 @@
   "buildCommand": "next build",
   "build": {
     "env": {
-      "NEXT_PUBLIC_SNAPSHOT": "1"
+      "NEXT_PUBLIC_SNAPSHOT": "1",
+      "NEXT_PUBLIC_API_BASE": ""
     }
   },
   "installCommand": "npm ci",

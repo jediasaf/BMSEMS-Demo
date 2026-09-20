@@ -308,3 +308,26 @@ No Kubernetes, no message bus, no managed database. At six facilities and one
 container they would be architecture theatre. `docs/interview_questions.md`
 covers what would actually change at a thousand sites — and the answer starts
 with the storage layer, not the orchestrator.
+
+### What the hosted build is told
+
+`apps/web/vercel.json` sets both build-time variables explicitly:
+
+```json
+"env": { "NEXT_PUBLIC_SNAPSHOT": "1", "NEXT_PUBLIC_API_BASE": "" }
+```
+
+The second is not redundant. `NEXT_PUBLIC_*` variables are inlined at build
+time wherever the source reads them, so a leftover `NEXT_PUBLIC_API_BASE` in
+the Vercel project settings would be baked into the bundle — a dead backend
+URL shipped to every visitor, and a claim in the artefact that contradicts
+what the product does. Blanking it in `vercel.json` overrides the project
+setting, so the repository decides, not a dashboard field nobody will
+remember. `.github/workflows/verify-production.yml` fails the deployment if a
+backend host appears in the served bundle.
+
+If you connect this repository to Vercel through the GitHub integration rather
+than the CLI, set **Root Directory** to `apps/web`. Everything else —
+framework, build command, install command, headers, region — is in
+`vercel.json`, so there is nothing to configure in the dashboard and no
+environment variable to add.
