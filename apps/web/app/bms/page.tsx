@@ -14,8 +14,7 @@ import { TimeSeriesChart, type ChartSeriesConfig } from '@/components/TimeSeries
 import { BuildingView, AssetDrawer } from '@/components/BuildingView';
 import { InsightRow } from '@/components/InsightCard';
 import { RecommendationCard } from '@/components/RecommendationCard';
-import { DataSourcePanel } from '@/components/DataSourcePanel';
-import { EmptyNote, ErrorNote, Field, Panel, Pill, Skeleton } from '@/components/Primitives';
+import { EmptyNote, ErrorNote, Panel, Pill, Skeleton } from '@/components/Primitives';
 import { DataQualityDrawer } from '@/features/bms/DataQualityDrawer';
 import { ForecastPanel, OpportunityPanel } from '@/features/bms/ForwardView';
 import { ModelExplanationDrawer } from '@/features/bms/ModelExplanationDrawer';
@@ -87,6 +86,17 @@ export default function BmsOverviewPage() {
 
   const site = sites.data?.sites.find((s) => String(s.site_id) === siteId);
 
+  // Four, not six. `energy_intensity` and `occupancy_proxy` are both already
+  // on this screen -- power density in the Building view tile, occupancy in
+  // the recommendation's reasoning where it actually carries an argument --
+  // and a scan line reads as a sentence only while it is short enough to be
+  // one: this much now, this much expected, this many findings, this warm
+  // outside. /bms/ai-operations keeps the full set.
+  const HEADLINE_KPIS = ['building_load', 'expected_load', 'active_anomalies', 'outdoor_temp'];
+  const headlineKpis = (data?.kpis ?? [])
+    .filter((k) => HEADLINE_KPIS.includes(k.key))
+    .sort((a, b) => HEADLINE_KPIS.indexOf(a.key) - HEADLINE_KPIS.indexOf(b.key));
+
   return (
     <>
       <PageHeader
@@ -94,7 +104,6 @@ export default function BmsOverviewPage() {
         title="AI Building Operator"
         subtitle="Measured → detect → predict → recommend → simulate"
         chips={[
-          { label: 'Source', value: status?.data_label ?? '…' },
           // An absent answer is not a negative answer. With no status yet, the
           // chip reads "…" rather than asserting SAMPLE FIXTURE — which would
           // be the interface inventing a fact about data it has not seen.
@@ -172,13 +181,13 @@ export default function BmsOverviewPage() {
           {/* ROW 1 — KPIs */}
           {overview.error && <ErrorNote message={overview.error} onRetry={overview.reload} />}
           {!data && overview.loading ? (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-              {Array.from({ length: 6 }).map((_, index) => (
+            <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, index) => (
                 <Skeleton key={index} className="h-[72px]" />
               ))}
             </div>
           ) : (
-            data && <KpiRow kpis={data.kpis} sparks={sparks} />
+            data && <KpiRow kpis={headlineKpis} sparks={sparks} columns={4} />
           )}
 
           {/* ROW 2 — chart + building view */}
@@ -237,7 +246,7 @@ export default function BmsOverviewPage() {
           </div>
 
           {/* ROW 4 — insights + recommendation + data source */}
-          <div className="grid items-start gap-2.5 xl:grid-cols-[1.15fr_1.15fr_0.7fr]">
+          <div className="grid items-start gap-2.5 xl:grid-cols-2">
             <Panel
               title="Recent AI insights"
               subtitle={data ? `${data.insights.length} in window` : undefined}
@@ -274,38 +283,6 @@ export default function BmsOverviewPage() {
 
             <div className="min-w-0">
               <RecommendationPanel siteId={siteId} scenarioId={bmsScenario} />
-            </div>
-
-            <div className="flex min-w-0 flex-col gap-2.5">
-              <DataSourcePanel />
-              {data?.calibration && (
-                <Panel title="Thermal model" subtitle="used by the Control Lab">
-                  <Field
-                    label="Published area"
-                    value={`${num(data.calibration.published_floor_area_m2, 0)} m²`}
-                    mono
-                  />
-                  <Field
-                    label="Conditioned"
-                    value={`${num(data.calibration.conditioned_area_m2, 0)} m² (${num(
-                      data.calibration.conditioned_share * 100,
-                      0,
-                    )}%)`}
-                    mono
-                  />
-                  <Field
-                    label="τ air / mass"
-                    value={`${num(data.calibration.time_constants_hours.air, 2)} h / ${num(
-                      data.calibration.time_constants_hours.mass,
-                      1,
-                    )} h`}
-                    mono
-                  />
-                  <p className="mt-1.5 border-t border-base-700 pt-1.5 text-3xs leading-relaxed text-ink-600">
-                    {data.calibration.method}
-                  </p>
-                </Panel>
-              )}
             </div>
           </div>
         </div>
