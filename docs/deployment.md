@@ -12,11 +12,25 @@ The frontend is correct and complete; it is waiting on a backend URL. Nothing
 below is aspirational — the image builds, runs and passes `/interview/verify`
 locally, and the manifests are sized from measurements of that run.
 
-### One command, once a credential exists
+### One click, once a credential exists
 
-Everything except the credential is committed. With a token in the
-environment, this deploys, waits for the service, checks all three health
-endpoints and prints the exact command to wire the frontend:
+Everything except the credential is committed, and the credential does not
+belong in anyone's shell. Put it in the repository instead:
+
+1. `flyctl tokens create deploy --name ecotwin`
+2. GitHub → **Settings → Secrets and variables → Actions → New repository
+   secret**, named `FLY_API_TOKEN`
+3. **Actions → Deploy backend → Run workflow**
+
+`.github/workflows/deploy-backend.yml` then creates the app, deploys the
+committed `fly.toml` (1 GB, one always-on machine, `/healthz` as the platform
+check), waits for liveness, and asserts `/health` components and
+`/interview/verify` `ready: true` before it reports success. It accepts the
+token under `FLY_API_TOKEN`, `FLY_ACCESS_TOKEN`, `FLY_TOKEN` or
+`FLYIO_API_TOKEN`, never prints it, and runs only on `workflow_dispatch` — a
+deployment is a decision, not a side effect of committing.
+
+To deploy from a shell instead:
 
 ```bash
 FLY_API_TOKEN=... bash scripts/deploy_backend.sh
@@ -24,8 +38,17 @@ FLY_API_TOKEN=... bash scripts/deploy_backend.sh
 RENDER_API_KEY=... bash scripts/deploy_backend.sh --render
 ```
 
-Without a credential it exits immediately and says which one it needs. It
-never reports a deployment it did not make.
+Both refuse to run without a credential and neither reports a deployment it
+did not make.
+
+### Why not Vercel, measured
+
+The backend's runtime dependencies install to **483 MB** — pyarrow 135,
+scipy 113, pandas 75, scikit-learn 57, numpy 40, pandapower 35, the rest
+smaller — before any code, and it reads a further 94 MB of Parquet and joblib
+from disk. Vercel's serverless function limit is 250 MB unzipped. This is not
+a near miss that could be trimmed; it is a long-lived process with a
+filesystem, which is what a container host is for.
 
 ## The shape of it
 
