@@ -4,6 +4,9 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  # Runnable on demand. An intermittent failure needs samples, and pushing
+  # commits to collect them is not a way to get them.
+  workflow_dispatch:
 
 jobs:
   backend:
