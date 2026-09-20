@@ -1,0 +1,80 @@
+# Deploy the EcoTwin backend to Fly.io.
+#
+# Run from the Actions tab (or `gh workflow run deploy-backend.yml`). It is
+# never triggered by a push: a deployment is a decision, not a side effect of
+# committing.
+#
+# The Fly credential lives in the repository secret FLY_API_TOKEN and is never
+# read outside this runner. Create one with:
+#
+#     flyctl tokens create deploy --name ecotwin
+#
+# and add it under Settings -> Secrets and variables -> Actions.
+name: Deploy backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Fly app name
+        required: false
+        default: ecotwin-api
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      APP: ${{ inputs.app || 'ecotwin-api' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the credential is present
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error::Repository secret FLY_API_TOKEN is not set."
+            echo "Create a token with 'flyctl tokens create deploy --name ecotwin'"
+            echo "and add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "credential present"
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create the app if it does not exist
+        run: flyctl apps create "$APP" --machines || echo "app already exists"
+
+      # fly.toml is committed and carries the measured sizing: 1 GB, one
+      # always-on machine, /healthz as the platform check.
+      - name: Deploy
+        run: flyctl deploy --config fly.toml --app "$APP" --ha=false --yes
+
+      - name: Wait for liveness
+        run: |
+          BASE="https://${APP}.fly.dev"
+          for i in $(seq 1 40); do
+            if curl -fsS --max-time 10 "$BASE/healthz" >/dev/null 2>&1; then
+              echo "healthz answered after $((i*5))s"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::$BASE/healthz never answered"; flyctl logs --app "$APP" --no-tail | tail -50; exit 1
+
+      - name: Verify components and demo readiness
+        run: |
+          BASE="https://${APP}.fly.dev"
+          echo "healthz: $(curl -fsS --max-time 10 "$BASE/healthz")"
+          curl -fsS --max-time 60 "$BASE/health" | python3 -c 'import json,sys; b=json.load(sys.stdin); print("components:", b["components"]); print("status:", b["status"])'
+          curl -fsS --max-time 180 "$BASE/interview/verify" | python3 -c '
+          import json, sys
+          b = json.load(sys.stdin)
+          for c in b["checks"]:
+              print(("PASS" if c["passed"] else "FAIL"), c["check"], "|", c["detail"])
+          print("ready:", b["ready"])
+          sys.exit(0 if b["ready"] else 1)'
+
+      - name: Report the URL
+        run: echo "Backend live at https://${APP}.fly.dev" >> "$GITHUB_STEP_SUMMARY"
