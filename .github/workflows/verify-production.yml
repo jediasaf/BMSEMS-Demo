@@ -1,0 +1,170 @@
+# Verify the public deployment from the public internet.
+#
+# Deliberately runs on a GitHub runner rather than a developer's machine: the
+# question is whether the demo works for someone who is not us, from a network
+# we do not control. It needs no secrets -- it only reads public URLs.
+name: Verify production
+
+on:
+  workflow_dispatch:
+    inputs:
+      api:
+        description: Backend base URL
+        required: false
+        default: https://bmsems-demo.fly.dev
+      web:
+        description: Frontend base URL
+        required: false
+        default: https://ecotwin-ai-zeta.vercel.app
+
+permissions:
+  contents: read
+
+env:
+  API: ${{ inputs.api || 'https://bmsems-demo.fly.dev' }}
+  WEB: ${{ inputs.web || 'https://ecotwin-ai-zeta.vercel.app' }}
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: healthz
+        run: |
+          echo "## Backend" >> "$GITHUB_STEP_SUMMARY"
+          code=$(curl -s -o /tmp/hz -w '%{http_code}' --max-time 20 "$API/healthz")
+          echo "- /healthz -> $code $(cat /tmp/hz)" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$code" = "200" ]
+
+      - name: health components
+        run: |
+          curl -fsS --max-time 60 "$API/health" -o /tmp/h.json
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json
+          b = json.load(open('/tmp/h.json'))
+          print(f"- /health status: **{b['status']}**")
+          for k, v in b['components'].items():
+              print(f"  - {k}: {v}")
+          for n in b.get('notes', []):
+              print(f"  - note: {n}")
+          required = {'api', 'data', 'models', 'pandapower'}
+          bad = {k: v for k, v in b['components'].items() if k in required and v not in ('ok',)}
+          assert not bad, f"unhealthy required components: {bad}"
+          PY
+
+      - name: interview/verify
+        run: |
+          curl -fsS --max-time 240 "$API/interview/verify" -o /tmp/v.json
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, sys
+          b = json.load(open('/tmp/v.json'))
+          print(f"- /interview/verify ready: **{b['ready']}** ({len(b['checks'])} checks)")
+          for c in b['checks']:
+              print(f"  - {'PASS' if c['passed'] else 'FAIL'} `{c['check']}` — {c['detail']}")
+          sys.exit(0 if b['ready'] else 1)
+          PY
+
+      - name: CORS allowlist is closed
+        run: |
+          echo "## CORS" >> "$GITHUB_STEP_SUMMARY"
+          check() {
+            got=$(curl -s -D - -o /dev/null --max-time 20 -X OPTIONS "$API/bms/overview" \
+                  -H "Origin: $1" -H "Access-Control-Request-Method: GET" \
+                  | tr -d '\r' | awk 'tolower($1)=="access-control-allow-origin:"{print $2}')
+            echo "- \`$1\` -> ${got:-<no grant>}" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ "$2" = "allow" ]; then [ "$got" = "$1" ]; else [ -z "$got" ]; fi
+          }
+          check "$WEB" allow
+          check "http://localhost:3000" allow
+          check "https://ecotwin-ai-zeta.vercel.app.attacker.example" deny
+          check "https://evil.example" deny
+          cred=$(curl -s -D - -o /dev/null --max-time 20 "$API/healthz" -H "Origin: $WEB" \
+                 | tr -d '\r' | grep -ci 'access-control-allow-credentials' || true)
+          echo "- credentials header present: $cred (must be 0)" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$cred" = "0" ]
+
+      - name: bounded inputs and error hygiene
+        run: |
+          echo "## Input handling" >> "$GITHUB_STEP_SUMMARY"
+          long=$(python3 -c 'print("x"*70)')
+          for q in "site_id=$long" "site_id=../../etc/passwd" "hours=99999"; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$API/bms/control-lab?$q")
+            echo "- \`${q:0:32}\` -> $code (expect 422)" | tee -a "$GITHUB_STEP_SUMMARY"
+            [ "$code" = "422" ]
+          done
+          body=$(curl -s --max-time 30 "$API/bms/overview?site_id=no-such-site")
+          echo "- unknown site -> $body" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "$body" | grep -qv 'Traceback'
+          echo "$body" | grep -qv '/app/'
+
+      - name: latency
+        run: |
+          echo "## Warm latency (median of 3)" >> "$GITHUB_STEP_SUMMARY"
+          for p in "/healthz" "/health" "/bms/overview?scenario_id=bms_hot_day" \
+                   "/bms/control-lab?scenario_id=bms_hot_day" \
+                   "/ems/portfolio?scenario_id=ems_ev_surge" \
+                   "/ems/network?scenario_id=ems_ev_surge" "/interview/verify"; do
+            ts=""
+            for i in 1 2 3; do
+              ts="$ts $(curl -s -o /dev/null -w '%{time_total}' --max-time 240 "$API$p")"
+            done
+            med=$(python3 -c "import statistics,sys; print(f'{statistics.median([float(x) for x in '''$ts'''.split()])*1000:.0f}')")
+            echo "- \`$p\` — ${med} ms" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+          post=$(curl -s -o /dev/null -X POST -w '%{time_total}' --max-time 240 "$API/ems/optimise?scenario_id=ems_ev_surge")
+          echo "- \`POST /ems/optimise\` — $(python3 -c "print(f'{float($post)*1000:.0f}')") ms" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: The served bundle must not fall back to localhost
+        run: |
+          echo "## Frontend bundle" >> "$GITHUB_STEP_SUMMARY"
+          curl -fsS --max-time 30 "$WEB/bms" -o /tmp/page.html
+          echo "- page bytes: $(wc -c < /tmp/page.html)" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Pull every JS chunk the page references and scan the lot.
+          grep -oE '/_next/static/[^"]+\.js' /tmp/page.html | sort -u | head -60 > /tmp/chunks
+          echo "- chunks scanned: $(wc -l < /tmp/chunks)" | tee -a "$GITHUB_STEP_SUMMARY"
+          : > /tmp/all.js
+          while read -r c; do curl -fsS --max-time 30 "$WEB$c" >> /tmp/all.js || true; done < /tmp/chunks
+          if grep -qE '127\.0\.0\.1:8000|localhost:8000' /tmp/all.js /tmp/page.html; then
+            echo "::error::a localhost API fallback is present in the served bundle"
+            exit 1
+          fi
+          echo "- no localhost/127.0.0.1 API fallback in the served bundle" | tee -a "$GITHUB_STEP_SUMMARY"
+          if grep -q 'is not set in this build' /tmp/page.html; then
+            echo "::error::NEXT_PUBLIC_API_BASE is not configured in this deployment"
+            exit 1
+          fi
+          echo "- API base is configured" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: No source maps are served
+        run: |
+          maps=$(grep -oE '/_next/static/[^"]+\.js' /tmp/page.html | sort -u | head -20 | while read -r c; do
+            curl -s -o /dev/null -w '%{http_code}\n' --max-time 20 "$WEB$c.map"; done | grep -c '^200$' || true)
+          echo "- .map files served: $maps (must be 0)" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$maps" = "0" ]
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Drive the demo against the public deployment
+        env:
+          E2E_BASE_URL: ${{ inputs.web || 'https://ecotwin-ai-zeta.vercel.app' }}
+          E2E_API_BASE: ${{ inputs.api || 'https://bmsems-demo.fly.dev' }}
+        run: npx playwright test --reporter=list
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-failure
+          path: apps/web/test-results
+          retention-days: 7
