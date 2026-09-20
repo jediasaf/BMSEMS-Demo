@@ -17,6 +17,7 @@ import { RecommendationCard } from '@/components/RecommendationCard';
 import { DataSourcePanel } from '@/components/DataSourcePanel';
 import { EmptyNote, ErrorNote, Field, Panel, Pill, Skeleton } from '@/components/Primitives';
 import { DataQualityDrawer } from '@/features/bms/DataQualityDrawer';
+import { ForecastPanel, OpportunityPanel } from '@/features/bms/ForwardView';
 import { ModelExplanationDrawer } from '@/features/bms/ModelExplanationDrawer';
 import { num } from '@/lib/format';
 import type { AssetNode } from '@/lib/types';
@@ -105,6 +106,12 @@ export default function BmsOverviewPage() {
                 ? 'Archive 2017'
                 : 'Sample fixture',
             tone: !status ? 'neutral' : status.data_mode === 'REAL_DATA' ? 'accent' : 'warning',
+            // The first question anyone asks. Answer it where it is asked.
+            title:
+              status?.data_mode === 'REAL_DATA'
+                ? 'The published dataset ends 20 Nov 2017, so that is where the archive ends. ' +
+                  'Replay runs on the last complete block in it. No timestamp is altered.'
+                : undefined,
           },
           {
             label: 'Expected',
@@ -218,7 +225,18 @@ export default function BmsOverviewPage() {
             </Panel>
           </div>
 
-          {/* ROW 3 — insights + recommendation + data source */}
+          {/* ROW 3 — what is coming, and what to do about it.
+              The two questions an operator asks after reading the chart. */}
+          <div className="grid items-start gap-2.5 xl:grid-cols-[1.9fr_1fr]">
+            <ForecastPanel
+              expected={byId.expected}
+              cursor={stamp}
+              currentLoadKw={data?.kpis.find((k) => k.key === 'building_load')?.value ?? null}
+            />
+            <OpportunityPanel siteId={siteId} scenarioId={bmsScenario} />
+          </div>
+
+          {/* ROW 4 — insights + recommendation + data source */}
           <div className="grid items-start gap-2.5 xl:grid-cols-[1.15fr_1.15fr_0.7fr]">
             <Panel
               title="Recent AI insights"
@@ -321,8 +339,8 @@ function RecommendationPanel({
     return (
       <Panel title="AI recommendation">
         <EmptyNote
-          title="No operational intervention recommended"
-          detail="No action required. Recommendations follow a material finding."
+          title="No fault to act on"
+          detail="Recommendations follow a material finding. The standing setpoint plan above runs regardless."
         />
       </Panel>
     );

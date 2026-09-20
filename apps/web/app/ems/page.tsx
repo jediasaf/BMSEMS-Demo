@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { useAsync } from '@/lib/useAsync';
+import { type AsyncState, useAsync } from '@/lib/useAsync';
 import { cursorTimestamp, useDemo } from '@/lib/store';
 import { Workspace } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
@@ -13,9 +13,10 @@ import { ReplayControl } from '@/components/ReplayControl';
 import { ScenarioSelector } from '@/components/ScenarioSelector';
 import { TimeSeriesChart, type ChartSeriesConfig } from '@/components/TimeSeriesChart';
 import { DataSourcePanel } from '@/components/DataSourcePanel';
+import { DispatchSummary } from '@/features/ems/DispatchSummary';
 import { ErrorNote, Meter, Panel, Pill, Skeleton } from '@/components/Primitives';
 import { SEVERITY_STYLE, cn, clockTime, num, pct, signed } from '@/lib/format';
-import type { FacilityRow, Provenance, Series } from '@/lib/types';
+import type { FacilityRow, Provenance, RiskResponse, Series } from '@/lib/types';
 
 export default function EmsPortfolioPage() {
   const router = useRouter();
@@ -35,6 +36,10 @@ export default function EmsPortfolioPage() {
     [emsScenario, stamp],
   );
   const data = portfolio.data;
+  // Fetched here rather than inside the demand panel so the dispatch summary
+  // below it is about the same facility the chart is about. Two panels naming
+  // one number each, for different facilities, would be worse than neither.
+  const risk = useAsync(() => api.ems.risk(undefined, emsScenario), [emsScenario]);
 
   const open = (facility: FacilityRow) => {
     setFacilityId(facility.facility_id);
@@ -93,8 +98,15 @@ export default function EmsPortfolioPage() {
             data && <KpiRow kpis={data.kpis} columns={5} />
           )}
 
-          <div className="grid gap-2.5 xl:grid-cols-[1.9fr_1fr]">
-            <PortfolioDemandPanel scenarioId={emsScenario} totalDemand={totalDemand} />
+          <div className="grid items-start gap-2.5 xl:grid-cols-[1.9fr_1fr]">
+            <div className="flex min-w-0 flex-col gap-2.5">
+              <PortfolioDemandPanel risk={risk} totalDemand={totalDemand} />
+              <DispatchSummary
+                facilityId={risk.data?.facility_id ?? null}
+                scenarioId={emsScenario}
+                peakLoadingPct={risk.data?.predicted_peak_loading_pct ?? null}
+              />
+            </div>
             <DataSourcePanel />
           </div>
 
@@ -264,13 +276,12 @@ export default function EmsPortfolioPage() {
 
 /** Portfolio demand: the lead facility's forward horizon against its capacity. */
 function PortfolioDemandPanel({
-  scenarioId,
+  risk,
   totalDemand,
 }: {
-  scenarioId: string;
+  risk: AsyncState<RiskResponse>;
   totalDemand: number;
 }) {
-  const risk = useAsync(() => api.ems.risk(undefined, scenarioId), [scenarioId]);
   const data = risk.data;
 
   const configs: ChartSeriesConfig[] = useMemo(() => {

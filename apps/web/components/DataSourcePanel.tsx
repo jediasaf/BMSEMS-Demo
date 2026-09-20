@@ -57,6 +57,12 @@ export function DataSourcePanel({ className }: { className?: string }) {
               }
               mono
             />
+            <Field
+              label="Replayed"
+              value="24–27 Aug 2017"
+              mono
+              title="The last complete block in the published archive, less the days the forecaster needs for its lags. No timestamp is altered."
+            />
             <Field label="Models" value={num(data.models, 0)} mono />
             <Field label="Update" value={data.update_cadence} />
             <Field label="Access" value={data.access} tone="text-accent" />
