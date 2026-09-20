@@ -1,5 +1,7 @@
 'use client';
 
+import { useId, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/format';
 import type { ReactNode } from 'react';
 
@@ -12,6 +14,8 @@ export function Panel({
   bodyClassName,
   flush,
   scrollable,
+  collapsible,
+  defaultOpen = false,
 }: {
   title?: string;
   subtitle?: ReactNode;
@@ -26,30 +30,62 @@ export function Panel({
    * content is reachable without a pointer.
    */
   scrollable?: boolean;
+  /**
+   * For content that answers a question rather than reporting a state:
+   * caveats, how-to-read notes, method. It is worth having on the page and
+   * not worth spending the page's attention budget on until asked.
+   */
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const bodyId = useId();
+  const shown = !collapsible || open;
+
   return (
     <section className={cn('panel', className)}>
       {(title || actions) && (
         <header className="panel-head">
           <div className="flex min-w-0 items-baseline gap-2">
-            {title && <h2 className="panel-title">{title}</h2>}
+            {collapsible ? (
+              <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                aria-controls={bodyId}
+                className="focus-ring flex min-w-0 items-center gap-1.5 rounded-panel text-left"
+              >
+                <ChevronDown
+                  className={cn(
+                    'h-3 w-3 shrink-0 text-ink-500 transition-transform',
+                    !open && '-rotate-90',
+                  )}
+                />
+                {title && <h2 className="panel-title">{title}</h2>}
+              </button>
+            ) : (
+              title && <h2 className="panel-title">{title}</h2>
+            )}
             {subtitle && <span className="panel-sub">{subtitle}</span>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
         </header>
       )}
-      <div
-        className={cn(
-          flush ? 'min-w-0 flex-1' : 'panel-body',
-          scrollable && 'focus-ring',
-          bodyClassName,
-        )}
-        {...(scrollable
-          ? { tabIndex: 0, role: 'region', 'aria-label': title ?? 'Panel content' }
-          : {})}
-      >
-        {children}
-      </div>
+      {shown && (
+        <div
+          id={bodyId}
+          className={cn(
+            flush ? 'min-w-0 flex-1' : 'panel-body',
+            scrollable && 'focus-ring',
+            bodyClassName,
+          )}
+          {...(scrollable
+            ? { tabIndex: 0, role: 'region', 'aria-label': title ?? 'Panel content' }
+            : {})}
+        >
+          {children}
+        </div>
+      )}
     </section>
   );
 }

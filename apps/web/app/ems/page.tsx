@@ -12,7 +12,6 @@ import { KpiRow } from '@/components/KpiCard';
 import { ReplayControl } from '@/components/ReplayControl';
 import { ScenarioSelector } from '@/components/ScenarioSelector';
 import { TimeSeriesChart, type ChartSeriesConfig } from '@/components/TimeSeriesChart';
-import { DataSourcePanel } from '@/components/DataSourcePanel';
 import { DispatchSummary } from '@/features/ems/DispatchSummary';
 import { ErrorNote, Meter, Panel, Pill, Skeleton } from '@/components/Primitives';
 import { SEVERITY_STYLE, cn, clockTime, num, pct, signed } from '@/lib/format';
@@ -98,16 +97,13 @@ export default function EmsPortfolioPage() {
             data && <KpiRow kpis={data.kpis} columns={5} />
           )}
 
-          <div className="grid items-start gap-2.5 xl:grid-cols-[1.9fr_1fr]">
-            <div className="flex min-w-0 flex-col gap-2.5">
-              <PortfolioDemandPanel risk={risk} totalDemand={totalDemand} />
-              <DispatchSummary
-                facilityId={risk.data?.facility_id ?? null}
-                scenarioId={emsScenario}
-                peakLoadingPct={risk.data?.predicted_peak_loading_pct ?? null}
-              />
-            </div>
-            <DataSourcePanel />
+          <div className="flex min-w-0 flex-col gap-2.5">
+            <PortfolioDemandPanel risk={risk} totalDemand={totalDemand} />
+            <DispatchSummary
+              facilityId={risk.data?.facility_id ?? null}
+              scenarioId={emsScenario}
+              peakLoadingPct={risk.data?.predicted_peak_loading_pct ?? null}
+            />
           </div>
 
           <Panel
@@ -237,7 +233,7 @@ export default function EmsPortfolioPage() {
             )}
           </Panel>
 
-          <Panel title="How to read this table">
+          <Panel title="How to read this table" collapsible>
             <ul className="grid gap-1.5 text-2xs leading-relaxed text-ink-400 lg:grid-cols-2">
               <li>
                 <span className="text-ink-200">Current demand</span> is DERIVED from the published
