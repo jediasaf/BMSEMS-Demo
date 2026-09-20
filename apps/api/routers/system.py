@@ -13,16 +13,30 @@ from apps.api.config import Settings, get_settings
 from apps.api.errors import public_detail
 from apps.api.schemas.common import HealthResponse, SystemStatus
 from apps.api.schemas.params import ModuleName
-from core.adapters.building import get_building_adapter
-from core.adapters.building.power_laws import demo_window, load_selection
-from core.adapters.building.simulation import get_simulation_engine
-from core.adapters.power import get_power_adapter
 from core.common import paths
 from core.enums import DataMode, SimulationEngine
 from core.provenance.sources import SOURCES
-from core.scenarios import list_scenarios
 
 log = logging.getLogger(__name__)
+
+# The adapters read Parquet, so importing them pulls in pandas -- and the
+# simulation engine pulls the rest of the scientific stack. `/healthz` needs
+# none of it and must stay answerable the instant the process is up, so every
+# heavy import here happens inside the handler that needs it.
+
+
+def _adapters():
+    from core.adapters.building import get_building_adapter
+    from core.adapters.power import get_power_adapter
+
+    return get_building_adapter(), get_power_adapter()
+
+
+def _engine(settings: Settings):
+    from core.adapters.building.simulation import get_simulation_engine
+
+    return get_simulation_engine(prefer_boptest=bool(settings.boptest_url))
+
 
 router = APIRouter(tags=["system"])
 
@@ -56,7 +70,7 @@ def _boptest_state(settings: Settings) -> str:
     recording the honest answer is "local": an in-process RC model, labelled
     with its own engine everywhere it appears.
     """
-    engine = get_simulation_engine(prefer_boptest=bool(settings.boptest_url))
+    engine = _engine(settings)
     if engine.engine is SimulationEngine.BOPTEST:
         return "live"
     if engine.engine is SimulationEngine.REPLAY:
@@ -79,9 +93,8 @@ def healthz() -> dict[str, str]:
 @router.get("/health", response_model=HealthResponse)
 @router.get("/api/health", response_model=HealthResponse, include_in_schema=False)
 def health(settings: Settings = Depends(get_settings)) -> HealthResponse:
-    building = get_building_adapter()
-    power = get_power_adapter()
-    engine = get_simulation_engine(prefer_boptest=bool(settings.boptest_url))
+    building, power = _adapters()
+    engine = _engine(settings)
     models = _model_count()
     network_state, network_error = _pandapower_state()
     real_data = building.data_mode is DataMode.REAL_DATA
@@ -136,8 +149,10 @@ def health(settings: Settings = Depends(get_settings)) -> HealthResponse:
 
 @router.get("/status", response_model=SystemStatus)
 def status(settings: Settings = Depends(get_settings)) -> SystemStatus:
-    building = get_building_adapter()
-    engine = get_simulation_engine(prefer_boptest=bool(settings.boptest_url))
+    from core.adapters.building.power_laws import load_selection
+
+    building, _power = _adapters()
+    engine = _engine(settings)
     selection = load_selection()
     real = building.data_mode is DataMode.REAL_DATA
     descriptor = SOURCES.get(building.source_key)
@@ -182,8 +197,9 @@ def status(settings: Settings = Depends(get_settings)) -> SystemStatus:
 @router.get("/sources")
 def sources() -> dict[str, Any]:
     """Every source EcoTwin is allowed to cite, plus what was actually used."""
-    building = get_building_adapter()
-    power = get_power_adapter()
+    from core.adapters.building.power_laws import load_selection
+
+    building, power = _adapters()
     return {
         "registry": [
             {
@@ -213,8 +229,9 @@ def dataset() -> dict[str, Any]:
     it is the real row count of the real files, not a round number chosen to
     look impressive.
     """
-    building = get_building_adapter()
-    power = get_power_adapter()
+    from core.adapters.building.power_laws import load_selection
+
+    building, power = _adapters()
     selection = load_selection()
     descriptor = SOURCES.get(building.source_key)
 
@@ -268,6 +285,8 @@ def dataset() -> dict[str, Any]:
 
 @router.get("/replay-window")
 def replay_window() -> dict[str, Any]:
+    from core.adapters.building.power_laws import demo_window, load_selection
+
     window = demo_window()
     selection = load_selection()
     if window is None:
@@ -304,6 +323,8 @@ def _scenario_payload(s: Any) -> dict[str, Any]:
 
 @router.get("/scenarios")
 def scenarios(module: ModuleName = None) -> dict[str, Any]:
+    from core.scenarios import list_scenarios
+
     return {"scenarios": [_scenario_payload(s) for s in list_scenarios(module)]}
 
 

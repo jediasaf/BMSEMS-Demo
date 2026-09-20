@@ -10,23 +10,29 @@ from fastapi import APIRouter, HTTPException
 
 from apps.api.errors import public_detail
 from apps.api.schemas.params import AssetId, HorizonHours, RecommendationId, ScenarioId
-from apps.api.services import demo_cache
-from apps.api.services.bms import get_bms_service
-from apps.api.services.quality import build_report
-from apps.api.services.timeparse import naive_instant
 from core.common import paths
 from core.common.schemas import Insight, KpiValue, Recommendation
-from core.models.anomaly import summarise
-from core.optimisation.validation import ControlValidator
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bms", tags=["bms"])
 
+# The service layer pulls in pandas, LightGBM, pandapower and CVXPY: about 5 s
+# of import locally and, measured on a cold shared vCPU, 94 s -- long past the
+# ~8 s Fly's router waits for a machine to become reachable. Importing it on
+# first use instead lets uvicorn bind in about a second, so a woken machine
+# answers the request that woke it.
+
+
+def _service():
+    from apps.api.services.bms import get_bms_service
+
+    return get_bms_service()
+
 
 @router.get("/sites")
 def sites() -> dict[str, Any]:
-    service = get_bms_service()
+    service = _service()
     default = service.default_site_id()
     return {
         "default_site_id": default,
@@ -56,7 +62,10 @@ def overview(
     at: datetime | None = None,
     scenario_id: ScenarioId = "bms_normal_day",
 ) -> dict[str, Any]:
-    service = get_bms_service()
+    from apps.api.services.timeparse import naive_instant
+    from core.models.anomaly import summarise
+
+    service = _service()
     site = site_id or service.default_site_id()
     try:
         ctx = service.context(site, scenario_id)
@@ -83,13 +92,13 @@ def overview(
 
 @router.get("/timeline")
 def timeline(site_id: AssetId = None, scenario_id: ScenarioId = "bms_normal_day") -> dict[str, Any]:
-    service = get_bms_service()
+    service = _service()
     return service.timeline(site_id or service.default_site_id(), scenario_id)
 
 
 @router.get("/insights", response_model=list[Insight])
 def insights(site_id: AssetId = None, scenario_id: ScenarioId = "bms_normal_day") -> list[Insight]:
-    service = get_bms_service()
+    service = _service()
     return service.insights(site_id or service.default_site_id(), scenario_id=scenario_id)
 
 
@@ -97,7 +106,7 @@ def insights(site_id: AssetId = None, scenario_id: ScenarioId = "bms_normal_day"
 def recommendations(
     site_id: AssetId = None, scenario_id: ScenarioId = "bms_normal_day"
 ) -> list[Recommendation]:
-    service = get_bms_service()
+    service = _service()
     return service.recommendations(site_id or service.default_site_id(), scenario_id=scenario_id)
 
 
@@ -108,7 +117,9 @@ def validate_recommendation(
     scenario_id: ScenarioId = "bms_normal_day",
 ) -> dict[str, Any]:
     """Run the safety gate. Nothing is ever written outside a simulator."""
-    service = get_bms_service()
+    from core.optimisation.validation import ControlValidator
+
+    service = _service()
     site = site_id or service.default_site_id()
     matches = [
         r
@@ -138,7 +149,9 @@ def assets(
     at: datetime | None = None,
     scenario_id: ScenarioId = "bms_normal_day",
 ) -> dict[str, Any]:
-    service = get_bms_service()
+    from apps.api.services.timeparse import naive_instant
+
+    service = _service()
     site = site_id or service.default_site_id()
     return {
         "root": service.asset_tree(site, scenario_id, at=naive_instant(at)),
@@ -152,7 +165,9 @@ def control_lab(
     hours: HorizonHours = 24,
     scenario_id: ScenarioId = "bms_normal_day",
 ) -> dict[str, Any]:
-    service = get_bms_service()
+    from apps.api.services import demo_cache
+
+    service = _service()
     site = site_id or service.default_site_id()
     try:
         result = service.control_lab(site, hours=hours, scenario_id=scenario_id)
@@ -176,7 +191,7 @@ def control_lab(
 
 @router.get("/model-card")
 def model_card(site_id: AssetId = None) -> dict[str, Any]:
-    service = get_bms_service()
+    service = _service()
     site = site_id or service.default_site_id()
     ctx = service.context(site)
     return {
@@ -190,7 +205,9 @@ def model_card(site_id: AssetId = None) -> dict[str, Any]:
 
 @router.get("/data-quality")
 def data_quality(site_id: AssetId = None) -> dict[str, Any]:
-    service = get_bms_service()
+    from apps.api.services.quality import build_report
+
+    service = _service()
     site = site_id or service.default_site_id()
     ctx = service.context(site)
     report = build_report(
