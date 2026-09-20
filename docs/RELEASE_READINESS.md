@@ -58,7 +58,22 @@ has never failed in a test is decoration.
 
 ## Measured performance
 
-Warm, median of three, against the local production build:
+Warm, median of three, measured from a GitHub runner against the public
+deployment — the network an interviewer will be on, not the loopback:
+
+| Endpoint | |
+|---|---|
+| `/healthz` | 121 ms |
+| `/health` (every component, including a real load flow) | 168 ms |
+| `/bms/overview` (injected scenario) | 246 ms |
+| `/bms/control-lab` (two zone simulations + a convex solve) | 811 ms |
+| `/ems/portfolio` (six facilities) | 151 ms |
+| `/ems/network` (load flow) | 173 ms |
+| `POST /ems/optimise` (LP + two load flows) | 225 ms |
+| `/interview/verify` (re-runs every claim) | 2.0 s |
+
+Most of each figure above is transatlantic round trip to ams. The same
+endpoints, warm, against the local production build:
 
 | Endpoint | |
 |---|---|
@@ -100,33 +115,27 @@ Backend container, measured from the production image:
 
 ## Open items
 
-1. **The backend is not deployed, for want of one credential.** Checked, and
-   absent in all of them: the session environment (including a fresh login
-   shell), `~/.fly/config.yml`, and the repository's Actions secrets under
-   `FLY_API_TOKEN`, `FLY_ACCESS_TOKEN`, `FLY_TOKEN` and `FLYIO_API_TOKEN` —
-   the last proven by two real workflow runs, which failed their first step
-   and deployed nothing. The `AWS_*` and `CLOUDSDK_AUTH_ACCESS_TOKEN`
-   variables present are sandbox proxy placeholders; the GCP one returns 401.
+1. **The Fly account is on a trial, so the machine stops after five minutes
+   of running.** The log says it plainly: `Trial machine stopping. To run for
+   longer than 5m0s, add a credit card by visiting https://fly.io/trial`.
+   `auto_stop_machines = false` and `min_machines_running = 1` are set and
+   cannot override a trial limit.
 
-   Everything else is ready. `Dockerfile`, `fly.toml` and `render.yaml` are
-   committed and sized from the measurements above;
-   `.github/workflows/deploy-backend.yml` deploys and verifies from one click;
-   `scripts/deploy_backend.sh` does the same from a shell. Both refuse to run
-   without a credential rather than report a deployment they did not make.
+   The demo still works, because `auto_start_machines = true`: the first
+   request after an idle period wakes the machine and waits for it, which
+   costs the measured ~24 s cold start (19 s of that is cache warm-up). For an
+   interview that is a bad first click, so **add a card before the day**; no
+   configuration change can substitute for it.
 
-   The remaining human action is about two minutes:
-   `flyctl tokens create deploy --name ecotwin`, add it as the repository
-   secret `FLY_API_TOKEN`, then **Actions → Deploy backend → Run workflow**.
-2. **The frontend is therefore unwired.** `NEXT_PUBLIC_API_BASE` is unset in
-   the Vercel project, so the production build correctly reports
-   **Not configured** rather than falling back to localhost. It is inlined at
-   build time, so wiring it requires a redeploy, not an environment edit.
-3. **Rotate the Vercel deployment token.** A token was supplied to this work in
-   plain text and must be treated as compromised. Revoke it at
-   <https://vercel.com/account/tokens>.
-4. **BOPTEST is not live in the hosted deployment.** The zone simulator is the
-   in-process RC engine, solved live, and labelled as such everywhere it
+2. **BOPTEST is not live in the hosted deployment,** which `/health` reports
+   as `boptest: local`. The zone simulator is the in-process RC engine, solved
+   live on every request and labelled with its own engine everywhere it
    appears. It is never presented as BOPTEST.
+3. **Rotate both deployment tokens.** A Fly.io deploy token and a Vercel token
+   were each supplied to this work in plain text and must be treated as
+   compromised: <https://fly.io/dashboard/personal/tokens> and
+   <https://vercel.com/account/tokens>. Neither is committed anywhere in this
+   repository.
 
 ## Known limitations
 
