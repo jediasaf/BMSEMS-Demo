@@ -100,12 +100,23 @@ Backend container, measured from the production image:
 
 ## Open items
 
-1. **The backend is not deployed.** No Fly.io, Render, Railway or Cloud Run
-   credential exists in this environment. Everything else is ready:
-   `Dockerfile`, `fly.toml` and `render.yaml` are committed and sized from the
-   measurements above, and `scripts/deploy_backend.sh` deploys and verifies in
-   one command once a token exists. It refuses to run — and reports nothing —
-   without one.
+1. **The backend is not deployed, for want of one credential.** Checked, and
+   absent in all of them: the session environment (including a fresh login
+   shell), `~/.fly/config.yml`, and the repository's Actions secrets under
+   `FLY_API_TOKEN`, `FLY_ACCESS_TOKEN`, `FLY_TOKEN` and `FLYIO_API_TOKEN` —
+   the last proven by two real workflow runs, which failed their first step
+   and deployed nothing. The `AWS_*` and `CLOUDSDK_AUTH_ACCESS_TOKEN`
+   variables present are sandbox proxy placeholders; the GCP one returns 401.
+
+   Everything else is ready. `Dockerfile`, `fly.toml` and `render.yaml` are
+   committed and sized from the measurements above;
+   `.github/workflows/deploy-backend.yml` deploys and verifies from one click;
+   `scripts/deploy_backend.sh` does the same from a shell. Both refuse to run
+   without a credential rather than report a deployment they did not make.
+
+   The remaining human action is about two minutes:
+   `flyctl tokens create deploy --name ecotwin`, add it as the repository
+   secret `FLY_API_TOKEN`, then **Actions → Deploy backend → Run workflow**.
 2. **The frontend is therefore unwired.** `NEXT_PUBLIC_API_BASE` is unset in
    the Vercel project, so the production build correctly reports
    **Not configured** rather than falling back to localhost. It is inlined at
