@@ -285,8 +285,8 @@ export default function ControlLabPage() {
         </span>
         <span className="truncate text-2xs text-ink-400">
           {result?.is_boptest
-            ? 'A BOPTEST instance is answering; results are tagged BOPTEST.'
-            : 'BOPTEST is not reachable from this deployment, so a 2R2C zone model with an ideal-load plant runs the case. Results are labelled with the engine that produced them and never presented as BOPTEST. Local Docker mode runs BOPTEST live.'}
+            ? 'BOPTEST live — results tagged BOPTEST.'
+            : 'BOPTEST unreachable — 2R2C zone model, tagged as such.'}
         </span>
         {provenance && (
           <span className="ml-auto shrink-0">

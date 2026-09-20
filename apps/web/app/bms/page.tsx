@@ -102,7 +102,7 @@ export default function BmsOverviewPage() {
             value: !status
               ? '…'
               : status.data_mode === 'REAL_DATA'
-                ? 'Historical replay'
+                ? 'Archive 2017'
                 : 'Sample fixture',
             tone: !status ? 'neutral' : status.data_mode === 'REAL_DATA' ? 'accent' : 'warning',
           },
@@ -245,7 +245,7 @@ export default function BmsOverviewPage() {
                 <div className="p-2.5">
                   <EmptyNote
                     title="No anomalies in this window"
-                    detail="Conditions stayed inside the model's expected envelope. The detector is running over every step of this window and found nothing above the materiality floor. Inject a scenario above to see it respond."
+                    detail="Nothing above the materiality floor in this window."
                   />
                 </div>
               )}
@@ -322,7 +322,7 @@ function RecommendationPanel({
       <Panel title="AI recommendation">
         <EmptyNote
           title="No operational intervention recommended"
-          detail="Conditions are within expected operating ranges and monitoring remains active. A recommendation follows a material over-consumption finding; with none in this window there is nothing to act on, and inventing one would be worse than an empty panel."
+          detail="No action required. Recommendations follow a material finding."
         />
       </Panel>
     );

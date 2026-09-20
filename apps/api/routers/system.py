@@ -163,19 +163,16 @@ def status(settings: Settings = Depends(get_settings)) -> SystemStatus:
         SimulationEngine.PANDAPOWER: "pandapower",
         SimulationEngine.REPLAY: "Simulation replay",
     }
+    # Status-bar notes are read at a glance by someone mid-demo, so they are
+    # written as an operator would write them: the condition, not the essay.
+    # The reasoning behind each lives in the provenance popover and the docs.
     notes: list[str] = []
     if not real:
-        notes.append("No source files present. Values are SAMPLE FIXTURE and are synthetic.")
+        notes.append("Sample fixture data — synthetic, not measured.")
     if engine.engine is not SimulationEngine.BOPTEST:
-        notes.append(
-            "BOPTEST is not reachable; building simulation uses the EcoTwin RC "
-            "engine. Results are labelled with the engine that produced them."
-        )
+        notes.append("Zone simulation: EcoTwin RC engine (BOPTEST unreachable).")
     if selection.get("unit_hypothesis", {}).get("publisher_states_unit") is False:
-        notes.append(
-            "The source does not publish a unit for its energy counter; kW series "
-            "are DERIVED under a validated hypothesis."
-        )
+        notes.append("kW series are DERIVED — source publishes no energy unit.")
 
     return SystemStatus(
         data_label="Schneider public dataset" if real else "SAMPLE FIXTURE",
