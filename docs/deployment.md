@@ -4,9 +4,9 @@
 
 |                    |                                                                       |
 | ------------------ | --------------------------------------------------------------------- |
-| Frontend           | https://ecotwin-ai-zeta.vercel.app — deployed and publicly reachable  |
-| Backend            | **not deployed** — no Fly.io or Render credential has been available  |
-| Frontend → backend | `NEXT_PUBLIC_API_BASE` unset, so the site shows **Not configured**    |
+| Frontend           | https://ecotwin-ai-zeta.vercel.app — deployed and publicly reachable |
+| Backend            | https://bmsems-demo.fly.dev — Fly.io `bmsems-demo`, ams, 1 GB, one always-on machine |
+| Frontend → backend | `NEXT_PUBLIC_API_BASE=https://bmsems-demo.fly.dev` |
 
 The frontend is correct and complete; it is waiting on a backend URL. Nothing
 below is aspirational — the image builds, runs and passes `/interview/verify`
@@ -99,9 +99,9 @@ would OOM during warm-up. 2 GB is paying for nothing.
 `fly.toml` is committed with these numbers already in it.
 
 ```bash
-fly launch --no-deploy --copy-config --name ecotwin-api
+flyctl deploy --config fly.toml --app bmsems-demo --remote-only
 fly deploy
-curl -s https://ecotwin-api.fly.dev/healthz        # {"status":"ok"}
+curl -s https://bmsems-demo.fly.dev/healthz        # {"status":"ok"}
 ```
 
 `auto_stop_machines = false` and `min_machines_running = 1` are deliberate: a
