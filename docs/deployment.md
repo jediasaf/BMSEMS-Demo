@@ -12,10 +12,16 @@ The frontend is correct and complete; it is waiting on a backend URL. Nothing
 below is aspirational — the image builds, runs and passes `/interview/verify`
 locally, and the manifests are sized from measurements of that run.
 
-### One click, once a credential exists
+### Redeploying
 
-Everything except the credential is committed, and the credential does not
-belong in anyone's shell. Put it in the repository instead:
+The backend image is built from the committed `Dockerfile` and deployed to the
+Fly app `bmsems-demo`. Two routes, both committed:
+
+```bash
+FLY_API_TOKEN=... bash scripts/deploy_backend.sh   # from a shell
+```
+
+or put the token in the repository and click:
 
 1. `flyctl tokens create deploy --name ecotwin`
 2. GitHub → **Settings → Secrets and variables → Actions → New repository
@@ -40,6 +46,30 @@ RENDER_API_KEY=... bash scripts/deploy_backend.sh --render
 
 Both refuse to run without a credential and neither reports a deployment it
 did not make.
+
+### Two things worth knowing about this deployment
+
+**The account is on a Fly trial, so the machine stops after five minutes.**
+`auto_stop_machines = false` and `min_machines_running = 1` cannot override
+that; only a card on the account can. `auto_start_machines = true` means a
+request still wakes it, at the cost of the measured ~24 s cold start. Add a
+card before showing the demo.
+
+**A build host that cannot reach a depot builder can still deploy.** Build the
+image locally and hand Fly the result:
+
+```bash
+flyctl auth docker
+docker build -t registry.fly.io/bmsems-demo:deployment-$(date +%s) .
+docker push registry.fly.io/bmsems-demo:deployment-...
+flyctl deploy --config fly.toml --app bmsems-demo --image registry.fly.io/... --ha=false
+```
+
+A deploy token can push to its own app's registry and deploy an existing app;
+it cannot create apps or manage a remote builder, which is the correct scope.
+If the app has never had public addresses, `flyctl ips allocate-v4 --shared`
+and `allocate-v6` are needed once — without them health checks pass internally
+while the public hostname refuses every connection.
 
 ### Why not Vercel, measured
 
