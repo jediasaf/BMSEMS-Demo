@@ -14,7 +14,7 @@ is re-derived by `make check`, `make audit`, `make demo` and `make e2e`._
 | Branch | `claude/zen-ptolemy-5hf381` |
 | Commit | `ab1d485` |
 | Frontend | https://ecotwin-ai-zeta.vercel.app — deployed, publicly reachable |
-| Backend | **not deployed** — no container-host credential has been available |
+| Backend | https://bmsems-demo.fly.dev — Fly.io app `bmsems-demo`, region ams, 1 GB, one always-on machine |
 | Dataset | Power Laws: Forecasting Energy Consumption, 1.03 M records |
 | Replay window | 2017-08-24 → 2017-08-27, 15-minute steps |
 

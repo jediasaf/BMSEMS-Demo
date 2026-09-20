@@ -31,8 +31,14 @@ jobs:
       - name: healthz
         run: |
           echo "## Backend" >> "$GITHUB_STEP_SUMMARY"
-          code=$(curl -s -o /tmp/hz -w '%{http_code}' --max-time 20 "$API/healthz")
-          echo "- /healthz -> $code $(cat /tmp/hz)" | tee -a "$GITHUB_STEP_SUMMARY"
+          # A cold machine takes ~24 s to bind, of which 19 s is cache warm-up.
+          # Retry rather than race it; the latency step measures the warm path.
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /tmp/hz -w '%{http_code}' --max-time 20 "$API/healthz" || echo 000)
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          echo "- /healthz -> $code $(cat /tmp/hz 2>/dev/null)" | tee -a "$GITHUB_STEP_SUMMARY"
           [ "$code" = "200" ]
 
       - name: health components
@@ -126,16 +132,23 @@ jobs:
           echo "- chunks scanned: $(wc -l < /tmp/chunks)" | tee -a "$GITHUB_STEP_SUMMARY"
           : > /tmp/all.js
           while read -r c; do curl -fsS --max-time 30 "$WEB$c" >> /tmp/all.js || true; done < /tmp/chunks
-          if grep -qE '127\.0\.0\.1:8000|localhost:8000' /tmp/all.js /tmp/page.html; then
-            echo "::error::a localhost API fallback is present in the served bundle"
-            exit 1
-          fi
-          echo "- no localhost/127.0.0.1 API fallback in the served bundle" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # The question is which base the build RESOLVES to, not which strings
+          # exist in it. `resolveApiBase` carries the development fallback as a
+          # literal in every build -- grepping for it proves nothing, and the
+          # unit tests already pin that production never returns it.
           if grep -q 'is not set in this build' /tmp/page.html; then
-            echo "::error::NEXT_PUBLIC_API_BASE is not configured in this deployment"
+            echo "::error::NEXT_PUBLIC_API_BASE is not configured in this deployment."
+            echo "The page renders the 'Not configured' state, so no API is being called."
             exit 1
           fi
-          echo "- API base is configured" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "- the build has an API base configured" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          if ! grep -qF "$API" /tmp/all.js /tmp/page.html; then
+            echo "::error::the served bundle does not contain the expected backend URL $API"
+            exit 1
+          fi
+          echo "- the served bundle targets \`$API\`" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: No source maps are served
         run: |
