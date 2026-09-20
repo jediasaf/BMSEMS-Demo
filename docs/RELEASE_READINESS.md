@@ -13,9 +13,9 @@ is re-derived by `make check`, `make audit`, `make snapshot`, `make demo` and
 | | |
 |---|---|
 | Branch | `claude/zen-ptolemy-5hf381` |
-| Commit | `1e8e99d` |
-| Hosted demo | https://ecotwin-ai-zeta.vercel.app — Vercel, static, no backend |
-| What is hosted | a **recording**: 1389 files, 10.3 MB, taken 2026-09-20T10:14Z |
+| Commit | `a8681b3` |
+| Hosted demo | https://ecotwin-ai-zeta.vercel.app — **not yet serving this build**, see item 1 under Open items |
+| What ships | a **recording**: 1389 files, 10.3 MB, taken 2026-09-20T10:14Z |
 | Live mode | `make demo` — FastAPI plus the whole science stack, every answer solved on request |
 | Dataset | Power Laws: Forecasting Energy Consumption, 1.03 M records |
 | Replay window | 2017-08-24 → 2017-08-27, 15-minute steps |
@@ -58,7 +58,7 @@ computing?".
 | Types | `tsc --noEmit` | clean |
 | Frontend lint | `next lint` | clean |
 | Production build | `next build` | 9 routes, all static, no browser source maps |
-| Browser suite | `playwright test` | 8 passed against the **hosted (recorded) build** with no backend running: the twelve demo steps, reset, the honest normal day, the API-base rules, and a sweep that fails on any missing file or console error. The ninth test asks a live backend for its verdict and skips when there is none. |
+| Browser suite | `playwright test` | 8 passed against the **recorded build**, built exactly as Vercel builds it (no `.env.local`, blank API base), with no backend running: the twelve demo steps, reset, the honest normal day, the API-base rules, and a sweep that fails on any missing file or console error. The ninth test asks a live backend for its verdict and skips when there is none. |
 | Recording | `scripts/verify_snapshot.py` | consistent: recorded verdict `ready` with 10/10 checks, every payload marked as a recording, both gates still reached |
 | Provenance | `make audit` | every audited metric carries a badge from the closed vocabulary |
 | Demo readiness | `GET /interview/verify` | `ready: true`, 10/10 checks |
@@ -177,7 +177,16 @@ Backend container, measured from the production image:
 
 ## Open items
 
-1. **The hosted demo is a replay, not a live computation.** This is a
+1. **This build is not published yet.** The Vercel URL above still serves the
+   previous build, which calls a backend that is no longer running — so the
+   public demo is currently broken and this commit is the fix. Publishing it
+   needs one thing that cannot be done from here: either a valid Vercel token,
+   or the Vercel GitHub integration installed on the repository (Root
+   Directory `apps/web`; nothing else to configure, since `vercel.json`
+   carries the rest). The CLI token used on 2026-09-19 now returns
+   `User not found`.
+
+2. **The hosted demo is a replay, not a live computation.** This is a
    deliberate trade, not an oversight, and the product states it in three
    places rather than hiding it. `make demo` runs the same code live in about
    a minute, and `scripts/verify_snapshot.py` re-checks that the recording
@@ -189,7 +198,7 @@ Backend container, measured from the production image:
    captured is a missing file; `e2e/snapshot.spec.ts` fails on exactly that,
    which is how the one gap found so far was found.
 
-2. **The container deployment that was verified on 2026-09-19 is no longer
+3. **The container deployment that was verified on 2026-09-19 is no longer
    running.** It was on a free tier that stopped the machine after five
    minutes: `Trial machine stopping. To run for longer than 5m0s, add a
    credit card`. `auto_stop_machines = false` and `min_machines_running = 1`
@@ -204,15 +213,16 @@ Backend container, measured from the production image:
    `/healthz` from 94 s to 2 s**, measured twice. Anyone redeploying this to
    a paid instance gets that for free.
 
-3. **BOPTEST is not live,** which `/health` reports as `boptest: local`. The
+4. **BOPTEST is not live,** which `/health` reports as `boptest: local`. The
    zone simulator is the in-process RC engine, solved on every request in live
    mode and labelled with its own engine everywhere it appears. It is never
    presented as BOPTEST.
-4. **Rotate both deployment tokens.** A Fly.io deploy token and a Vercel token
+5. **Rotate both deployment tokens.** A Fly.io deploy token and a Vercel token
    were each supplied to this work in plain text and must be treated as
    compromised: <https://fly.io/dashboard/personal/tokens> and
    <https://vercel.com/account/tokens>. Neither is committed anywhere in this
-   repository.
+   repository. The Vercel one has already stopped working, which is the right
+   outcome; the Fly one has not been confirmed revoked.
 
 ## Known limitations
 
