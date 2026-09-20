@@ -12,7 +12,7 @@ is re-derived by `make check`, `make audit`, `make demo` and `make e2e`._
 | | |
 |---|---|
 | Branch | `claude/zen-ptolemy-5hf381` |
-| Commit | `ab1d485` |
+| Commit | `e9abfc1` |
 | Frontend | https://ecotwin-ai-zeta.vercel.app — deployed, publicly reachable |
 | Backend | https://bmsems-demo.fly.dev — Fly.io app `bmsems-demo`, region ams, 1 GB, one always-on machine |
 | Dataset | Power Laws: Forecasting Energy Consumption, 1.03 M records |
@@ -28,7 +28,7 @@ is re-derived by `make check`, `make audit`, `make demo` and `make e2e`._
 | Types | `tsc --noEmit` | clean |
 | Frontend lint | `next lint` | clean |
 | Production build | `next build` | 9 routes, all static, no browser source maps |
-| Browser suite | `playwright test` | 8 passed — the twelve demo steps, reset, the honest normal day, and `/interview/verify` |
+| Browser suite | `playwright test` | 8 passed locally, and **8 passed against the public deployment** from a GitHub runner — the twelve demo steps, reset, the honest normal day, and `/interview/verify` |
 | Provenance | `make audit` | every audited metric carries a badge from the closed vocabulary |
 | Demo readiness | `GET /interview/verify` | `ready: true`, 10/10 checks |
 | Accessibility | axe-core, WCAG 2.0/2.1 A + AA, all seven routes | no violations |
@@ -63,13 +63,13 @@ deployment — the network an interviewer will be on, not the loopback:
 
 | Endpoint | |
 |---|---|
-| `/healthz` | 121 ms |
-| `/health` (every component, including a real load flow) | 168 ms |
-| `/bms/overview` (injected scenario) | 246 ms |
-| `/bms/control-lab` (two zone simulations + a convex solve) | 811 ms |
-| `/ems/portfolio` (six facilities) | 151 ms |
-| `/ems/network` (load flow) | 173 ms |
-| `POST /ems/optimise` (LP + two load flows) | 225 ms |
+| `/healthz` | 219 ms |
+| `/health` (every component, including a real load flow) | 260 ms |
+| `/bms/overview` (injected scenario) | 361 ms |
+| `/bms/control-lab` (two zone simulations + a convex solve) | 954 ms |
+| `/ems/portfolio` (six facilities) | 274 ms |
+| `/ems/network` (load flow) | 268 ms |
+| `POST /ems/optimise` (LP + two load flows) | 336 ms |
 | `/interview/verify` (re-runs every claim) | 2.0 s |
 
 Most of each figure above is transatlantic round trip to ams.
