@@ -10,9 +10,7 @@
   },
   "installCommand": "npm ci",
   "outputDirectory": ".next",
-  "regions": [
-    "cdg1"
-  ],
+  "regions": ["cdg1"],
   "headers": [
     {
       "source": "/(.*)",

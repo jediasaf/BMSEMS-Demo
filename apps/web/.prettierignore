@@ -2,3 +2,8 @@
 # Playwright output
 test-results/
 playwright-report/
+
+# The static recording. Machine-written, minified on purpose: reformatting it
+# would add ~40 MB of whitespace to the repository and to every deployment,
+# and nobody reads it by hand.
+public/snapshot/

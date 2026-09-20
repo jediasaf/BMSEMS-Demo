@@ -52,7 +52,7 @@ computing?".
 
 | Check | Command | Result |
 |---|---|---|
-| Python tests | `pytest` | 205 passed |
+| Python tests | `pytest` | 208 passed, eight consecutive runs |
 | Lint | `ruff check .` | clean |
 | Format | `black --check .` | clean |
 | Types | `tsc --noEmit` | clean |
@@ -62,6 +62,7 @@ computing?".
 | Recording | `scripts/verify_snapshot.py` | consistent: recorded verdict `ready` with 10/10 checks, every payload marked as a recording, both gates still reached |
 | Provenance | `make audit` | every audited metric carries a badge from the closed vocabulary |
 | Demo readiness | `GET /interview/verify` | `ready: true`, 10/10 checks |
+| Thread safety | `pytest tests/test_network.py` | the load-flow model is solved from several threads at once and every read matches the single-threaded answer |
 | Known limitation | both gates still say no somewhere | the network gate rejects 18 of 54 over-nameplate replay positions; the recording keeps those rejections rather than only the flattering ones |
 | Accessibility | axe-core, WCAG 2.0/2.1 A + AA, all seven routes | no violations |
 
@@ -160,6 +161,45 @@ Backend container, measured from the production image:
 | RAM after warm-up | 502 MB |
 | RAM peak under the whole demo workload | **548 MB** |
 | Therefore | **1 GB** instance; 512 MB would OOM during warm-up |
+
+## A defect found and fixed during this release
+
+Worth recording because of what it touched, and because it was found by the
+test suite rather than by a demo going wrong.
+
+**Symptom.** `test_ev_surge_creates_a_risk_the_optimiser_resolves` failed on
+CI roughly one run in three and never locally, with nothing but `assert
+False`. Instrumenting the assertion, then the capacity calibration underneath
+it, showed the transformer capacity for one facility answering 144.940,
+144.834 and **131.683 kW** on three calls in the same process from identical
+inputs, and a 100 kVA site answering **50.042 kW** instead of 91.013.
+
+**Cause.** Each facility has one pandapower model, shared by every caller, and
+a load flow is not an atomic read: `solve` writes the loads in, runs
+Newton-Raphson, then reads the results back. The cold-start fix (open item 3)
+moved the cache warm-up onto a background thread, and that thread calibrates
+every facility's capacity while request handlers are already solving. The
+three steps interleaved, and callers got answers belonging to neither load.
+The capacity bisection, being nothing but a sequence of solves, amplified it:
+a probe that read another thread's loading walked the bracket the wrong way
+and collapsed it.
+
+**Why it mattered.** That capacity is the cap the EMS optimiser is held to and
+the denominator of every transformer-loading percentage on screen. A wrong
+one makes the flagship EMS claim wrong, in the direction of *understating* the
+optimiser — or, worse, of showing a dispatch as accepted against a cap that is
+not the transformer's.
+
+**Fix.** The model is serialised with a reentrant lock, held for a whole
+capacity search rather than per probe. Solves take single-digit milliseconds,
+so the cost is not measurable. Two tests in `tests/test_network.py` reproduce
+the race and fail without the lock. Separately, the bisection now checks that
+its bracket contains the answer and logs and falls back to the nameplate
+estimate when the search does not settle, instead of returning its last guess
+as though it were a measurement.
+
+**Blast radius.** The recording was taken from a process that ran the same
+background warm-up, so it was regenerated after the fix and re-verified.
 
 ## Security posture
 

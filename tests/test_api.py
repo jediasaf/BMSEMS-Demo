@@ -6,6 +6,7 @@ that the whole stack answers, with provenance attached to every value.
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from core.enums import SourceType
@@ -272,7 +273,24 @@ def test_ev_surge_creates_a_risk_the_optimiser_resolves(client) -> None:
     before = body["network_before"]["transformer_loading_pct"]
     after = body["network_after"]["transformer_loading_pct"]
     assert after < before
-    assert after <= 100.0
+    # The LP and the load flow have to agree about the worst instant. When they
+    # do not, the interesting number is what each of them thinks is standing
+    # there, so print it rather than just the percentage.
+    worst = int(np.argmax(np.asarray(body["baseline_kw"], dtype=float)))
+    assert after <= 100.0, (
+        f"the post-action load flow reads {after:.3f}% of a "
+        f"{summary['cap_kw']:.3f} kW transformer, but the optimiser says the "
+        f"peak lands at {summary['optimised_peak_kw']:.3f} kW.\n"
+        f"  worst instant  index={worst} of {len(body['baseline_kw'])} "
+        f"at {body.get('worst_instant')}\n"
+        f"  there          baseline={body['baseline_kw'][worst]:.3f} "
+        f"optimised={body['optimised_kw'][worst]:.3f} "
+        f"hvac_cut={body['hvac_reduction_kw'][worst]:.3f} "
+        f"ev_cut={body['ev_reduction_kw'][worst]:.3f} "
+        f"ev_recovery={body['ev_recovery_kw'][worst]:.3f}\n"
+        f"  load flow      before={before:.3f}% status={body['network_after'].get('status')} "
+        f"violations={body['network_after'].get('violations')}"
+    )
     assert "not the optimiser" in body["verification_note"]
     # Energy is conserved.
     assert sum(body["ev_reduction_kw"]) == pytest.approx(
