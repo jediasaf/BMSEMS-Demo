@@ -72,8 +72,15 @@ deployment — the network an interviewer will be on, not the loopback:
 | `POST /ems/optimise` (LP + two load flows) | 225 ms |
 | `/interview/verify` (re-runs every claim) | 2.0 s |
 
-Most of each figure above is transatlantic round trip to ams. The same
-endpoints, warm, against the local production build:
+Most of each figure above is transatlantic round trip to ams.
+
+A second run of the same battery, taken while the trial stopped the machine
+part-way through, measured `/interview/verify` at **23.0 s** and the Control
+Lab at **9.9 s** — the same code, paying cold starts. That gap is the entire
+cost of the trial limitation in item 1 below, and it is why a card matters
+more than any tuning.
+
+The same endpoints, warm, against the local production build:
 
 | Endpoint | |
 |---|---|
