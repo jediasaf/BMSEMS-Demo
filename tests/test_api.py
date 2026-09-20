@@ -254,7 +254,20 @@ def test_ev_surge_creates_a_risk_the_optimiser_resolves(client) -> None:
     body = client.post("/ems/optimise", params={"scenario_id": "ems_ev_surge"}).json()
     summary = body["summary"]
     assert summary["peak_reduction_kw"] > 0
-    assert summary["feasible_within_cap"]
+    # This has failed on CI and never here, so a bare `assert False` is not
+    # enough to tell a different solve from a different problem. Print both:
+    # if the inputs match and the outcome does not, it is the solver.
+    assert summary["feasible_within_cap"], (
+        f"dispatch left {summary['residual_overload_kw']} kW above the "
+        f"{summary['cap_kw']:.3f} kW cap.\n"
+        f"  inputs   horizon={len(body['baseline_kw'])} "
+        f"baseline_sum={sum(body['baseline_kw']):.3f} "
+        f"baseline_peak={summary['baseline_peak_kw']:.3f} "
+        f"target={summary['target_kw']:.3f}\n"
+        f"  solve    status={summary.get('status')} solver={summary.get('solver')} "
+        f"optimised_peak={summary['optimised_peak_kw']:.3f} "
+        f"deferred_kwh={summary['ev_energy_shifted_kwh']:.3f}"
+    )
     # Verified by a second load flow, not by the optimiser's own estimate.
     before = body["network_before"]["transformer_loading_pct"]
     after = body["network_after"]["transformer_loading_pct"]
