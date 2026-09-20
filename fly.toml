@@ -6,8 +6,8 @@
 #   RAM after warm-up 502 MB · peak under the whole demo workload 548 MB
 #
 # 1 GB therefore leaves ~45% headroom. 2 GB would be paying for nothing.
-app = "ecotwin-api"
-primary_region = "cdg"
+app = "bmsems-demo"
+primary_region = "ams"
 
 [build]
   dockerfile = "Dockerfile"
