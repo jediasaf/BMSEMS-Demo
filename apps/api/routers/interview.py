@@ -23,9 +23,7 @@ from fastapi import APIRouter, Depends
 
 from apps.api.config import Settings, get_settings
 from apps.api.errors import public_detail
-from core.adapters.building.simulation import get_simulation_engine
 from core.enums import SimulationEngine
-from core.scenarios import get_scenario, list_scenarios
 
 router = APIRouter(prefix="/interview", tags=["interview"])
 log = logging.getLogger(__name__)
@@ -38,6 +36,8 @@ RESOLVED_PCT = 100.0
 
 def flagship(module: str) -> str:
     """The one scenario per module the guided demo runs."""
+    from core.scenarios import list_scenarios
+
     for scenario in list_scenarios(module):
         if scenario.is_flagship:
             return scenario.scenario_id
@@ -148,6 +148,8 @@ def plan(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
     ems_scenario = flagship("EMS")
     site = get_bms_service().default_site_id()
     facility = get_ems_service().default_facility_id()
+    from core.adapters.building.simulation import get_simulation_engine
+
     engine = get_simulation_engine(prefer_boptest=bool(settings.boptest_url))
 
     return {
@@ -181,6 +183,8 @@ def plan(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
 
 
 def _scenario_brief(scenario_id: str) -> dict[str, Any]:
+    from core.scenarios import get_scenario
+
     s = get_scenario(scenario_id)
     return {
         "scenario_id": s.scenario_id,

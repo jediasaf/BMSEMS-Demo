@@ -10,10 +10,6 @@ from fastapi import APIRouter, HTTPException
 
 from apps.api.errors import public_detail
 from apps.api.schemas.params import AssetId, ScenarioId
-from apps.api.services import demo_cache
-from apps.api.services.ems import get_ems_service
-from apps.api.services.quality import build_report
-from apps.api.services.timeparse import naive_instant
 from core.common import paths
 from core.common.schemas import Insight
 
@@ -21,10 +17,20 @@ log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ems", tags=["ems"])
 
+# Deferred for the same reason as the BMS router: importing the service layer
+# costs ~5 s locally and 94 s on a cold shared vCPU, well past the ~8 s Fly's
+# router waits. See apps/api/routers/bms.py.
+
+
+def _service():
+    from apps.api.services.ems import get_ems_service
+
+    return get_ems_service()
+
 
 @router.get("/facilities")
 def facilities() -> dict[str, Any]:
-    service = get_ems_service()
+    service = _service()
     default = service.default_facility_id()
     return {
         "default_facility_id": default,
@@ -50,7 +56,9 @@ def facilities() -> dict[str, Any]:
 def portfolio(
     at: datetime | None = None, scenario_id: ScenarioId = "ems_normal_day"
 ) -> dict[str, Any]:
-    return get_ems_service().portfolio(at=naive_instant(at), scenario_id=scenario_id)
+    from apps.api.services.timeparse import naive_instant
+
+    return _service().portfolio(at=naive_instant(at), scenario_id=scenario_id)
 
 
 @router.get("/network")
@@ -59,7 +67,9 @@ def network(
     at: datetime | None = None,
     scenario_id: ScenarioId = "ems_normal_day",
 ) -> dict[str, Any]:
-    service = get_ems_service()
+    from apps.api.services.timeparse import naive_instant
+
+    service = _service()
     fid = facility_id or service.default_facility_id()
     try:
         state, split, stamp = service.network_state(
@@ -101,7 +111,9 @@ def risk(
     at: datetime | None = None,
     scenario_id: ScenarioId = "ems_normal_day",
 ) -> dict[str, Any]:
-    service = get_ems_service()
+    from apps.api.services.timeparse import naive_instant
+
+    service = _service()
     return service.peak_risk(
         facility_id or service.default_facility_id(), at=naive_instant(at), scenario_id=scenario_id
     )
@@ -113,7 +125,10 @@ def optimise(
     at: datetime | None = None,
     scenario_id: ScenarioId = "ems_ev_surge",
 ) -> dict[str, Any]:
-    service = get_ems_service()
+    from apps.api.services import demo_cache
+    from apps.api.services.timeparse import naive_instant
+
+    service = _service()
     facility = facility_id or service.default_facility_id()
     try:
         result = service.optimise(facility, at=naive_instant(at), scenario_id=scenario_id)
@@ -137,13 +152,15 @@ def optimise(
 def insights(
     facility_id: AssetId = None, scenario_id: ScenarioId = "ems_normal_day"
 ) -> list[Insight]:
-    service = get_ems_service()
+    service = _service()
     return service.insights(facility_id or service.default_facility_id(), scenario_id=scenario_id)
 
 
 @router.get("/data-quality")
 def data_quality(facility_id: AssetId = None) -> dict[str, Any]:
-    service = get_ems_service()
+    from apps.api.services.quality import build_report
+
+    service = _service()
     fid = facility_id or service.default_facility_id()
     ctx = service.context(fid)
     report = build_report(
