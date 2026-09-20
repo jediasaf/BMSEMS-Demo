@@ -13,9 +13,9 @@ is re-derived by `make check`, `make audit`, `make snapshot`, `make demo` and
 | | |
 |---|---|
 | Branch | `claude/zen-ptolemy-5hf381` |
-| Commit | `a8681b3` |
+| Commit | `81d7088` |
 | Hosted demo | https://ecotwin-ai-zeta.vercel.app — **not yet serving this build**, see item 1 under Open items |
-| What ships | a **recording**: 1389 files, 10.3 MB, taken 2026-09-20T10:14Z |
+| What ships | a **recording**: 1389 files, 10.3 MB, taken 2026-09-20T11:23Z |
 | Live mode | `make demo` — FastAPI plus the whole science stack, every answer solved on request |
 | Dataset | Power Laws: Forecasting Energy Consumption, 1.03 M records |
 | Replay window | 2017-08-24 → 2017-08-27, 15-minute steps |
