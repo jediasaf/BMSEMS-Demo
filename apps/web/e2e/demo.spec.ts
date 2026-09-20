@@ -183,8 +183,17 @@ test.describe('interview demo path', () => {
   });
 
   test('the backend agrees the demo is ready', async ({ request }) => {
-    const response = await request.get(`${API}/interview/verify`);
-    expect(response.ok()).toBeTruthy();
+    // A host that scales to zero answers the first request with a 502 while
+    // the machine wakes, and this is the most expensive endpoint in the
+    // product (~2 s warm, ~23 s from cold). Retry the wake, not the verdict:
+    // the assertions below are unchanged, and a backend that is genuinely
+    // unwell still fails.
+    let response = await request.get(`${API}/interview/verify`, { timeout: 120_000 });
+    for (let attempt = 0; attempt < 3 && !response.ok(); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      response = await request.get(`${API}/interview/verify`, { timeout: 120_000 });
+    }
+    expect(response.ok(), `GET /interview/verify -> ${response.status()}`).toBeTruthy();
     const body = await response.json();
     const failed = (body.checks as { check: string; passed: boolean; detail: string }[])
       .filter((check) => !check.passed)
