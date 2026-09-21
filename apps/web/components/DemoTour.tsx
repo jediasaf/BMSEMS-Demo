@@ -135,12 +135,17 @@ export function DemoTour() {
   return (
     <>
       {architecture && <ArchitectureDrawer onClose={() => setArchitecture(false)} />}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-3">
-        <div className="pointer-events-auto w-full max-w-3xl animate-fade-up rounded-panel border border-accent/40 bg-base-850/[0.97] shadow-raised backdrop-blur">
+      {/* A row in the shell, not a layer over it. Floating at bottom-0 put the
+          bar on top of whatever the step was describing -- on the steps that
+          talk about the recommendation and the network verdict, it covered
+          them. It is the last child of the shell's flex column, so docking it
+          here makes the workspace shrink by exactly its height instead. */}
+      <div className="flex shrink-0 justify-center px-3 pb-3">
+        <div className="w-full max-w-3xl animate-fade-up rounded-panel border border-accent/40 bg-base-850 shadow-raised">
           <div className="flex items-center justify-between gap-2 border-b border-base-700 px-2.5 py-1.5">
             <span className="label text-accent">Guided demo</span>
             <div className="flex items-center gap-2">
-              <span className="tabular font-mono text-3xs text-ink-500">
+              <span className="tabular font-mono text-3xs text-ink-400">
                 step {tourStep + 1} of {STEPS.length}
               </span>
               <button
@@ -150,7 +155,7 @@ export function DemoTour() {
                   router.push('/bms');
                 }}
                 title="Reset the demo to its opening position"
-                className="focus-ring flex items-center gap-1 rounded-panel p-0.5 text-3xs uppercase tracking-[0.08em] text-ink-500 hover:text-ink-100"
+                className="focus-ring flex items-center gap-1 rounded-panel p-0.5 text-3xs uppercase tracking-[0.08em] text-ink-400 hover:text-ink-100"
               >
                 <RotateCcw className="h-3 w-3" />
                 Reset
@@ -159,7 +164,7 @@ export function DemoTour() {
                 type="button"
                 onClick={endTour}
                 aria-label="End guided demo"
-                className="focus-ring rounded-panel p-0.5 text-ink-500 hover:text-ink-100"
+                className="focus-ring rounded-panel p-0.5 text-ink-400 hover:text-ink-100"
               >
                 <X className="h-3 w-3" />
               </button>

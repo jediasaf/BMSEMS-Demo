@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, Check, Info, ShieldCheck, X } from 'lucide-react';
+import { ArrowRight, Check, ShieldCheck, X } from 'lucide-react';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { Button, Meter, Pill } from './Primitives';
 import { api } from '@/lib/api';
 import { cn, num, signed } from '@/lib/format';
-import type { Recommendation } from '@/lib/types';
+import type { ExpectedImpact, Recommendation } from '@/lib/types';
 
 /**
  * The most visually important card in the BMS.
@@ -16,6 +16,29 @@ import type { Recommendation } from '@/lib/types';
  * simulator, because a number invented here would be the easiest thing in the
  * whole platform to get wrong.
  */
+/**
+ * The impact line, in numbers when there are any and in four words when there
+ * are not.
+ *
+ * Before the Control Lab has run, every field here is null on purpose -- the
+ * whole point of the gate is that no saving is asserted before it is
+ * simulated. Saying that took a bordered box, an icon and a sentence; it is
+ * the same fact either way, so it gets a line.
+ */
+function impactLine(impact: ExpectedImpact): string {
+  const parts: string[] = [];
+  if (impact.energy_pct !== null && impact.energy_pct !== undefined) {
+    parts.push(`${signed(impact.energy_pct)}% energy`);
+  }
+  if (impact.peak_pct !== null && impact.peak_pct !== undefined) {
+    parts.push(`${signed(impact.peak_pct)}% peak`);
+  }
+  if (impact.comfort_violation_kh !== null && impact.comfort_violation_kh !== undefined) {
+    parts.push(`${signed(impact.comfort_violation_kh, 2)} K\u00b7h comfort`);
+  }
+  return parts.length ? parts.join(' \u00b7 ') : 'not claimed until simulated';
+}
+
 export function RecommendationCard({
   recommendation,
   siteId,
@@ -96,11 +119,6 @@ export function RecommendationCard({
           </div>
         </div>
 
-        <div>
-          <div className="label mb-1">Reason</div>
-          <p className="text-2xs leading-relaxed text-ink-300">{recommendation.rationale}</p>
-        </div>
-
         <div className="flex items-center gap-2 border-t border-base-700 pt-2">
           <span className="label shrink-0">Confidence</span>
           <Meter value={recommendation.confidence * 100} className="flex-1" />
@@ -110,27 +128,35 @@ export function RecommendationCard({
         </div>
 
         {recommendation.expected_impact && (
-          <div className="rounded-panel border border-base-600 bg-base-800/50 px-2.5 py-2">
-            <div className="label mb-1">Expected impact</div>
-            <div className="flex items-start gap-1.5">
-              <Info className="mt-[2px] h-3 w-3 shrink-0 text-status-info" />
-              <div className="min-w-0">
-                <p className="text-2xs leading-relaxed text-ink-300">
-                  {recommendation.expected_impact.basis}
-                </p>
-                <div className="mt-1.5">
-                  <ProvenanceBadge
-                    provenance={recommendation.expected_impact.provenance}
-                    size="xs"
-                  />
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 border-t border-base-700 pt-2">
+            <span className="label shrink-0">Expected impact</span>
+            <span
+              className="truncate text-2xs text-ink-400"
+              title={recommendation.expected_impact.basis}
+            >
+              {impactLine(recommendation.expected_impact)}
+            </span>
+            <span className="ml-auto shrink-0">
+              <ProvenanceBadge
+                provenance={recommendation.expected_impact.provenance}
+                size="xs"
+                align="right"
+              />
+            </span>
           </div>
         )}
 
         {explaining && (
           <div className="space-y-2 rounded-panel border border-base-600 bg-base-800/60 p-2.5">
+            {/* The prose reasoning lives here rather than on the face of the
+                card. On the card it restated the factors below it in
+                sentences, which is the product narrating itself; an operator
+                reading the card wants the setpoint and the confidence, and
+                asks for the argument separately. */}
+            <div>
+              <div className="label mb-1">Reason</div>
+              <p className="text-2xs leading-relaxed text-ink-300">{recommendation.rationale}</p>
+            </div>
             <div className="label">Contributing factors</div>
             {recommendation.factors.map((factor) => (
               <div
