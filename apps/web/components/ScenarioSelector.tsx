@@ -72,10 +72,6 @@ export function ScenarioSelector({
           <div className="text-2xs font-semibold text-ink-100">{active.name}</div>
           <div className="label">{active.subtitle}</div>
           <p className="mt-1.5 text-2xs leading-relaxed text-ink-300">{active.description}</p>
-          <p className="mt-1.5 border-t border-base-700 pt-1.5 text-2xs leading-relaxed text-ink-400">
-            <span className="text-ink-500">What it demonstrates — </span>
-            {active.teaches}
-          </p>
           {Object.keys(active.parameters).length > 0 && (
             <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 border-t border-base-700 pt-1.5">
               {Object.entries(active.parameters).map(([key, value]) => (

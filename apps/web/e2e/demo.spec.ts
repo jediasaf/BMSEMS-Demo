@@ -62,7 +62,9 @@ test.describe('interview demo path', () => {
     // 4 — a recommendation, which claims no saving before simulation.
     await nextStep(page);
     await expect(page.getByText(/AI recommendation/i).first()).toBeVisible();
-    await expect(page.getByText(/No number is claimed until the simulator/i)).toBeVisible();
+    // The claim, not the sentence that used to carry it: nothing is asserted
+    // about savings until the simulator has run both cases.
+    await expect(page.getByText(/not claimed until simulated/i)).toBeVisible();
 
     // 5 — the Control Lab: before/after, and the simulator's verdict.
     await nextStep(page);

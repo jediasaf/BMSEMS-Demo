@@ -228,10 +228,6 @@ export default function ScenarioLabPage() {
               <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
                 <div>
                   <p className="text-2xs leading-relaxed text-ink-300">{active.description}</p>
-                  <p className="mt-1.5 border-t border-base-700 pt-1.5 text-2xs leading-relaxed text-ink-500">
-                    <span className="text-ink-600">What it demonstrates — </span>
-                    {active.teaches}
-                  </p>
                   {Object.keys(active.parameters).length > 0 && (
                     <dl className="mt-1.5 flex flex-wrap gap-x-5 gap-y-0.5 border-t border-base-700 pt-1.5">
                       {Object.entries(active.parameters).map(([key, value]) => (
