@@ -109,6 +109,36 @@ test.describe('static recording', () => {
       await expect(page.getByText(/Panel unavailable/i)).toHaveCount(0);
     }
 
+    // And every facility the two EMS dropdowns offer, with the buttons that
+    // only fire for the selected one. The Scenario Lab runs the cross-module
+    // chain for whichever facility is chosen, and the recorder captured it
+    // only for the default, so the dropdown offered a choice answering 404.
+    for (const path of ['/ems/network', '/ems/scenario-lab']) {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle').catch(() => undefined);
+      const facility = page.getByRole('combobox').first();
+      const ids = await facility
+        .locator('option')
+        .evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+      expect(ids.length, `${path} should offer more than one facility`).toBeGreaterThan(1);
+      for (const id of ids) {
+        await facility.selectOption(id);
+        await page.waitForLoadState('networkidle').catch(() => undefined);
+        for (const label of [/Run optimisation/i, /Open BMS analysis/i]) {
+          const button = page.getByRole('button', { name: label });
+          if (await button.count()) {
+            await button.first().click();
+            await page.waitForLoadState('networkidle').catch(() => undefined);
+          }
+        }
+        await page.waitForTimeout(700);
+        await expect(
+          page.getByText(/Panel unavailable|Cross-module run failed|Optimisation failed/i),
+          `facility ${id} on ${path} has no recorded data`,
+        ).toHaveCount(0);
+      }
+    }
+
     expect(
       [...missing],
       `recorded files requested and not found:\n${[...missing].join('\n')}`,

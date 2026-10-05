@@ -92,14 +92,53 @@ def slug(path: str, query: dict[str, Any] | None) -> str:
     return "__".join(parts)
 
 
+def prepare_out(out: Path, *, fill: bool) -> dict[str, Any]:
+    """Ready the output directory, and return the index of what was kept.
+
+    A fresh run starts from empty, so a renamed or removed endpoint cannot
+    leave an orphan file behind still answering requests the product no longer
+    makes. ``--fill`` instead keeps the recording and writes only what it is
+    missing, and hands back its index so this run carries over what the
+    recording already settled, such as its date and cursor stride.
+
+    Split out and tested because the two branches are one line apart and
+    getting them the wrong way round is silent: a fill that wipes the
+    recording it was asked to top up still exits 0.
+    """
+    out.mkdir(parents=True, exist_ok=True)
+    if not fill:
+        stale = list(out.glob("*.json"))
+        for file in stale:
+            file.unlink()
+        if stale:
+            _log(f"cleared {len(stale)} file(s) from the previous recording")
+        return {}
+    index_file = out / "index.json"
+    previous: dict[str, Any] = json.loads(index_file.read_text()) if index_file.exists() else {}
+    kept = len([p for p in out.glob("*.json") if p.name != "index.json"])
+    _log(f"fill mode: keeping {kept} recorded file(s), writing only what is missing")
+    return previous
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default="apps/web/public/snapshot")
     parser.add_argument(
         "--cursor-stride",
         type=int,
-        default=1,
-        help="record every Nth replay step (1 = every step)",
+        default=None,
+        help=(
+            "record every Nth replay step (1 = every step); defaults to 1, or "
+            "to whatever the existing recording used under --fill"
+        ),
+    )
+    parser.add_argument(
+        "--fill",
+        action="store_true",
+        help=(
+            "keep the existing recording and only write files it is missing, "
+            "rather than starting from empty"
+        ),
     )
     parser.add_argument(
         "--sites",
@@ -131,17 +170,28 @@ def main() -> int:
         )
 
     out = REPO_ROOT / args.out
-    out.mkdir(parents=True, exist_ok=True)
-    for stale in out.glob("*.json"):
-        stale.unlink()
+    previous = prepare_out(out, fill=args.fill)
+
+    # A fill at a coarser stride than the recording it is topping up would
+    # leave index.json promising steps that are no longer all there, so the
+    # stride carries over unless this run states one.
+    stride = args.cursor_stride
+    if stride is None:
+        stride = int(previous.get("cursor_stride") or 1)
+    if args.fill and previous.get("cursor_stride") and stride != previous["cursor_stride"]:
+        _log(f"stride {stride} differs from the recording's {previous['cursor_stride']}")
 
     from fastapi.testclient import TestClient
 
     from apps.api.main import app
 
     started = time.perf_counter()
+    now = datetime.now(UTC).isoformat()
     index: dict[str, Any] = {
-        "recorded_at": datetime.now(UTC).isoformat(),
+        # What the UI puts on the Recorded chip. In fill mode most files came
+        # from the original run, so that is the date to show; the files added
+        # now carry their own timestamp, as every payload always has.
+        "recorded_at": previous.get("recorded_at", now),
         "note": (
             "Static recording of a live run. Every value keeps the provenance it "
             "was served with; only the delivery is a replay."
@@ -170,7 +220,7 @@ def main() -> int:
             body = _round(response.json())
             if isinstance(body, dict):
                 body["_snapshot"] = {
-                    "recorded_at": index["recorded_at"],
+                    "recorded_at": now,
                     "path": path,
                     "live": False,
                 }
@@ -248,11 +298,15 @@ def main() -> int:
             # different file; missing it showed up as an error panel, which is
             # what e2e/snapshot.spec.ts now fails on.
             capture("/ems/risk", {"scenario_id": scenario})
-            capture(
-                "/link/simulate-hvac-action",
-                {"facility_id": facility, "scenario_id": scenario, "hours": 24},
-                method="POST",
-            )
+            # Per facility, not just the default one: the Scenario Lab runs
+            # this chain for whichever facility is selected, so recording only
+            # the default put a 404 behind its dropdown.
+            for f_id in all_facilities:
+                capture(
+                    "/link/simulate-hvac-action",
+                    {"facility_id": f_id, "scenario_id": scenario, "hours": 24},
+                    method="POST",
+                )
 
         # -- cursor-dependent ----------------------------------------------
         # These are what the replay slider drives. Recorded at every step the
@@ -265,7 +319,7 @@ def main() -> int:
             base = pd.Timestamp(start)
             cursors += [
                 (base + pd.Timedelta(minutes=15 * i)).strftime("%Y-%m-%dT%H:%M:%S")
-                for i in range(0, steps + 1, max(1, args.cursor_stride))
+                for i in range(0, steps + 1, max(1, stride))
             ]
         _log(f"{len(cursors)} cursor positions x scenarios")
 
@@ -304,7 +358,7 @@ def main() -> int:
                                 kpis = {
                                     "kpis": _round(r.json()["kpis"]),
                                     "_snapshot": {
-                                        "recorded_at": index["recorded_at"],
+                                        "recorded_at": now,
                                         "path": "/bms/overview",
                                         "live": False,
                                         "merge_with": "__base",
@@ -331,8 +385,23 @@ def main() -> int:
             if i and i % 25 == 0:
                 _log(f"  {i}/{len(cursors)} cursors, {total_bytes / 1e6:.1f} MB so far")
 
+    # The index has to describe the directory rather than the run: the base
+    # files are written outside capture(), and in fill mode most of the
+    # recording predates this process. Scanning is the only description of it
+    # that cannot drift.
+    index["entries"] = {}
+    total_bytes = 0
+    for file in sorted(out.glob("*.json")):
+        if file.name == "index.json":
+            continue
+        size = file.stat().st_size
+        index["entries"][file.stem] = size
+        total_bytes += size
+    if args.fill:
+        index["filled_at"] = now
+
     # The client needs both to snap a dragged cursor onto a step that exists.
-    index["cursor_stride"] = args.cursor_stride
+    index["cursor_stride"] = stride
     index["start"] = start
     index["bytes"] = total_bytes
     # What the recording covers, so a checker does not have to infer it from
