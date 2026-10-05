@@ -325,7 +325,10 @@ the Vercel project settings would be baked into the bundle — a dead backend
 URL shipped to every visitor, and a claim in the artefact that contradicts
 what the product does. Blanking it in `vercel.json` overrides the project
 setting, so the repository decides, not a dashboard field nobody will
-remember. `.github/workflows/verify-production.yml` fails the deployment if a
+remember. In practice a dashboard value still won over `vercel.json`, so
+`apps/web/next.config.mjs` now forces both values whenever the build runs on
+Vercel (`VERCEL` is set). The Vercel build never points at Fly.io, whatever
+the dashboard says. `.github/workflows/verify-production.yml` fails the deployment if a
 backend host appears in the served bundle.
 
 If you connect this repository to Vercel through the GitHub integration rather

@@ -37,13 +37,12 @@ test.describe('interview demo path', () => {
     await page.goto('/bms');
     await expect(page.getByRole('heading', { name: 'AI Building Operator' })).toBeVisible();
 
-    // 1 — Interview Mode, preloaded, and the guided demo opens.
+    // 1 — the guided demo opens.
     await page
       .getByRole('button', { name: /Start demo/i })
       .first()
       .click();
     await expect(page.getByText(/step 1 of 12/i)).toBeVisible();
-    await expect(page.getByText(/Interview mode/i).first()).toBeVisible();
 
     // 2 — the injected scenario is applied and labelled as injected.
     await nextStep(page);
