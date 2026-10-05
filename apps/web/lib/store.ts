@@ -36,7 +36,7 @@ interface DemoState {
   resetToken: number;
   /** Asset selected in the BMS building view, shown in the detail drawer. */
   selectedZone: string | null;
-  /** Insight selected in the AI Operations feed. */
+  /** Insight selected in the Operations feed. */
   selectedInsight: string | null;
 
   setStatus: (status: SystemStatus) => void;

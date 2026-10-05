@@ -91,7 +91,7 @@ export default function BmsOverviewPage() {
   // the recommendation's reasoning where it actually carries an argument --
   // and a scan line reads as a sentence only while it is short enough to be
   // one: this much now, this much expected, this many findings, this warm
-  // outside. /bms/ai-operations keeps the full set.
+  // outside. /bms/operations keeps the full set.
   const HEADLINE_KPIS = ['building_load', 'expected_load', 'active_anomalies', 'outdoor_temp'];
   const headlineKpis = (data?.kpis ?? [])
     .filter((k) => HEADLINE_KPIS.includes(k.key))
@@ -101,7 +101,7 @@ export default function BmsOverviewPage() {
     <>
       <PageHeader
         module="BMS"
-        title="AI Building Operator"
+        title="Building Operator"
         subtitle="Measured → detect → predict → recommend → simulate"
         chips={[
           // An absent answer is not a negative answer. With no status yet, the
@@ -252,14 +252,14 @@ export default function BmsOverviewPage() {
           {/* ROW 4 — insights + recommendation + data source */}
           <div className="grid items-start gap-2.5 xl:grid-cols-2">
             <Panel
-              title="Recent AI insights"
+              title="Recent insights"
               subtitle={data ? `${data.insights.length} in window` : undefined}
               actions={
                 <Link
-                  href="/bms/ai-operations"
+                  href="/bms/operations"
                   className="focus-ring text-3xs uppercase tracking-[0.08em] text-accent hover:underline"
                 >
-                  AI Operations →
+                  Operations →
                 </Link>
               }
               flush
@@ -318,7 +318,7 @@ function RecommendationPanel({
   }
   if (recommendations.data.length === 0) {
     return (
-      <Panel title="AI recommendation">
+      <Panel title="Recommendation">
         <EmptyNote
           title="No fault to act on"
           detail="Recommendations follow a material finding. The standing setpoint plan above runs regardless."
@@ -338,10 +338,10 @@ function RecommendationPanel({
         <div className="mt-1.5 flex items-center gap-1.5">
           <Pill tone="neutral">{recommendations.data.length - 1} more</Pill>
           <Link
-            href="/bms/ai-operations"
+            href="/bms/operations"
             className="focus-ring text-3xs uppercase tracking-[0.08em] text-accent hover:underline"
           >
-            Review in AI Operations →
+            Review in Operations →
           </Link>
         </div>
       )}

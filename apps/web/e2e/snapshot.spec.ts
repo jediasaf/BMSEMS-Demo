@@ -26,7 +26,7 @@ test.describe('static recording', () => {
     });
 
     await page.goto('/bms');
-    await expect(page.getByRole('heading', { name: 'AI Building Operator' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Building Operator' })).toBeVisible();
     // The build must say what it is. A replay presented as live is the one
     // failure this project does not tolerate.
     await expect(page.getByText(/Recorded/i).first()).toBeVisible();

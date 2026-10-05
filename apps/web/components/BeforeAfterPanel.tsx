@@ -22,7 +22,7 @@ export interface ComparisonRow {
 export function BeforeAfterPanel({
   rows,
   beforeLabel = 'Baseline',
-  afterLabel = 'AI control',
+  afterLabel = 'Optimised',
 }: {
   rows: ComparisonRow[];
   beforeLabel?: string;

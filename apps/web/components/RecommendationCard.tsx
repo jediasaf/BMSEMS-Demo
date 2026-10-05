@@ -79,7 +79,7 @@ export function RecommendationCard({
     <div className="panel border-l-[2px] border-l-accent">
       <header className="panel-head">
         <div className="flex items-center gap-2">
-          <span className="panel-title text-accent">AI recommendation</span>
+          <span className="panel-title text-accent">Recommendation</span>
           <Pill tone="accent">{recommendation.mode}</Pill>
         </div>
         <ProvenanceBadge provenance={recommendation.provenance} size="xs" />
