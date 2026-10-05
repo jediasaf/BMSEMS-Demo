@@ -56,6 +56,65 @@ test.describe('static recording', () => {
     await context.close();
   });
 
+  /**
+   * Every site the selector offers has to be in the recording.
+   *
+   * The recorder captured only the default site while the Building dropdown
+   * listed six and the facility table invited a click on any row, so the
+   * first thing a curious viewer did returned a 404. A control that offers a
+   * choice the recording cannot serve is the defect, so this walks all of
+   * them.
+   */
+  test('every site in the selector is recorded', async ({ page }) => {
+    test.skip(process.env.E2E_SNAPSHOT !== '1', 'needs a NEXT_PUBLIC_SNAPSHOT=1 build');
+
+    const missing = new Set<string>();
+    page.on('response', (r) => {
+      if (r.status() === 404) missing.add(new URL(r.url()).pathname);
+    });
+
+    await page.goto('/bms');
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+
+    const selector = page.getByRole('combobox').first();
+    const values = await selector
+      .locator('option')
+      .evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+    expect(values.length, 'the building selector should offer more than one site').toBeGreaterThan(
+      1,
+    );
+
+    for (const value of values) {
+      await selector.selectOption(value);
+      await page.waitForLoadState('networkidle').catch(() => undefined);
+      await page.waitForTimeout(700);
+      await expect(
+        page.getByText(/Panel unavailable/i),
+        `site ${value} has no recorded data`,
+      ).toHaveCount(0);
+    }
+
+    // And the facility drill-down the portfolio table invites.
+    await page.goto('/ems');
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+    const rows = page.locator('table tbody tr');
+    const count = await rows.count();
+    expect(count, 'the portfolio should list facilities').toBeGreaterThan(1);
+    for (let i = 0; i < count; i += 1) {
+      await page.goto('/ems');
+      await page.waitForLoadState('networkidle').catch(() => undefined);
+      await rows.nth(i).click();
+      await page.waitForLoadState('networkidle').catch(() => undefined);
+      await page.waitForTimeout(700);
+      await expect(page.getByText(/Panel unavailable/i)).toHaveCount(0);
+    }
+
+    expect(
+      [...missing],
+      `recorded files requested and not found:\n${[...missing].join('\n')}`,
+    ).toEqual([]);
+  });
+
   test('drives the whole demo with no backend', async ({ page }) => {
     test.skip(process.env.E2E_SNAPSHOT !== '1', 'needs a NEXT_PUBLIC_SNAPSHOT=1 build');
 
