@@ -91,7 +91,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               't_ai',
-              'Zone temp — AI control',
+              'Zone temp — optimised',
               result.timestamps,
               result.ai_control.zone_temp_c,
               provenance,
@@ -116,7 +116,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               'sp_ai',
-              'Setpoint — AI control',
+              'Setpoint — optimised',
               result.timestamps,
               result.ai_control.setpoint_c,
               optimisedProvenance,
@@ -169,7 +169,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               'p_ai',
-              'HVAC power — AI control',
+              'HVAC power — optimised',
               result.timestamps,
               result.ai_control.hvac_kw,
               provenance,
@@ -397,7 +397,7 @@ export default function ControlLabPage() {
 
             {/* RIGHT — comparison */}
             <div className="flex min-w-0 flex-col gap-2.5">
-              <Panel title="Baseline vs AI control" subtitle="same engine, same inputs" flush>
+              <Panel title="Baseline vs optimised" subtitle="same engine, same inputs" flush>
                 <BeforeAfterPanel rows={rows} />
               </Panel>
 

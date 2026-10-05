@@ -19,8 +19,8 @@ flexible load.
 
 |                                        |                                                                   |
 | -------------------------------------- | ----------------------------------------------------------------- |
-| **EcoTwin BMS** — AI Building Operator | Measured → Detect → Predict → Recommend → Simulate → Compare      |
-| **EcoTwin EMS** — AI Power Operator    | Measured → Forecast → Detect Risk → Optimise → Simulate → Resolve |
+| **EcoTwin BMS** — Building Operator | Measured → Detect → Predict → Recommend → Simulate → Compare      |
+| **EcoTwin EMS** — Power Operator    | Measured → Forecast → Detect Risk → Optimise → Simulate → Resolve |
 
 ---
 
@@ -79,7 +79,7 @@ A mislabelled number fails at construction rather than reaching a chart.
 ### The cross-module workflow
 
 ```
-Power risk → Building analysis → AI recommendation → Control simulation → Power impact
+Power risk → Building analysis → recommendation → Control simulation → Power impact
    (EMS)          (BMS)              (BMS)                 (BMS)             (EMS)
 ```
 
@@ -90,11 +90,11 @@ simulation.
 
 ### Screenshots
 
-**BMS — AI Operations.** A seeded hot-day injection, the residual score against
+**BMS — Operations.** A seeded hot-day injection, the residual score against
 its threshold, a finding with its full evidence, and a recommendation that
 claims no saving until the simulator has run.
 
-![BMS AI Operations](docs/images/bms-ai-operations.png)
+![BMS Operations](docs/images/bms-ai-operations.png)
 
 **BMS — Control Lab, mid-demo.** Baseline against AI control, both from the
 same engine over identical inputs, with every model parameter on screen — and

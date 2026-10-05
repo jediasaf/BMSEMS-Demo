@@ -52,7 +52,7 @@ export default function EmsPortfolioPage() {
     <>
       <PageHeader
         module="EMS"
-        title="AI Power Operator"
+        title="Power Operator"
         subtitle="Measured → forecast → risk → optimise → resolve"
         chips={[
           { label: 'Source', value: status?.data_label ?? '…' },
