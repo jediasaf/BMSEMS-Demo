@@ -16,12 +16,12 @@ import { StatusDot } from './Primitives';
 
 /**
  * The thin bar above everything. It exists for one reason: at any moment an
- * operator — or an interviewer — can read where the numbers came from, whether
+ * operator can read where the numbers came from, whether
  * the models are serving, and which simulator is live. It never goes quiet;
  * when something degrades it says so here first.
  */
 export function SystemBar() {
-  const { status, setStatus, window: replayWindow, cursor, interviewMode, preload } = useDemo();
+  const { status, setStatus, window: replayWindow, cursor } = useDemo();
 
   const [unreachable, setUnreachable] = useState<string | null>(null);
   const [recordedAt, setRecordedAt] = useState<string | null>(null);
@@ -153,7 +153,9 @@ export function SystemBar() {
       )}
 
       <div className="ml-auto flex min-w-0 items-center gap-2.5">
-        {status?.notes.length ? (
+        {/* In the hosted recording the live-backend notes ("BOPTEST
+            unreachable") read as faults; they stay in the Simulation tooltip. */}
+        {!SNAPSHOT_MODE && status?.notes.length ? (
           <span
             className="hidden min-w-0 max-w-[34rem] truncate text-ink-600 xl:inline"
             title={status.notes.join('\n')}
@@ -161,60 +163,10 @@ export function SystemBar() {
             {status.notes[0]}
           </span>
         ) : null}
-        {interviewMode && (
-          <span
-            title={
-              // In a recording nothing is being warmed now, so the live
-              // figure belongs in the tooltip where it can say whose it is.
-              SNAPSHOT_MODE && preload.state === 'ready'
-                ? 'Every curated step is already recorded. On the live backend this preload ' +
-                  `took ${(preload.ms / 1000).toFixed(1)} s.`
-                : PRELOAD_TITLE[preload.state]
-            }
-            className={cn(
-              'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill border px-1.5 py-[1px] text-3xs font-semibold uppercase tracking-[0.1em]',
-              preload.state === 'failed'
-                ? 'border-status-warning/45 bg-status-warning/10 text-status-warning'
-                : 'border-accent/40 bg-accent/10 text-accent',
-            )}
-          >
-            <StatusDot
-              tone={preload.state === 'failed' ? 'warning' : 'normal'}
-              pulse={preload.state !== 'loading'}
-            />
-            Interview
-            {preload.state === 'ready' && (
-              <span className="tabular font-mono font-normal normal-case tracking-normal opacity-70">
-                {/* "warm 9.7s" would claim this build just spent 9.7 s warming
-                    a cache. It did not; it read a file. */}
-                {SNAPSHOT_MODE ? '· ready' : `· warm ${(preload.ms / 1000).toFixed(1)}s`}
-              </span>
-            )}
-            {preload.state === 'loading' && (
-              <span className="font-normal normal-case tracking-normal opacity-70">
-                · preloading
-              </span>
-            )}
-            {preload.state === 'failed' && (
-              <span className="font-normal normal-case tracking-normal opacity-80">
-                · on demand
-              </span>
-            )}
-          </span>
-        )}
       </div>
     </div>
   );
 }
-
-const PRELOAD_TITLE: Record<string, string> = {
-  idle: 'Interview mode is on. Nothing has been preloaded yet.',
-  loading: 'Computing every curated step so none of them waits during the demo.',
-  ready: 'Every curated step is served from a warm cache.',
-  failed:
-    'Preload did not complete, so curated steps compute on demand. Nothing is wrong with the ' +
-    'results; they just arrive slower.',
-};
 
 function Segment({
   label,

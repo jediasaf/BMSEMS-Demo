@@ -23,9 +23,8 @@ interface DemoState {
   cursor: number;
   playing: boolean;
   speed: number;
-  interviewMode: boolean;
   tourStep: number | null;
-  /** Result of the last Interview Mode preload, for the system bar. */
+  /** Result of the background cache warm-up on first load. */
   preload: PreloadState;
   compactNav: boolean;
   /**
@@ -53,7 +52,6 @@ interface DemoState {
   pause: () => void;
   toggle: () => void;
   setSpeed: (speed: number) => void;
-  setInterviewMode: (on: boolean) => void;
   setPreload: (preload: PreloadState) => void;
   toggleCompactNav: () => void;
   setSelectedZone: (id: string | null) => void;
@@ -94,7 +92,6 @@ export const useDemo = create<DemoState>((set, get) => ({
   cursor: 0,
   playing: false,
   speed: 20,
-  interviewMode: true,
   tourStep: null,
   preload: { state: 'idle' },
   compactNav: false,
@@ -102,7 +99,7 @@ export const useDemo = create<DemoState>((set, get) => ({
   selectedZone: null,
   selectedInsight: null,
 
-  setStatus: (status) => set({ status, interviewMode: status.interview_mode }),
+  setStatus: (status) => set({ status }),
   setWindow: (window) => set({ window, cursor: openingCursor(window) }),
   setScenarios: (scenarios) => set({ scenarios }),
   setBmsScenario: (bmsScenario) => set({ bmsScenario }),
@@ -120,7 +117,6 @@ export const useDemo = create<DemoState>((set, get) => ({
   pause: () => set({ playing: false }),
   toggle: () => set({ playing: !get().playing }),
   setSpeed: (speed) => set({ speed }),
-  setInterviewMode: (interviewMode) => set({ interviewMode }),
   setPreload: (preload) => set({ preload }),
   toggleCompactNav: () => set({ compactNav: !get().compactNav }),
   setSelectedZone: (selectedZone) => set({ selectedZone }),

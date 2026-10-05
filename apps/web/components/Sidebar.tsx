@@ -14,13 +14,12 @@ import {
   LayoutGrid,
   Network,
   PlayCircle,
-  Presentation,
   Radar,
   RotateCcw,
   SlidersHorizontal,
   Zap,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { SNAPSHOT_MODE, api } from '@/lib/api';
 import { useDemo } from '@/lib/store';
 import { cn } from '@/lib/format';
 import { StatusDot } from './Primitives';
@@ -56,41 +55,11 @@ const SECTIONS = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const {
-    status,
-    compactNav,
-    toggleCompactNav,
-    interviewMode,
-    setInterviewMode,
-    setPreload,
-    startTour,
-    resetDemo,
-    tourStep,
-  } = useDemo();
+  const { status, compactNav, toggleCompactNav, startTour, resetDemo, tourStep } = useDemo();
   const [architecture, setArchitecture] = useState(false);
 
-  // Turning Interview Mode on warms every curated computation, so no step in
-  // the demo is the one that waits on a cold cache.
-  const enterInterviewMode = async () => {
-    setInterviewMode(true);
-    setPreload({ state: 'loading' });
-    try {
-      const result = await api.interview.preload();
-      setPreload(
-        result.preloaded
-          ? { state: 'ready', ms: result.total_ms }
-          : { state: 'failed', failed: result.failed },
-      );
-    } catch {
-      // A failed preload costs speed, not correctness: the demo still works,
-      // it just computes on demand. Saying so is better than a silent retry.
-      setPreload({ state: 'failed', failed: ['preload request failed'] });
-    }
-  };
-
-  const onStartDemo = async () => {
+  const onStartDemo = () => {
     resetDemo();
-    if (!interviewMode) await enterInterviewMode();
     startTour();
   };
 
@@ -186,7 +155,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer: system status, interview mode, about */}
+      {/* Footer: system status, demo controls, about */}
       <div className="shrink-0 border-t border-base-600/70">
         {!compactNav && status && (
           <div className="space-y-1 px-3 py-2">
@@ -203,20 +172,6 @@ export function Sidebar() {
         )}
 
         <div className={cn('space-y-1 px-2 py-2', compactNav && 'flex flex-col items-center')}>
-          <button
-            type="button"
-            onClick={() => (interviewMode ? setInterviewMode(false) : enterInterviewMode())}
-            title="Interview mode: curated scenarios, everything preloaded, no experimental surface"
-            className={cn(
-              'focus-ring flex w-full items-center gap-1.5 rounded-panel border px-1.5 py-1 text-3xs uppercase tracking-[0.08em] transition-colors',
-              interviewMode
-                ? 'border-accent/40 bg-accent/10 text-accent'
-                : 'border-base-600 text-ink-400 hover:text-ink-200',
-            )}
-          >
-            <Presentation className="h-3 w-3 shrink-0" />
-            {!compactNav && (interviewMode ? 'Interview mode' : 'Standard mode')}
-          </button>
           {!compactNav && (
             <div className="flex gap-1">
               <DemoButton
@@ -224,7 +179,7 @@ export function Sidebar() {
                 icon={PlayCircle}
                 label={tourStep === null ? 'Start demo' : 'Restart'}
                 primary
-                title="Reset, preload and open the guided walkthrough"
+                title="Reset and open the guided walkthrough"
               />
               <DemoButton
                 onClick={onResetDemo}
@@ -272,21 +227,24 @@ export function Sidebar() {
                 <Info className="h-3.5 w-3.5" />
                 About
               </Link>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await api.resetDemo();
-                  } catch {
-                    /* a failed cache clear is not worth breaking the demo over */
-                  }
-                  window.location.reload();
-                }}
-                className="focus-ring ml-auto text-3xs uppercase tracking-[0.08em] text-ink-500 hover:text-ink-200"
-                title="Clear every server-side cache and reload from disk"
-              >
-                Clear cache
-              </button>
+              {/* Clears the live backend's caches; a recording has none. */}
+              {!SNAPSHOT_MODE && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await api.resetDemo();
+                    } catch {
+                      /* a failed cache clear is not worth breaking the demo over */
+                    }
+                    window.location.reload();
+                  }}
+                  className="focus-ring ml-auto text-3xs uppercase tracking-[0.08em] text-ink-500 hover:text-ink-200"
+                  title="Clear every server-side cache and reload from disk"
+                >
+                  Clear cache
+                </button>
+              )}
             </>
           )}
         </div>
