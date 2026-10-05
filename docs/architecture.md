@@ -5,7 +5,7 @@
 ```mermaid
 flowchart TB
     subgraph browser["Browser"]
-        UI["Next.js 15 · React 19 · TypeScript<br/>BMS: Overview · AI Operations · Control Lab<br/>EMS: Portfolio · Power Network · Scenario Lab"]
+        UI["Next.js 15 · React 19 · TypeScript<br/>BMS: Overview · Operations · Control Lab<br/>EMS: Portfolio · Power Network · Scenario Lab"]
     end
 
     subgraph api["FastAPI backend"]
