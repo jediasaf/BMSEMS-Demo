@@ -95,7 +95,11 @@ type Query = Record<string, string | number | boolean | undefined | null>;
  * viewer they are looking at a recording.
  */
 export const SNAPSHOT_MODE = process.env.NEXT_PUBLIC_SNAPSHOT === '1';
-const SNAPSHOT_ROOT = '/snapshot';
+// Absolute from the deployment root, which is not the origin root when the
+// site is served from a subpath (GitHub Pages project sites are). Next.js
+// rewrites its own asset URLs for basePath; a path this code builds by hand
+// it does not, so the prefix is applied here.
+const SNAPSHOT_ROOT = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/snapshot`;
 
 /** Replay steps are 15 minutes; the recording may keep only every Nth one. */
 const SNAPSHOT_STEP_MS = 15 * 60 * 1000;

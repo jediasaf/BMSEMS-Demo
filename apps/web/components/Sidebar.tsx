@@ -106,9 +106,12 @@ export function Sidebar() {
         compactNav ? 'w-sidebar-compact' : 'w-sidebar',
       )}
     >
-      {/* Wordmark */}
+      {/* Wordmark. Straight to /bms rather than to /, which exists only to
+          redirect there -- and cannot, in a static export, where there is no
+          server to issue the redirect. Next prefetched the dead route and the
+          console carried a 404 for it on every page. */}
       <Link
-        href="/"
+        href="/bms"
         className="focus-ring flex h-topbar shrink-0 items-center gap-2.5 border-b border-base-600/70 px-3"
       >
         <span className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-panel border border-accent/40 bg-accent/10">

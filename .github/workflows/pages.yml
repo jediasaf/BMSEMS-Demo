@@ -1,0 +1,92 @@
+# Publish the recorded demo to GitHub Pages.
+#
+# The demo is a recording -- every response the product can make is committed
+# under apps/web/public/snapshot -- so it needs no backend, no container and
+# no credential beyond the one GitHub hands this workflow. That is the whole
+# reason it can live here: a static host cannot run FastAPI, and does not
+# need to.
+#
+# Project sites are served from a subpath, so the build is told its basePath
+# and lib/api.ts prefixes the snapshot URLs with it.
+name: Deploy demo to Pages
+
+on:
+  push:
+    branches: ["claude/zen-ptolemy-5hf381"]
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; never cancel one half-way.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - name: Build the recorded site
+        env:
+          NEXT_STATIC_EXPORT: "1"
+          NEXT_PUBLIC_SNAPSHOT: "1"
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_API_BASE: ""
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npx next build
+      - name: The recording has to have shipped with it
+        run: |
+          count=$(ls out/snapshot/*.json | wc -l)
+          echo "recorded files in the export: $count"
+          test "$count" -gt 1000
+          # Jekyll would otherwise swallow _next/.
+          touch out/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: The published site serves the recording, not an error page
+        run: |
+          URL="${{ needs.deploy.outputs.page_url || format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) }}"
+          echo "checking $URL" >> "$GITHUB_STEP_SUMMARY"
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /tmp/p.html -w '%{http_code}' --max-time 20 "${URL}bms.html" || echo 000)
+            [ "$code" = "200" ] && break
+            sleep 10
+          done
+          echo "- bms.html -> $code" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$code" = "200" ]
+          grep -qi 'Recorded' /tmp/p.html || { echo "::error::no Recorded marker"; exit 1; }
+          echo "- carries the Recorded marker" | tee -a "$GITHUB_STEP_SUMMARY"
+          idx=$(curl -s -o /tmp/i.json -w '%{http_code}' --max-time 20 "${URL}snapshot/index.json")
+          echo "- snapshot/index.json -> $idx" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$idx" = "200" ]
+          python3 -c "import json;d=json.load(open('/tmp/i.json'));n=len(d.get('entries',{}));print(f'- {n} recorded files');assert n>1000" | tee -a "$GITHUB_STEP_SUMMARY"
