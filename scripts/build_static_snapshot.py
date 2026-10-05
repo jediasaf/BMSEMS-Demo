@@ -20,6 +20,7 @@ this script is careful about:
 Usage:
     python scripts/build_static_snapshot.py
     python scripts/build_static_snapshot.py --out apps/web/public/snapshot
+    python scripts/build_static_snapshot.py --sites all --cursor-stride 4
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -40,6 +42,14 @@ sys.path.insert(0, str(REPO_ROOT))
 #: Decimal places kept in recorded floats. The UI shows at most 4, and the
 #: difference is invisible on screen while roughly halving the payload.
 PRECISION = 6
+
+#: Sites recorded unless --sites says otherwise. Four buildings rather than all
+#: six: the recording's size is linear in the site count, and these four already
+#: span three orders of magnitude of floor area (573 m2 to 65,578 m2) and both
+#: outcomes of the simulator gate -- 227 is the curated lead site the guided
+#: path walks through, and on 143 the gate refuses the proposal, which is worth
+#: being able to show.
+DEFAULT_SITES = "62,143,162,227"
 
 
 def _log(msg: str) -> None:
@@ -91,7 +101,35 @@ def main() -> int:
         default=1,
         help="record every Nth replay step (1 = every step)",
     )
+    parser.add_argument(
+        "--sites",
+        default=DEFAULT_SITES,
+        help=(
+            "comma-separated site ids to serve and record, or 'all' for every "
+            f"prepared site (default: {DEFAULT_SITES})"
+        ),
+    )
     args = parser.parse_args()
+
+    # Narrow the catalogue before anything reads it, so the API itself only
+    # ever offers what this run is going to record. A UI-side filter would
+    # leave the backend disagreeing with the browser; this way the dropdowns,
+    # the portfolio table and its KPIs all describe the same buildings.
+    from core.adapters.building.power_laws import DEMO_SITE_IDS_ENV, load_selection
+
+    if args.sites.strip().lower() in ("all", ""):
+        os.environ.pop(DEMO_SITE_IDS_ENV, None)
+    else:
+        os.environ[DEMO_SITE_IDS_ENV] = args.sites
+    load_selection.cache_clear()
+    catalogue = load_selection().get("catalogue")
+    if catalogue:
+        _log(
+            f"catalogue: serving {catalogue['sites_served']} of "
+            f"{catalogue['sites_prepared']} prepared sites "
+            f"({', '.join(catalogue['site_ids'])})"
+        )
+
     out = REPO_ROOT / args.out
     out.mkdir(parents=True, exist_ok=True)
     for stale in out.glob("*.json"):
@@ -157,9 +195,10 @@ def main() -> int:
         ems_scenarios = ["ems_normal_day", "ems_peak_demand", "ems_ev_surge"]
 
         # Every site the selector offers, not just the default one. Recording
-        # one site while the UI lists six meant a 404 the moment anyone used
+        # one site while the UI listed six meant a 404 the moment anyone used
         # the Building dropdown or clicked a row in the facility table, which
-        # is the first thing a curious viewer does.
+        # is the first thing a curious viewer does. --sites narrows what the
+        # API offers, so these two lists and the dropdowns cannot drift apart.
         sites = capture("/bms/sites") or {}
         site = str(sites.get("default_site_id", "227"))
         all_sites = [str(s["site_id"]) for s in sites.get("sites", [])] or [site]
@@ -296,6 +335,14 @@ def main() -> int:
     index["cursor_stride"] = args.cursor_stride
     index["start"] = start
     index["bytes"] = total_bytes
+    # What the recording covers, so a checker does not have to infer it from
+    # filenames: these are the only sites the recorded API offers.
+    index["sites"] = all_sites
+    index["facilities"] = all_facilities
+    index["default_site_id"] = site
+    index["default_facility_id"] = facility
+    if catalogue:
+        index["catalogue"] = catalogue
     (out / "index.json").write_text(json.dumps(index, separators=(",", ":")))
     _log(
         f"{len(index['entries'])} files, {total_bytes / 1e6:.1f} MB, "

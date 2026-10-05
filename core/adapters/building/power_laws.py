@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 from datetime import datetime
 from typing import Any
 
@@ -27,13 +28,70 @@ from core.common import paths
 from core.common.ids import as_numeric_id
 from core.enums import DataMode
 
+#: Env var naming the sites the demo surface offers, comma-separated.
+#: Unset means every site ``prepare_data.py`` prepared.
+DEMO_SITE_IDS_ENV = "ECOTWIN_DEMO_SITE_IDS"
+
+
+def _wanted_site_ids() -> list[str]:
+    raw = os.environ.get(DEMO_SITE_IDS_ENV, "").strip()
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def _restrict(selection: dict[str, Any]) -> dict[str, Any]:
+    """Narrow the served catalogue, and record in the payload that it was.
+
+    Why narrow at all: the static recording writes one file per site, scenario
+    and cursor, so its size is linear in the number of buildings, and most of
+    that weight is buildings nobody opens. Narrowing here rather than in the UI
+    keeps the whole surface agreeing with itself -- the portfolio KPIs, the risk
+    counts, the dropdowns and the recording all describe the same buildings,
+    instead of a table that contradicts the number printed above it.
+
+    What it must not do is quietly serve a different set than it was asked for,
+    so an id that is not in the prepared data raises rather than being dropped.
+    """
+    wanted = _wanted_site_ids()
+    prepared = selection.get("sites")
+    if not wanted or not isinstance(prepared, list):
+        return selection
+    known = {str(site.get("site_id")) for site in prepared}
+    unknown = sorted(set(wanted) - known)
+    if unknown:
+        raise ValueError(
+            f"{DEMO_SITE_IDS_ENV} names site(s) that are not in the prepared "
+            f"dataset: {', '.join(unknown)}. Prepared: {', '.join(sorted(known))}."
+        )
+    # The BMS lead site carries the curated workflow the demo walks through,
+    # so it stays in the catalogue whether or not it was asked for.
+    lead = selection.get("bms_site")
+    keep = set(wanted) | ({str(lead)} if lead is not None else set())
+    out = dict(selection)
+    out["sites"] = [site for site in prepared if str(site.get("site_id")) in keep]
+    out["ems_sites"] = [sid for sid in selection.get("ems_sites", []) if str(sid) in keep]
+    out["catalogue"] = {
+        "sites_prepared": len(prepared),
+        "sites_served": len(out["sites"]),
+        "site_ids": [str(site["site_id"]) for site in out["sites"]],
+        "note": (
+            f"{DEMO_SITE_IDS_ENV} narrows the catalogue this instance serves. "
+            "The prepared dataset holds sites_prepared sites; the rest are on "
+            "disk and unserved, not missing."
+        ),
+    }
+    return out
+
 
 @functools.lru_cache(maxsize=1)
 def load_selection() -> dict[str, Any]:
-    """The decisions ``prepare_data.py`` made, or an empty marker."""
+    """The decisions ``prepare_data.py`` made, or an empty marker.
+
+    Cached, so a change to ``ECOTWIN_DEMO_SITE_IDS`` after the first call needs
+    ``load_selection.cache_clear()`` to take effect.
+    """
     if not paths.SELECTION_JSON.exists():
         return {"status": "NO_RAW_DATA", "mode": "SAMPLE_FIXTURE"}
-    return json.loads(paths.SELECTION_JSON.read_text())
+    return _restrict(json.loads(paths.SELECTION_JSON.read_text()))
 
 
 @functools.lru_cache(maxsize=1)

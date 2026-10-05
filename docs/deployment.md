@@ -97,6 +97,19 @@ make static     # record, then build the frontend that serves the recording
 `apps/web/public/snapshot/*.json`. The frontend reads those instead of a
 backend when built with `NEXT_PUBLIC_SNAPSHOT=1`, which `vercel.json` sets.
 
+The recording holds one file per site, scenario and cursor position, so its
+size is linear in how many buildings the API offers. `--sites` says which ones
+to serve, defaulting to four of the six prepared: 227, the lead site the guided
+path walks through, plus 62, 143 and 162, which span 573 m2 to 65,578 m2 and
+both outcomes of the simulator gate. `--sites all` records every prepared site.
+
+The narrowing happens in the API, not the browser: `ECOTWIN_DEMO_SITE_IDS`
+restricts the served catalogue, so the building dropdown, the facility table,
+the portfolio KPIs above it and the recording all describe the same buildings.
+A UI-side filter would have left a table disagreeing with its own totals, and
+the unserved sites are still on disk, reported under `catalogue.sites_prepared`
+in `/sources`.
+
 What this buys: one platform, no container, no cold start, nothing to pay for,
 nothing to wake up. What it costs: the hosted demo is a **replay**, and the
 product says so, a `Recorded` chip in the status bar with the date, a line on

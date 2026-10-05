@@ -65,7 +65,7 @@ def main() -> int:
             unlabelled.append(file.name)
     if unlabelled:
         failures.append(
-            f"{len(unlabelled)} file(s) carry no _snapshot marker, " f"e.g. {unlabelled[0]}"
+            f"{len(unlabelled)} file(s) carry no _snapshot marker, e.g. {unlabelled[0]}"
         )
     else:
         print("every payload is marked as recorded")
@@ -76,7 +76,8 @@ def main() -> int:
     #    optimiser looks 12 hours ahead, so from early morning the afternoon
     #    surge is at the edge of the horizon and there is nowhere to shift the
     #    load to. The gate rejects those, which is the gate doing its job.
-    ev = read("ems_optimise__facility_id-227__scenario_id-ems_ev_surge")
+    ev_facility = str(index.get("default_facility_id", "227"))
+    ev = read(f"ems_optimise__facility_id-{ev_facility}__scenario_id-ems_ev_surge")
     if ev is not None:
         before = ev["network_before"]["transformer_loading_pct"]
         after = ev["network_after"]["transformer_loading_pct"]
@@ -85,7 +86,10 @@ def main() -> int:
         elif not ev.get("acceptance", {}).get("accepted"):
             failures.append("curated EV-surge dispatch is rejected by the recorded network gate")
         else:
-            print(f"EMS (curated): {before:.1f}% -> {after:.1f}%, network gate accepted")
+            print(
+                f"EMS (curated, facility {ev_facility}): {before:.1f}% -> {after:.1f}%, "
+                "network gate accepted"
+            )
 
     # How the gate behaves across the rest of the window, reported rather than
     # asserted: a recording in which nothing is ever rejected would mean the
@@ -108,10 +112,15 @@ def main() -> int:
         if not rejected:
             print("  (note: the gate never refused, worth checking it still can)")
 
-    # The Control Lab claim is about the 24-hour horizon the demo runs.
-    lab_file = next(iter(sorted(root.glob("bms_control-lab__hours-24__*bms_hot_day*.json"))), None)
-    if lab_file is None:
-        failures.append("no 24-hour Control Lab recording for the hot-day scenario")
+    # The Control Lab claim is about the curated site over the 24-hour horizon
+    # the demo runs -- the same site /interview/verify checks. Globbing across
+    # every recorded site instead failed on whichever id sorted first, which on
+    # a large building is the gate correctly refusing a proposal, not a
+    # regression. Acceptance across the rest of the sites is reported below.
+    lab_site = str(index.get("default_site_id", "227"))
+    lab_file = root / f"bms_control-lab__hours-24__scenario_id-bms_hot_day__site_id-{lab_site}.json"
+    if not lab_file.exists():
+        failures.append(f"no 24-hour Control Lab recording for site {lab_site} on the hot day")
     else:
         lab = json.loads(lab_file.read_text())
         if not lab.get("acceptance", {}).get("accepted"):
@@ -119,9 +128,25 @@ def main() -> int:
         else:
             d = lab["delta_pct"]
             print(
-                f"BMS: {d.get('energy_kwh'):+.2f}% energy, {d.get('peak_kw'):+.2f}% peak, "
-                "simulator gate accepted"
+                f"BMS (curated, site {lab_site}): {d.get('energy_kwh'):+.2f}% energy, "
+                f"{d.get('peak_kw'):+.2f}% peak, simulator gate accepted"
             )
+
+    # The same reporting-not-asserting treatment as the EMS gate: a recording
+    # where the simulator accepted every proposal would mean it had stopped
+    # being able to refuse one.
+    verdicts = []
+    for file in sorted(root.glob("bms_control-lab__hours-24__*bms_hot_day*.json")):
+        body = json.loads(file.read_text())
+        site_id = file.stem.rsplit("site_id-", 1)[-1]
+        verdicts.append((site_id, bool(body.get("acceptance", {}).get("accepted"))))
+    if verdicts:
+        yes = sum(1 for _, ok in verdicts if ok)
+        refused = [s for s, ok in verdicts if not ok]
+        print(
+            f"Control Lab across {len(verdicts)} recorded sites: {yes} accepted"
+            + (f", refused on {', '.join(refused)}" if refused else "")
+        )
 
     if failures:
         print()

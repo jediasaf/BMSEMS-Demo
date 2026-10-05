@@ -125,3 +125,56 @@ def test_derived_kw_matches_the_published_counter(building_adapter) -> None:
     sample = frame.dropna(subset=["load_kw", "energy_wh_interval"]).head(500)
     expected = sample["energy_wh_interval"] * 4.0 / 1000.0
     pd.testing.assert_series_equal(sample["load_kw"], expected, check_names=False, rtol=1e-9)
+
+
+@requires_real_data
+def test_catalogue_can_be_narrowed_and_stays_self_consistent(monkeypatch) -> None:
+    """The served catalogue is one decision, not one per surface.
+
+    The static recording holds a file per site, scenario and cursor, so it is
+    recorded against a narrowed catalogue. Narrowing it in the UI instead would
+    leave the API still offering buildings nothing had recorded -- a 404 behind
+    the dropdown, and a portfolio table disagreeing with the totals above it.
+    So the restriction belongs here, where every surface reads it.
+    """
+    from core.adapters.building.power_laws import (
+        DEMO_SITE_IDS_ENV,
+        PowerLawsBuildingAdapter,
+        load_selection,
+    )
+    from core.adapters.power.facility import FacilityPowerAdapter
+
+    load_selection.cache_clear()
+    prepared = load_selection()
+    assert len(prepared["sites"]) > 2, "needs more sites than the subset under test"
+    lead = str(prepared["bms_site"])
+    keep = [s for s in (str(x["site_id"]) for x in prepared["sites"]) if s != lead][:2]
+
+    try:
+        monkeypatch.setenv(DEMO_SITE_IDS_ENV, ",".join(keep))
+        load_selection.cache_clear()
+        selection = load_selection()
+
+        # The lead site carries the curated workflow, so it survives narrowing
+        # whether or not it was named.
+        served = {str(s["site_id"]) for s in selection["sites"]}
+        assert served == set(keep) | {lead}
+        assert {str(s) for s in selection["ems_sites"]} <= served
+        assert selection["catalogue"]["sites_prepared"] == len(prepared["sites"])
+        assert selection["catalogue"]["sites_served"] == len(served)
+
+        # Every surface that lists assets agrees with it.
+        assert {s.site_id for s in PowerLawsBuildingAdapter().list_sites()} == served
+        assert {f.facility_id for f in FacilityPowerAdapter().list_facilities()} <= served
+
+        # An id that is not in the prepared data is a typo, and serving a
+        # different set than the one asked for is worse than refusing.
+        monkeypatch.setenv(DEMO_SITE_IDS_ENV, "not-a-site")
+        load_selection.cache_clear()
+        with pytest.raises(ValueError, match="not in the prepared dataset"):
+            load_selection()
+    finally:
+        monkeypatch.delenv(DEMO_SITE_IDS_ENV, raising=False)
+        load_selection.cache_clear()
+
+    assert len(load_selection()["sites"]) == len(prepared["sites"])

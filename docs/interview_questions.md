@@ -265,7 +265,8 @@ then be validated against measured voltages rather than only solved.
 
 ### How would this scale?
 
-The demo is 6 sites. The published dataset is 267. A real estate is thousands.
+The demo serves 4 sites, of the 6 the pipeline prepared. The published dataset
+is 267. A real estate is thousands.
 
 - **Storage**: Parquet files are right for a fixed archive and wrong for
   ingestion. The first change is TimescaleDB or ClickHouse, hypertables on
