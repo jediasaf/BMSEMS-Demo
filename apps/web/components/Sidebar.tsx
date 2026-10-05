@@ -30,19 +30,19 @@ const SECTIONS = [
   {
     module: 'BMS' as const,
     label: 'EcoTwin BMS',
-    caption: 'AI Building Operator',
+    caption: 'Building Operator',
     icon: Building2,
     tint: 'text-accent',
     items: [
       { href: '/bms', label: 'Overview', icon: LayoutGrid },
-      { href: '/bms/ai-operations', label: 'AI Operations', icon: Radar },
+      { href: '/bms/operations', label: 'Operations', icon: Radar },
       { href: '/bms/control-lab', label: 'Control Lab', icon: SlidersHorizontal },
     ],
   },
   {
     module: 'EMS' as const,
     label: 'EcoTwin EMS',
-    caption: 'AI Power Operator',
+    caption: 'Power Operator',
     icon: Zap,
     tint: 'text-info',
     items: [
@@ -189,7 +189,7 @@ export function Sidebar() {
           <div className="space-y-1 px-3 py-2">
             <div className="label">System</div>
             <FooterStat label="Data" value={status.data_label} ok={status.data_ok} />
-            <FooterStat label="AI" value={status.ai_label} ok={status.ai_ok} />
+            <FooterStat label="MODELS" value={status.ai_label} ok={status.ai_ok} />
             <FooterStat
               label="Sim"
               value={status.simulation_label}

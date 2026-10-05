@@ -88,7 +88,7 @@ export default function AiOperationsPage() {
     <>
       <PageHeader
         module="BMS"
-        title="AI Operations"
+        title="Operations"
         subtitle="Operational intelligence feed"
         chips={[
           { label: 'Asset', value: overview.data?.site.name ?? '…' },
@@ -233,7 +233,7 @@ export default function AiOperationsPage() {
               )}
               {!recommendations.data && recommendations.loading && <Skeleton className="h-64" />}
               {recommendations.data?.length === 0 && (
-                <Panel title="AI recommendation">
+                <Panel title="Recommendation">
                   <EmptyNote
                     title="No operational intervention recommended"
                     detail="No action required. Recommendations follow a material finding."

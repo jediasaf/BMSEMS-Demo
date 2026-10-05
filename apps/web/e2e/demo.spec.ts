@@ -35,7 +35,7 @@ test.describe('interview demo path', () => {
     const errors = watchForErrors(page);
 
     await page.goto('/bms');
-    await expect(page.getByRole('heading', { name: 'AI Building Operator' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Building Operator' })).toBeVisible();
 
     // 1 — Interview Mode, preloaded, and the guided demo opens.
     await page
@@ -52,7 +52,7 @@ test.describe('interview demo path', () => {
 
     // 3 — an anomaly exists, with observed, expected and possible causes.
     await nextStep(page);
-    await expect(page).toHaveURL(/\/bms\/ai-operations/);
+    await expect(page).toHaveURL(/\/bms\/operations/);
     await expect(page.getByText(/insight feed/i)).toBeVisible();
     await expect(page.getByText(/Observed/i).first()).toBeVisible();
     await expect(page.getByText(/Expected/i).first()).toBeVisible();
@@ -61,7 +61,7 @@ test.describe('interview demo path', () => {
 
     // 4 — a recommendation, which claims no saving before simulation.
     await nextStep(page);
-    await expect(page.getByText(/AI recommendation/i).first()).toBeVisible();
+    await expect(page.getByText(/Recommendation/i).first()).toBeVisible();
     // The claim, not the sentence that used to carry it: nothing is asserted
     // about savings until the simulator has run both cases.
     await expect(page.getByText(/not claimed until simulated/i)).toBeVisible();
@@ -70,7 +70,7 @@ test.describe('interview demo path', () => {
     await nextStep(page);
     await expect(page).toHaveURL(/\/bms\/control-lab/);
     await expect(page.getByText(/simulation mode/i).first()).toBeVisible();
-    await expect(page.getByText(/Baseline vs AI control/i)).toBeVisible();
+    await expect(page.getByText(/Baseline vs optimised/i)).toBeVisible();
     await expect(page.getByText(/Simulator verdict/i)).toBeVisible();
     await expect(page.getByText(/^accepted$/i).first()).toBeVisible();
     await expect(page.getByText(/HVAC energy/i).first()).toBeVisible();
@@ -79,7 +79,7 @@ test.describe('interview demo path', () => {
     // 6 — EMS portfolio.
     await nextStep(page);
     await expect(page).toHaveURL(/\/ems$/);
-    await expect(page.getByRole('heading', { name: /AI Power Operator/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Power Operator/i })).toBeVisible();
     await expect(page.getByText(/Facility performance/i)).toBeVisible();
 
     // 7 — the EV surge is applied.

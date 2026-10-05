@@ -106,7 +106,7 @@ export function SystemBar() {
       />
       <Rule />
       <Segment
-        label="AI"
+        label="MODELS"
         value={status?.ai_label ?? '…'}
         tone={status ? (status.ai_ok ? 'normal' : 'warning') : 'idle'}
       />

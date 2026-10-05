@@ -44,13 +44,13 @@ const STEPS: TourStep[] = [
   {
     title: 'Detection, and why it is believable',
     body: 'The detector scores the forecast residual against an hour-of-day baseline calibrated on history that ends where this window begins — so a fault lasting the whole window cannot quietly become the new normal. Observed against expected, the robust z-score, the sustain requirement and the possible causes are all on screen.',
-    href: '/bms/ai-operations',
+    href: '/bms/operations',
     bmsScenario: 'bms_hot_day',
   },
   {
     title: 'The recommendation',
     body: 'A constrained setpoint proposal with its contributing factors, the constraints it was checked against, and a safety gate you can run. It claims no saving at this point — nothing is asserted before the simulator has run.',
-    href: '/bms/ai-operations',
+    href: '/bms/operations',
     bmsScenario: 'bms_hot_day',
   },
   {
