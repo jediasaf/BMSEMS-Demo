@@ -1,1 +1,1 @@
-{"reset":true,"at":"2026-10-05T08:07:57.382319Z","warmed":true,"note":"All service and adapter caches cleared; next request rebuilds from disk.","_snapshot":{"recorded_at":"2026-10-05T08:07:43.534338+00:00","path":"/demo/reset","live":false}}
+{"reset":true,"at":"2026-10-05T11:33:25.152824Z","warmed":true,"note":"All service and adapter caches cleared; next request rebuilds from disk.","_snapshot":{"recorded_at":"2026-10-05T11:33:19.884897+00:00","path":"/demo/reset","live":false}}

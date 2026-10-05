@@ -13,9 +13,9 @@ is re-derived by `make check`, `make audit`, `make snapshot`, `make demo` and
 | | |
 |---|---|
 | Branch | `claude/zen-ptolemy-5hf381` |
-| Commit | `81d7088` |
-| Hosted demo | https://ecotwin-ai-zeta.vercel.app, **not yet serving this build**, see item 1 under Open items |
-| What ships | a **recording**: 1389 files, 10.3 MB, taken 2026-09-20T11:23Z |
+| Commit | `d54232f`, the source this was verified against; the recording it ships is the one committed on top of it |
+| Hosted demo | https://jediasaf.github.io/BMSEMS-Demo/, serving the recording, no backend |
+| What ships | a **recording**: 4840 files, 43.4 MB, taken 2026-10-05T11:33Z, 4 of 6 prepared sites |
 | Live mode | `make demo`, FastAPI plus the whole science stack, every answer solved on request |
 | Dataset | Power Laws: Forecasting Energy Consumption, 1.03 M records |
 | Replay window | 2017-08-24 → 2017-08-27, 15-minute steps |
@@ -52,18 +52,18 @@ computing?".
 
 | Check | Command | Result |
 |---|---|---|
-| Python tests | `pytest` | 208 passed, eight consecutive runs |
+| Python tests | `pytest` | 213 passed |
 | Lint | `ruff check .` | clean |
 | Format | `black --check .` | clean |
 | Types | `tsc --noEmit` | clean |
 | Frontend lint | `next lint` | clean |
 | Production build | `next build` | 9 routes, all static, no browser source maps |
-| Browser suite | `playwright test` | **9 passed against the recorded build**, built exactly as Vercel builds it (no `.env.local`, blank API base), with no backend running; and **9 passed against the live backend** (`make demo`). Each mode skips the one test that only applies to the other. Covers the twelve demo steps, reset, the honest normal day, the forecast and optimisation panels, the API-base rules, and a sweep that fails on any missing file or console error. |
-| Recording | `scripts/verify_snapshot.py` | consistent: recorded verdict `ready` with 10/10 checks, every payload marked as a recording, both gates still reached |
+| Browser suite | `playwright test` | **11 passed against the recorded build**, built exactly as Pages builds it (blank API base, no `.env.local`), with no backend running; the one test that needs a live API skips. Covers the twelve demo steps, reset, the honest normal day, the forecast and optimisation panels, the API-base rules, the replay cursor from a non-UTC timezone, every site in the Building dropdown and every facility in both EMS dropdowns including the buttons that only fire for the selected one, and a sweep that fails on any missing file or console error. Not re-run against `make demo` in this pass: the only backend change since, `ECOTWIN_DEMO_SITE_IDS`, is inert unless it is set, which is how `make demo` runs. |
+| Recording | `scripts/verify_snapshot.py` | consistent: recorded verdict `ready` with 10/10 checks, every payload marked as a recording, both gates still reached and both still able to refuse |
 | Provenance | `make audit` | every audited metric carries a badge from the closed vocabulary |
 | Demo readiness | `GET /interview/verify` | `ready: true`, 10/10 checks |
 | Thread safety | `pytest tests/test_network.py` | the load-flow model is solved from several threads at once and every read matches the single-threaded answer |
-| Known limitation | both gates still say no somewhere | the network gate rejects 18 of 54 over-nameplate replay positions; the recording keeps those rejections rather than only the flattering ones |
+| Known limitation | both gates still say no somewhere | the network gate rejects 58 of 162 over-nameplate replay positions, and the simulator gate refuses the Control Lab proposal on the 65,578 m2 site outright (+58.3% peak). The recording keeps those refusals rather than only the flattering ones |
 | Accessibility | axe-core, WCAG 2.0/2.1 A + AA, all seven routes | no violations |
 | Warm latency, live | `make demo`, median of three | overview 114 ms · Control Lab 492 ms · portfolio 36 ms · risk 22 ms · `POST /ems/optimise` 76 ms |
 
@@ -103,7 +103,7 @@ locally; on Vercel the same files come off a CDN:
 | `/bms/overview` base (the 56 kB timeline) | 2 ms |
 | `POST /ems/optimise` (recorded) | 1 ms |
 | `/bms/control-lab` (recorded) | 1 ms |
-| Whole recording | 1389 files, 10.3 MB |
+| Whole recording | 4840 files, 43.4 MB |
 | Cold start | none, there is no server to start |
 
 There is no slow first click, because there is nothing to wake. What this
