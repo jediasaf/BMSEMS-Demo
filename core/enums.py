@@ -2,7 +2,7 @@
 
 These enums are the contract between the backend and the UI. The UI renders a
 provenance badge for every value it draws, and the badge text is exactly the
-``SourceType`` member name — so adding a member here is a UI-visible change.
+``SourceType`` member name, so adding a member here is a UI-visible change.
 """
 
 from __future__ import annotations

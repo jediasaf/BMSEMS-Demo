@@ -105,7 +105,7 @@ export default function BmsOverviewPage() {
         subtitle="Measured → detect → predict → recommend → simulate"
         chips={[
           // An absent answer is not a negative answer. With no status yet, the
-          // chip reads "…" rather than asserting SAMPLE FIXTURE — which would
+          // chip reads "…" rather than asserting SAMPLE FIXTURE, which would
           // be the interface inventing a fact about data it has not seen.
           {
             label: 'Mode',
@@ -178,7 +178,7 @@ export default function BmsOverviewPage() {
             </div>
           </div>
 
-          {/* ROW 1 — KPIs */}
+          {/* ROW 1, KPIs */}
           {overview.error && <ErrorNote message={overview.error} onRetry={overview.reload} />}
           {!data && overview.loading ? (
             <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
@@ -190,7 +190,7 @@ export default function BmsOverviewPage() {
             data && <KpiRow kpis={headlineKpis} sparks={sparks} columns={4} />
           )}
 
-          {/* ROW 2 — chart + building view */}
+          {/* ROW 2, chart + building view */}
           <div className="grid items-start gap-2.5 xl:grid-cols-[1.9fr_1fr]">
             <Panel
               title="Building load"
@@ -238,7 +238,7 @@ export default function BmsOverviewPage() {
             </Panel>
           </div>
 
-          {/* ROW 3 — what is coming, and what to do about it.
+          {/* ROW 3, what is coming, and what to do about it.
               The two questions an operator asks after reading the chart. */}
           <div className="grid items-start gap-2.5 xl:grid-cols-[1.9fr_1fr]">
             <ForecastPanel
@@ -249,7 +249,7 @@ export default function BmsOverviewPage() {
             <OpportunityPanel siteId={siteId} scenarioId={bmsScenario} />
           </div>
 
-          {/* ROW 4 — insights + recommendation + data source */}
+          {/* ROW 4, insights + recommendation + data source */}
           <div className="grid items-start gap-2.5 xl:grid-cols-2">
             <Panel
               title="Recent insights"

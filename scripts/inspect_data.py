@@ -160,7 +160,7 @@ def _profile_csv(path: Path, max_rows: int) -> dict[str, Any]:
 
 def _fmt(stats: dict[str, Any], key: str) -> str:
     value = stats.get(key)
-    return f"{value:.4g}" if isinstance(value, int | float) else "—"
+    return f"{value:.4g}" if isinstance(value, int | float) else "-"
 
 
 def _candidate_targets(reports: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -266,7 +266,7 @@ def main() -> int:
         for col in rep["columns"]:
             stats = rep.get("numeric_stats", {}).get(col, {})
             lines.append(
-                f"| `{col}` | {rep['dtypes'].get(col, '—')} | "
+                f"| `{col}` | {rep['dtypes'].get(col, '-')} | "
                 f"{rep['missingness_pct'].get(col, 0):.3f} | "
                 f"{_fmt(stats, 'min')} | {_fmt(stats, 'max')} | {_fmt(stats, 'mean')} |"
             )
@@ -295,7 +295,7 @@ def main() -> int:
 
     lines += ["## Candidate model targets", ""]
     for cand in payload["candidate_targets"]:
-        lines.append(f"- `{cand['column']}` in `{cand['file']}` — {cand['reason']}")
+        lines.append(f"- `{cand['column']}` in `{cand['file']}`, {cand['reason']}")
     lines.append("")
 
     out_md = REPO_ROOT / args.out_md

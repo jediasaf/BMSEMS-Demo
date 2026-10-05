@@ -228,7 +228,7 @@ export function RecommendationCard({
                     <X className="mt-[2px] h-2.5 w-2.5 shrink-0 text-status-critical" />
                   )}
                   <span className="text-ink-400">
-                    <span className="font-mono text-ink-200">{check.check}</span> — {check.detail}
+                    <span className="font-mono text-ink-200">{check.check}</span>: {check.detail}
                   </span>
                 </li>
               ))}

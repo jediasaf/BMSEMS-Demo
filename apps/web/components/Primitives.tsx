@@ -23,7 +23,7 @@ export function Panel({
   children: ReactNode;
   className?: string;
   bodyClassName?: string;
-  /** Remove body padding — for tables and charts that manage their own. */
+  /** Remove body padding, for tables and charts that manage their own. */
   flush?: boolean;
   /**
    * Set when the body scrolls. It becomes a focusable, named region, so the
@@ -310,7 +310,7 @@ export function Meter({
 }: {
   value: number;
   max?: number;
-  /** Draws a tick at this value — a limit the bar is allowed to run past. */
+  /** Draws a tick at this value, a limit the bar is allowed to run past. */
   mark?: number;
   tone?: 'accent' | 'info' | 'warning' | 'critical' | 'idle';
   className?: string;

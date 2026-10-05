@@ -161,8 +161,8 @@ export default function AboutPage() {
                 {SNAPSHOT_MODE && (
                   <li>
                     <span className="text-status-warning">Not computing live.</span> This build is a
-                    recording. Every figure was produced by the engines named in its provenance —
-                    LightGBM, the RC zone model, pandapower, CVXPY — on a real run, then written to
+                    recording. Every figure was produced by the engines named in its provenance:
+                    LightGBM, the RC zone model, pandapower, CVXPY, on a real run, then written to
                     files so the demo needs no server. Run it locally with{' '}
                     <span className="font-mono text-ink-300">make demo</span> to watch the same
                     numbers being solved.

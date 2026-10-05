@@ -87,7 +87,7 @@ export function SystemBar() {
         <span className="truncate text-ink-400">
           The interface is running but no backend answered at{' '}
           <span className="tabular font-mono text-ink-200">{API_BASE}</span>. Nothing on screen is
-          data — no value here is a model output.
+          data, no value here is a model output.
         </span>
         <span className="tabular ml-auto shrink-0 font-mono text-3xs text-ink-600">
           {unreachable}
@@ -126,8 +126,8 @@ export function SystemBar() {
           <span
             title={
               recordedAt
-                ? `Recorded ${recordedAt}. Same engines, same code paths — replayed, not solved live.`
-                : 'Recorded run — replayed, not solved live.'
+                ? `Recorded ${recordedAt}. Same engines, same code paths, replayed, not solved live.`
+                : 'Recorded run, replayed, not solved live.'
             }
             className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill border border-status-warning/45 bg-status-warning/10 px-1.5 py-[1px] text-3xs font-semibold uppercase tracking-[0.1em] text-status-warning"
           >

@@ -134,7 +134,7 @@ export function ArchitectureDrawer({ onClose }: { onClose: () => void }) {
               <Row label="Models" value={status?.ai_label ?? '…'} />
               <Row label="Zone simulation" value={status?.simulation_label ?? '…'} />
               <Row label="Network" value="pandapower, balanced AC load flow" />
-              <Row label="Actuation" value="none — advisory only, no controller path" />
+              <Row label="Actuation" value="none, advisory only, no controller path" />
             </dl>
           </section>
         </div>

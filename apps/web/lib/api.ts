@@ -7,6 +7,8 @@
  * wrong, so callers always have something to render.
  */
 
+import { naiveStamp } from './format';
+
 import type {
   AssetNode,
   BmsOverview,
@@ -62,7 +64,7 @@ export const API_BASE_CONFIGURED = resolved.configured;
 
 export const API_BASE_ERROR =
   'NEXT_PUBLIC_API_BASE is not set in this build. Next.js inlines it at build ' +
-  'time, so set it in the deployment environment and redeploy — changing it ' +
+  'time, so set it in the deployment environment and redeploy, changing it ' +
   'without rebuilding has no effect.';
 
 const DEFAULT_TIMEOUT_MS = 45_000;
@@ -86,7 +88,7 @@ type Query = Record<string, string | number | boolean | undefined | null>;
  * The demo is deterministic, so it can be recorded once and served as files
  * from a CDN with no backend at all. `scripts/build_static_snapshot.py` writes
  * one JSON file per request the product can make, keyed by the same path and
- * query this module builds — the two have to agree exactly or the browser asks
+ * query this module builds, the two have to agree exactly or the browser asks
  * for a file nobody wrote.
  *
  * This is a replay, and the UI says so. Nothing here fakes liveness: each file
@@ -148,15 +150,14 @@ function snapCursor(at: string): string {
   if (snapshotStart === null || Number.isNaN(t)) return at;
   const steps = Math.round((t - snapshotStart) / snapshotStrideMs);
   const snapped = new Date(snapshotStart + Math.max(0, steps) * snapshotStrideMs);
-  // The recorder wrote naive local-style stamps, so mirror that format here.
-  return snapped.toISOString().slice(0, 19);
+  return naiveStamp(snapped);
 }
 
 /** Mirror of `slug()` in scripts/build_static_snapshot.py.
  *
  * Deliberately not URLSearchParams: that percent-encodes the colons in a
  * timestamp, the encoding survives into the filename, and the server then
- * decodes it back before looking the file up — so it is never found. Both
+ * decodes it back before looking the file up, so it is never found. Both
  * sides replace the awkward characters outright instead, and must keep
  * producing byte-identical names.
  */

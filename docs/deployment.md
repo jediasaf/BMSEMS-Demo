@@ -4,14 +4,14 @@
 
 |                    |                                                                       |
 | ------------------ | --------------------------------------------------------------------- |
-| Frontend           | https://ecotwin-ai-zeta.vercel.app — Vercel, static |
+| Frontend           | https://ecotwin-ai-zeta.vercel.app, Vercel, static |
 | Backend            | none. The hosted demo is a **recording**; see *Two ways to host this* below |
 | Build variables    | `NEXT_PUBLIC_SNAPSHOT=1`, `NEXT_PUBLIC_API_BASE=""`, both set in `vercel.json` |
 
 The container path documented in the rest of this file still works and is what
 `make demo` exercises: the image builds, runs and passes `/interview/verify`,
 and the manifests below are sized from measurements of that run. The Fly
-deployment it describes is no longer running — the free tier it was on stopped
+deployment it describes is no longer running, the free tier it was on stopped
 the machine after five minutes, which is why the hosted demo is a recording.
 
 ### Redeploying
@@ -35,7 +35,7 @@ committed `fly.toml` (1 GB, one always-on machine, `/healthz` as the platform
 check), waits for liveness, and asserts `/health` components and
 `/interview/verify` `ready: true` before it reports success. It accepts the
 token under `FLY_API_TOKEN`, `FLY_ACCESS_TOKEN`, `FLY_TOKEN` or
-`FLYIO_API_TOKEN`, never prints it, and runs only on `workflow_dispatch` — a
+`FLYIO_API_TOKEN`, never prints it, and runs only on `workflow_dispatch`, a
 deployment is a decision, not a side effect of committing.
 
 To deploy from a shell instead:
@@ -70,14 +70,14 @@ flyctl deploy --config fly.toml --app bmsems-demo --image registry.fly.io/... --
 A deploy token can push to its own app's registry and deploy an existing app;
 it cannot create apps or manage a remote builder, which is the correct scope.
 If the app has never had public addresses, `flyctl ips allocate-v4 --shared`
-and `allocate-v6` are needed once — without them health checks pass internally
+and `allocate-v6` are needed once, without them health checks pass internally
 while the public hostname refuses every connection.
 
 ### Why not Vercel, measured
 
-The backend's runtime dependencies install to **483 MB** — pyarrow 135,
+The backend's runtime dependencies install to **483 MB**, pyarrow 135,
 scipy 113, pandas 75, scikit-learn 57, numpy 40, pandapower 35, the rest
-smaller — before any code, and it reads a further 94 MB of Parquet and joblib
+smaller, before any code, and it reads a further 94 MB of Parquet and joblib
 from disk. Vercel's serverless function limit is 250 MB unzipped. This is not
 a near miss that could be trimmed; it is a long-lived process with a
 filesystem, which is what a container host is for.
@@ -99,13 +99,13 @@ backend when built with `NEXT_PUBLIC_SNAPSHOT=1`, which `vercel.json` sets.
 
 What this buys: one platform, no container, no cold start, nothing to pay for,
 nothing to wake up. What it costs: the hosted demo is a **replay**, and the
-product says so — a `Recorded` chip in the status bar with the date, a line on
+product says so, a `Recorded` chip in the status bar with the date, a line on
 the About page, and a `_snapshot` marker on every payload.
 `scripts/verify_snapshot.py` re-checks that the recording still holds up, so a
 stale recording fails a command rather than an audience.
 
 Nothing is fabricated by recording. Every figure was produced by the engines
-named in its provenance — LightGBM, the RC zone model, pandapower, CVXPY — on
+named in its provenance, LightGBM, the RC zone model, pandapower, CVXPY, on
 a real run. Only the delivery changed.
 
 **Live backend (what `make demo` runs, and what a container host would run).**
@@ -121,12 +121,12 @@ EcoTwin is two processes, and only one of them belongs on Vercel.
 
 |            | What it is                                    | Where it runs                                             |
 | ---------- | --------------------------------------------- | --------------------------------------------------------- |
-| `apps/web` | Next.js 15, React 19                          | **Vercel** — this is what Vercel is for                   |
-| `apps/api` | FastAPI + pandas, LightGBM, pandapower, CVXPY | **A container host** — Fly.io, Render, Railway, Cloud Run |
+| `apps/web` | Next.js 15, React 19                          | **Vercel**, this is what Vercel is for                   |
+| `apps/api` | FastAPI + pandas, LightGBM, pandapower, CVXPY | **A container host**, Fly.io, Render, Railway, Cloud Run |
 
 The backend does not fit Vercel's serverless model and it is not close. Its
 dependency set is around 400 MB of wheels before any code, it reads ~94 MB of
-Parquet and joblib from disk, and it warms per-facility caches at start-up —
+Parquet and joblib from disk, and it warms per-facility caches at start-up -
 including a transformer-capacity calibration that bisects on a load flow. That
 is a long-lived process with a filesystem, not a function.
 
@@ -175,7 +175,7 @@ request is the one an interviewer is watching.
 
 ### Render
 
-`render.yaml` is committed. **Do not use the free tier** — it spins down when
+`render.yaml` is committed. **Do not use the free tier**, it spins down when
 idle and puts a 24 s cold start in front of the first click. Starter (512 MB)
 is too small; Standard is the smallest plan that fits.
 
@@ -230,7 +230,7 @@ Or through the dashboard: import the repository, set **Root Directory** to
 | Root directory         | `apps/web`                               |
 | Framework              | Next.js (detected)                       |
 | Build command          | `next build` (in `vercel.json`)          |
-| `NEXT_PUBLIC_API_BASE` | `https://<your-api>` — no trailing slash |
+| `NEXT_PUBLIC_API_BASE` | `https://<your-api>`, no trailing slash |
 
 `NEXT_PUBLIC_API_BASE` is inlined at build time, so **changing it requires a
 redeploy**, not just an environment edit.
@@ -247,7 +247,7 @@ https://ecotwin-ai-jediasafs-projects.vercel.app
 ```
 
 `allow_credentials` is False and the API has no cookies or auth headers, so
-`*` is never paired with credentials — and an empty list now means _no_
+`*` is never paired with credentials, and an empty list now means _no_
 cross-origin access rather than silently meaning _all_ of it. Override for a
 different frontend:
 
@@ -286,7 +286,7 @@ E2E_API_BASE=https://<your-api> \
 
 The end-to-end test drives all twelve curated steps, runs the optimiser and
 asserts the transformer comes back under 100%. If it passes against the
-deployed URLs, the demo works from a cold browser on the public internet —
+deployed URLs, the demo works from a cold browser on the public internet -
 which is the only definition of "deployed" worth having.
 
 ---
@@ -308,7 +308,7 @@ which is the only definition of "deployed" worth having.
 
 No Kubernetes, no message bus, no managed database. At six facilities and one
 container they would be architecture theatre. `docs/interview_questions.md`
-covers what would actually change at a thousand sites — and the answer starts
+covers what would actually change at a thousand sites, and the answer starts
 with the storage layer, not the orchestrator.
 
 ### What the hosted build is told
@@ -321,7 +321,7 @@ with the storage layer, not the orchestrator.
 
 The second is not redundant. `NEXT_PUBLIC_*` variables are inlined at build
 time wherever the source reads them, so a leftover `NEXT_PUBLIC_API_BASE` in
-the Vercel project settings would be baked into the bundle — a dead backend
+the Vercel project settings would be baked into the bundle, a dead backend
 URL shipped to every visitor, and a claim in the artefact that contradicts
 what the product does. Blanking it in `vercel.json` overrides the project
 setting, so the repository decides, not a dashboard field nobody will
@@ -332,7 +332,7 @@ the dashboard says. `.github/workflows/verify-production.yml` fails the deployme
 backend host appears in the served bundle.
 
 If you connect this repository to Vercel through the GitHub integration rather
-than the CLI, set **Root Directory** to `apps/web`. Everything else —
-framework, build command, install command, headers, region — is in
+than the CLI, set **Root Directory** to `apps/web`. Everything else -
+framework, build command, install command, headers, region, is in
 `vercel.json`, so there is nothing to configure in the dashboard and no
 environment variable to add.

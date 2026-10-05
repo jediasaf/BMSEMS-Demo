@@ -33,7 +33,7 @@ function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
       >
         <div className="flex items-center justify-between border-b border-base-600 pb-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-200">
-            Forecast model — asset {siteId}
+            Forecast model, asset {siteId}
           </h2>
           <button
             type="button"
@@ -68,7 +68,7 @@ function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
               <>
                 <Section title="Evaluation">
                   <p className="mb-2 text-[10px] leading-relaxed text-ink-500">
-                    Backtest is a chronological holdout inside the training history — large enough
+                    Backtest is a chronological holdout inside the training history, large enough
                     for the numbers to mean something. Live is the window the demo replays, held out
                     entirely by the training cutoff.
                   </p>
@@ -167,23 +167,23 @@ function Drawer({ siteId, onClose }: { siteId: string; onClose: () => void }) {
 
 function MetricsTable({ backtest, live }: { backtest: SplitMetrics; live: SplitMetrics | null }) {
   const rows: { label: string; a: string; b: string }[] = [
-    { label: 'Samples', a: num(backtest.n, 0), b: live ? num(live.n, 0) : '—' },
-    { label: 'MAE (kW)', a: num(backtest.mae_kw, 2), b: live ? num(live.mae_kw, 2) : '—' },
+    { label: 'Samples', a: num(backtest.n, 0), b: live ? num(live.n, 0) : '-' },
+    { label: 'MAE (kW)', a: num(backtest.mae_kw, 2), b: live ? num(live.mae_kw, 2) : '-' },
     {
       label: 'WAPE',
       a: `${num(backtest.wape_pct, 1)}%`,
-      b: live ? `${num(live.wape_pct, 1)}%` : '—',
+      b: live ? `${num(live.wape_pct, 1)}%` : '-',
     },
-    { label: 'R²', a: num(backtest.r2, 3), b: live ? num(live.r2, 3) : '—' },
+    { label: 'R²', a: num(backtest.r2, 3), b: live ? num(live.r2, 3) : '-' },
     {
       label: `Skill vs ${backtest.baseline_name}`,
       a: `${num(backtest.skill_vs_baseline_pct, 1)}%`,
-      b: live ? `${num(live.skill_vs_baseline_pct, 1)}%` : '—',
+      b: live ? `${num(live.skill_vs_baseline_pct, 1)}%` : '-',
     },
     {
       label: 'Interval coverage',
       a: `${num(backtest.interval_coverage_pct, 1)}%`,
-      b: live ? `${num(live.interval_coverage_pct, 1)}%` : '—',
+      b: live ? `${num(live.interval_coverage_pct, 1)}%` : '-',
     },
   ];
   return (

@@ -79,7 +79,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               't_base',
-              'Zone temp — baseline',
+              'Zone temp, baseline',
               result.timestamps,
               result.baseline.zone_temp_c,
               provenance,
@@ -91,7 +91,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               't_ai',
-              'Zone temp — optimised',
+              'Zone temp, optimised',
               result.timestamps,
               result.ai_control.zone_temp_c,
               provenance,
@@ -103,7 +103,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               'sp_base',
-              'Setpoint — baseline',
+              'Setpoint, baseline',
               result.timestamps,
               result.baseline.setpoint_c,
               provenance,
@@ -116,7 +116,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               'sp_ai',
-              'Setpoint — optimised',
+              'Setpoint, optimised',
               result.timestamps,
               result.ai_control.setpoint_c,
               optimisedProvenance,
@@ -156,7 +156,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               'p_base',
-              'HVAC power — baseline',
+              'HVAC power, baseline',
               result.timestamps,
               result.baseline.hvac_kw,
               provenance,
@@ -169,7 +169,7 @@ export default function ControlLabPage() {
           {
             series: toSeries(
               'p_ai',
-              'HVAC power — optimised',
+              'HVAC power, optimised',
               result.timestamps,
               result.ai_control.hvac_kw,
               provenance,
@@ -285,8 +285,8 @@ export default function ControlLabPage() {
         </span>
         <span className="truncate text-2xs text-ink-400">
           {result?.is_boptest
-            ? 'BOPTEST live — results tagged BOPTEST.'
-            : 'BOPTEST unreachable — 2R2C zone model, tagged as such.'}
+            ? 'BOPTEST live. Results tagged BOPTEST.'
+            : 'BOPTEST unreachable. 2R2C zone model, tagged as such.'}
         </span>
         {provenance && (
           <span className="ml-auto shrink-0">
@@ -306,13 +306,13 @@ export default function ControlLabPage() {
 
         {result && (
           <div className="grid gap-2.5 xl:grid-cols-[0.72fr_1.7fr_1fr]">
-            {/* LEFT — case settings */}
+            {/* LEFT, case settings */}
             <div className="flex min-w-0 flex-col gap-2.5">
               <Panel title="Case" subtitle="both runs share these inputs">
                 <Field label="Engine" value={result.engine_label} mono />
                 <Field label="Horizon" value={`${hours} h`} mono />
                 <Field label="Step" value={`${params.step_minutes ?? 15} min`} mono />
-                <Field label="Integrator" value={String(params.integrator ?? '—')} />
+                <Field label="Integrator" value={String(params.integrator ?? '-')} />
                 <Field
                   label="Deadband"
                   value={`${num(Number(params.deadband_k ?? 0), 1)} K`}
@@ -385,7 +385,7 @@ export default function ControlLabPage() {
               </Panel>
             </div>
 
-            {/* CENTRE — the two runs */}
+            {/* CENTRE, the two runs */}
             <div className="flex min-w-0 flex-col gap-2.5">
               <Panel title="Zone temperature and setpoints" flush>
                 <TimeSeriesChart configs={tempConfigs} height={250} yAxisName="°C" yScale />
@@ -395,7 +395,7 @@ export default function ControlLabPage() {
               </Panel>
             </div>
 
-            {/* RIGHT — comparison */}
+            {/* RIGHT, comparison */}
             <div className="flex min-w-0 flex-col gap-2.5">
               <Panel title="Baseline vs optimised" subtitle="same engine, same inputs" flush>
                 <BeforeAfterPanel rows={rows} />

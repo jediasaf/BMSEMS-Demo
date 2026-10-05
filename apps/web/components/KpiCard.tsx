@@ -49,7 +49,7 @@ export function KpiCard({
             )}
             title={kpi.display ?? undefined}
           >
-            {kpi.display ?? '—'}
+            {kpi.display ?? '-'}
           </div>
           {kpi.delta !== null && kpi.delta !== undefined && (
             <div className="tabular mt-1 truncate text-3xs text-ink-500">

@@ -16,7 +16,7 @@ flowchart TB
         EX["ExpectedLoadService<br/>model-quality gate"]
     end
 
-    subgraph core["core/ — source-agnostic domain"]
+    subgraph core["core/, source-agnostic domain"]
         AD["Adapters<br/>building · power"]
         ML["Models<br/>LightGBM · residual anomaly"]
         OPT["Optimisation<br/>CVXPY: setpoints · flexible load"]
@@ -185,7 +185,7 @@ Warm, median of three, against the local production build:
 | `/interview/verify` (re-runs every demo claim) | 2.0 s |
 
 Two caches earn most of that. The per-facility transformer capacity is found by
-bisection on the load flow — about forty solves — and the anomaly detection
+bisection on the load flow, about forty solves, and the anomaly detection
 behind the overview and portfolio screens runs its classifier once per
 anomalous step. Both are deterministic in their inputs, both are cached, and
 both are warmed at start-up, so the first click of a demo is not the slow one.

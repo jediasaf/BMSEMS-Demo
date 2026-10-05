@@ -2,12 +2,13 @@
 
 import { create } from 'zustand';
 import type { ReplayWindow, Scenario, SystemStatus } from './types';
+import { naiveStamp } from './format';
 
 /**
  * Shared demo state.
  *
  * The replay clock lives here rather than in a page, because both modules
- * animate against the same instant — that is what makes the BMS↔EMS link feel
+ * animate against the same instant, that is what makes the BMS↔EMS link feel
  * like one system instead of two tabs.
  */
 
@@ -150,15 +151,10 @@ export function openingCursor(window: ReplayWindow | null): number {
  *
  * Deliberately *not* `toISOString()`. The source publishes no UTC offset, so
  * the backend works in a naive local clock; serialising as UTC would shift the
- * cursor by the viewer's timezone — a bug that looks like it worked.
+ * cursor by the viewer's timezone, a bug that looks like it worked.
  */
 export function cursorTimestamp(window: ReplayWindow | null, cursor: number): string | null {
   if (!window?.available) return null;
   const start = new Date(window.start).getTime();
-  const at = new Date(start + cursor * window.step_minutes * 60_000);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return (
-    `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}` +
-    `T${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`
-  );
+  return naiveStamp(new Date(start + cursor * window.step_minutes * 60_000));
 }

@@ -11,7 +11,7 @@ import { DemoTour } from './DemoTour';
  * Shell: system bar across the top, fixed sidebar, scrolling workspace.
  *
  * The workspace scrolls rather than the page, so the sidebar and system bar
- * never leave the screen — the operational context is always readable.
+ * never leave the screen, the operational context is always readable.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { setWindow, setScenarios, setPreload } = useDemo();

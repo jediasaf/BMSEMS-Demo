@@ -14,7 +14,7 @@ export interface ContextChip {
 /**
  * Contextual header for a workspace page: what module you are in, what it
  * operates on, and the operational context (source, mode, asset). Restrained
- * on purpose — this is an application, not a landing page.
+ * on purpose, this is an application, not a landing page.
  */
 export function PageHeader({
   module,

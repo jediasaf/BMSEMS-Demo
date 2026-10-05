@@ -7,7 +7,7 @@ const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'EcoTwin AI — Building & Power Operations',
+  title: 'EcoTwin AI: Building & Power Operations',
   description:
     'Two end-to-end operational AI workflows over public Schneider Electric data: building analytics with simulated HVAC control, and facility demand with electrical network optimisation.',
 };

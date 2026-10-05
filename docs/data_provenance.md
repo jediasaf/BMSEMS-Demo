@@ -16,7 +16,7 @@
 | Vendored? | **No.** `data/raw/` is git-ignored; `make data` re-downloads it |
 
 Files and columns are not assumed. `scripts/inspect_data.py` reads whatever is
-present and writes `docs/schema_report.md` — dtypes, timestamp ranges, sampling
+present and writes `docs/schema_report.md`, dtypes, timestamp ranges, sampling
 intervals, missingness, identifier cardinality and candidate targets. The
 adapter layer is written against that report.
 
@@ -31,10 +31,10 @@ Rather than invent one:
 
 - `core/adapters/building/technopole.py` ships **dormant**. It watches
   `data/raw/technopole/`, validates any files it finds against a declared
-  schema, and activates automatically — or fails loudly. It never fabricates.
+  schema, and activates automatically, or fails loudly. It never fabricates.
 - The real analytics run on the Power Laws dataset above, which is genuinely
   Schneider-published and genuinely open.
-- Sites are named exactly as the publisher anonymises them — `Site 227`. No
+- Sites are named exactly as the publisher anonymises them, `Site 227`. No
   street address, campus name or building identity is invented.
 
 If a Technopole release appears, drop it in the watch directory. Nothing else
@@ -77,7 +77,7 @@ things at once, and `scripts/prepare_data.py` resolves them together.
 | The demo must be out-of-sample | ≥ 90 dense days must precede the window |
 | Load and weather come from different files | both must be ≥ 98% complete |
 
-The selected window — **2017-08-24 to 2017-08-27**, 3 days, 6 sites — is the
+The selected window, **2017-08-24 to 2017-08-27**, 3 days, 6 sites, is the
 one that maximises the portfolio's average daily load swing subject to all of
 the above. A flat-profile site makes a worse demo than a smaller portfolio with
 real daily structure, so the search optimises quality, not count.
@@ -146,8 +146,8 @@ Delete `data/raw` and `data/processed` and the application still runs. The
 adapter registry falls back to `core/adapters/*/fixture.py`, every value is
 tagged `SAMPLE FIXTURE`, the status bar switches to `SAMPLE FIXTURE` mode, and
 `describe_source()` carries a warning. The fixtures are seeded and physically
-motivated — a base load, a Gaussian occupancy profile and a degree-day HVAC
-response — so the AI layer is exercised on a realistic shape, but no fixture
+motivated, a base load, a Gaussian occupancy profile and a degree-day HVAC
+response, so the AI layer is exercised on a realistic shape, but no fixture
 number can be mistaken for a measurement.
 
 ## 9. Disclaimer

@@ -43,7 +43,7 @@ body {
 }
 
 @layer components {
-  /* One panel treatment across the whole app. Flat, thin-bordered, no glow —
+  /* One panel treatment across the whole app. Flat, thin-bordered, no glow -
      depth comes from the border and a single inset highlight, not shadow. */
   .panel {
     @apply flex min-w-0 flex-col rounded-panel border border-base-600/80 bg-base-850/80 shadow-panel;

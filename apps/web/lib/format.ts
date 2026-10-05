@@ -7,7 +7,7 @@ export function cn(...parts: (string | false | null | undefined)[]): string {
 }
 
 export function num(value: number | null | undefined, digits = 1): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
   return value.toLocaleString(undefined, {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
@@ -16,18 +16,18 @@ export function num(value: number | null | undefined, digits = 1): string {
 
 export function kw(value: number | null | undefined, digits = 1): string {
   return value === null || value === undefined || Number.isNaN(value)
-    ? '—'
+    ? '-'
     : `${num(value, digits)} kW`;
 }
 
 export function pct(value: number | null | undefined, digits = 1): string {
   return value === null || value === undefined || Number.isNaN(value)
-    ? '—'
+    ? '-'
     : `${num(value, digits)}%`;
 }
 
 export function signed(value: number | null | undefined, digits = 1): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
   const sign = value > 0 ? '+' : '';
   return `${sign}${num(value, digits)}`;
 }
@@ -43,6 +43,25 @@ export function dateTime(iso: string): string {
     day: '2-digit',
     month: 'short',
   })} ${clockTime(iso)}`;
+}
+
+/**
+ * The naive, timezone-free stamp the recorder wrote: `YYYY-MM-DDTHH:MM:SS`.
+ *
+ * These timestamps carry no offset, so `Date.parse` reads them in the local
+ * frame -- which means they have to be written back out in the local frame
+ * too. `toISOString()` does not: it converts to UTC, and on any machine that
+ * is not on UTC that silently shifts the stamp by the offset. The cursor then
+ * asks for a different hour than the one on the clock: a 404 at the edges of
+ * the replay window, and correct-looking data from the wrong time in the
+ * middle of it. Local in, local out.
+ */
+export function naiveStamp(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
 }
 
 export function fullTimestamp(iso: string): string {
@@ -96,7 +115,7 @@ export const SEVERITY_STYLE: Record<
 
 /** Compact integer/decimal formatting for large counts: 1,028,872 -> 1.03 M. */
 export function compact(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
   if (Math.abs(value) >= 1e6) return `${(value / 1e6).toFixed(2)} M`;
   if (Math.abs(value) >= 1e3) return `${(value / 1e3).toFixed(0)} k`;
   return String(Math.round(value));

@@ -17,8 +17,8 @@
 | column | dtype | missing % | min | max | mean |
 |---|---|---|---|---|---|
 | `Unnamed: 0` | int64 | 0.000 | 0 | 8386 | 4193 |
-| `Date` | object | 0.000 | — | — | — |
-| `Holiday` | object | 0.000 | — | — | — |
+| `Date` | object | 0.000 |, |, |, |
+| `Holiday` | object | 0.000 |, |, |, |
 | `SiteId` | int64 | 0.000 | 1 | 305 | 156.7 |
 
 **Timestamps**
@@ -66,7 +66,7 @@
 |---|---|---|---|---|---|
 | `obs_id` | int64 | 0.000 | 2 | 7.869e+06 | 3.931e+06 |
 | `SiteId` | int64 | 0.000 | 1 | 305 | 162.1 |
-| `Timestamp` | object | 0.000 | — | — | — |
+| `Timestamp` | object | 0.000 |, |, |, |
 | `ForecastId` | int64 | 0.000 | 1 | 6974 | 3483 |
 | `Value` | float64 | 0.000 | 0 | 0 | 0 |
 
@@ -92,7 +92,7 @@
 |---|---|---|---|---|---|
 | `obs_id` | int64 | 0.000 | 0 | 7.869e+06 | 3.935e+06 |
 | `SiteId` | int64 | 0.000 | 1 | 204 | 99.46 |
-| `Timestamp` | object | 0.000 | — | — | — |
+| `Timestamp` | object | 0.000 |, |, |, |
 | `ForecastId` | int64 | 0.000 | 1 | 4245 | 2124 |
 | `Value` | float64 | 1.263 | 0 | 6.405e+11 | 5.201e+05 |
 
@@ -117,7 +117,7 @@
 | column | dtype | missing % | min | max | mean |
 |---|---|---|---|---|---|
 | `Unnamed: 0` | int64 | 0.000 | 0 | 3.311e+05 | 6.52e+04 |
-| `Timestamp` | object | 0.000 | — | — | — |
+| `Timestamp` | object | 0.000 |, |, |, |
 | `Temperature` | float64 | 0.000 | -26.3 | 45 | 14.17 |
 | `Distance` | float64 | 0.000 | 1.299 | 29.98 | 16.6 |
 | `SiteId` | int64 | 0.000 | 1 | 55 | 27.82 |
@@ -134,14 +134,14 @@
 
 ## Candidate model targets
 
-- `Unnamed: 0` in `data/raw/power_laws_forecasting/holidays.csv` — numeric, range 0..8386
-- `Surface` in `data/raw/power_laws_forecasting/metadata.csv` — numeric, range 14.88..7.162e+04
-- `Sampling` in `data/raw/power_laws_forecasting/metadata.csv` — numeric, range 5..30
-- `BaseTemperature` in `data/raw/power_laws_forecasting/metadata.csv` — numeric, range 18..21
-- `FridayIsDayOff` in `data/raw/power_laws_forecasting/metadata.csv` — numeric, range 0..1
-- `SaturdayIsDayOff` in `data/raw/power_laws_forecasting/metadata.csv` — numeric, range 0..1
-- `SundayIsDayOff` in `data/raw/power_laws_forecasting/metadata.csv` — numeric, range 0..1
-- `Value` in `data/raw/power_laws_forecasting/train.csv` — numeric, range 0..6.405e+11
-- `Unnamed: 0` in `data/raw/power_laws_forecasting/weather.csv` — numeric, range 0..3.311e+05
-- `Temperature` in `data/raw/power_laws_forecasting/weather.csv` — numeric, range -26.3..45
-- `Distance` in `data/raw/power_laws_forecasting/weather.csv` — numeric, range 1.299..29.98
+- `Unnamed: 0` in `data/raw/power_laws_forecasting/holidays.csv`, numeric, range 0..8386
+- `Surface` in `data/raw/power_laws_forecasting/metadata.csv`, numeric, range 14.88..7.162e+04
+- `Sampling` in `data/raw/power_laws_forecasting/metadata.csv`, numeric, range 5..30
+- `BaseTemperature` in `data/raw/power_laws_forecasting/metadata.csv`, numeric, range 18..21
+- `FridayIsDayOff` in `data/raw/power_laws_forecasting/metadata.csv`, numeric, range 0..1
+- `SaturdayIsDayOff` in `data/raw/power_laws_forecasting/metadata.csv`, numeric, range 0..1
+- `SundayIsDayOff` in `data/raw/power_laws_forecasting/metadata.csv`, numeric, range 0..1
+- `Value` in `data/raw/power_laws_forecasting/train.csv`, numeric, range 0..6.405e+11
+- `Unnamed: 0` in `data/raw/power_laws_forecasting/weather.csv`, numeric, range 0..3.311e+05
+- `Temperature` in `data/raw/power_laws_forecasting/weather.csv`, numeric, range -26.3..45
+- `Distance` in `data/raw/power_laws_forecasting/weather.csv`, numeric, range 1.299..29.98

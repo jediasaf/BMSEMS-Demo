@@ -10,7 +10,7 @@ import { ErrorNote, Field, Panel, Pill, Skeleton } from './Primitives';
  * What is actually behind the screen.
  *
  * Every figure here is a real count of the real files rather than a round
- * number chosen to look impressive — that is the whole point of putting it on
+ * number chosen to look impressive, that is the whole point of putting it on
  * the page next to the analytics.
  */
 export function DataSourcePanel({ className }: { className?: string }) {
@@ -53,7 +53,7 @@ export function DataSourcePanel({ className }: { className?: string }) {
               value={
                 data.span.first && data.span.last
                   ? `${shortDate(data.span.first)} → ${shortDate(data.span.last)}`
-                  : '—'
+                  : '-'
               }
               mono
             />

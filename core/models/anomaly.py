@@ -427,8 +427,8 @@ def _title(kind: AnomalyKind, deviation: float, unit: str) -> str:
         AnomalyKind.OVER_CONSUMPTION: f"Consumption {deviation:+,.0f} {unit} above expected",
         AnomalyKind.UNDER_CONSUMPTION: f"Consumption {deviation:+,.0f} {unit} below expected",
         AnomalyKind.OFF_HOURS_LOAD: f"Out-of-hours load {deviation:+,.0f} {unit} above expected",
-        AnomalyKind.FLATLINE: "Reading held constant — possible stuck point",
-        AnomalyKind.SENSOR_DRIFT: "Sustained one-sided deviation — possible drift",
+        AnomalyKind.FLATLINE: "Reading held constant, possible stuck point",
+        AnomalyKind.SENSOR_DRIFT: "Sustained one-sided deviation, possible drift",
         AnomalyKind.MISSING_DATA: "Telemetry gap",
         AnomalyKind.PEAK_EXCURSION: f"Peak excursion {deviation:+,.0f} {unit}",
     }

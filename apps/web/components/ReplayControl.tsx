@@ -9,7 +9,7 @@ import { cn, fullTimestamp } from '@/lib/format';
  * Historical replay transport.
  *
  * The clock advances one 15-minute step per tick; speed multiplies the tick
- * rate. Nothing here fakes progress — the cursor indexes real samples in the
+ * rate. Nothing here fakes progress, the cursor indexes real samples in the
  * replay window, and every panel reads the same cursor.
  */
 export function ReplayControl({ compact = false }: { compact?: boolean }) {
@@ -71,7 +71,7 @@ export function ReplayControl({ compact = false }: { compact?: boolean }) {
       </div>
 
       <div className="tabular shrink-0 font-mono text-2xs text-ink-100">
-        {stamp ? fullTimestamp(stamp) : '—'}
+        {stamp ? fullTimestamp(stamp) : '-'}
       </div>
 
       <div className="relative min-w-[6rem] flex-1">

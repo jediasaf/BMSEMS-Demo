@@ -437,7 +437,7 @@ export default function ScenarioLabPage() {
 
           {chain?.available && (
             <Panel
-              title="BMS ↔ EMS — power risk to building action and back"
+              title="BMS ↔ EMS: power risk to building action and back"
               subtitle="every link is a real computation"
               bodyClassName="space-y-2.5"
             >

@@ -156,10 +156,19 @@ def main() -> int:
         bms_scenarios = ["bms_normal_day", "bms_hot_day", "bms_sensor_drift"]
         ems_scenarios = ["ems_normal_day", "ems_peak_demand", "ems_ev_surge"]
 
+        # Every site the selector offers, not just the default one. Recording
+        # one site while the UI lists six meant a 404 the moment anyone used
+        # the Building dropdown or clicked a row in the facility table, which
+        # is the first thing a curious viewer does.
         sites = capture("/bms/sites") or {}
         site = str(sites.get("default_site_id", "227"))
+        all_sites = [str(s["site_id"]) for s in sites.get("sites", [])] or [site]
         facilities = capture("/ems/facilities") or {}
         facility = str(facilities.get("default_facility_id", "227"))
+        all_facilities = [str(f["facility_id"]) for f in facilities.get("facilities", [])] or [
+            facility
+        ]
+        _log(f"{len(all_sites)} sites x {len(all_facilities)} facilities")
 
         # -- interview mode -----------------------------------------------
         capture("/demo/reset", method="POST")
@@ -168,32 +177,38 @@ def main() -> int:
         capture("/interview/preload", method="POST")
 
         # -- cursor-independent, per scenario ------------------------------
-        capture("/bms/model-card", {"site_id": site})
-        capture("/bms/data-quality", {"site_id": site})
-        capture("/ems/data-quality", {"facility_id": facility})
-        for scenario in bms_scenarios:
-            capture("/bms/timeline", {"site_id": site, "scenario_id": scenario})
-            capture("/bms/insights", {"site_id": site, "scenario_id": scenario})
-            recs = capture("/bms/recommendations", {"site_id": site, "scenario_id": scenario}) or []
-            for rec in recs:
-                capture(
-                    f"/bms/recommendations/{rec['recommendation_id']}/validate",
-                    {"site_id": site, "scenario_id": scenario},
-                    method="POST",
+        for s_id in all_sites:
+            capture("/bms/model-card", {"site_id": s_id})
+            capture("/bms/data-quality", {"site_id": s_id})
+            for scenario in bms_scenarios:
+                capture("/bms/timeline", {"site_id": s_id, "scenario_id": scenario})
+                capture("/bms/insights", {"site_id": s_id, "scenario_id": scenario})
+                recs = (
+                    capture("/bms/recommendations", {"site_id": s_id, "scenario_id": scenario})
+                    or []
                 )
-            for hours in (12, 24, 36, 48):
-                capture(
-                    "/bms/control-lab",
-                    {"site_id": site, "hours": hours, "scenario_id": scenario},
-                )
+                for rec in recs:
+                    capture(
+                        f"/bms/recommendations/{rec['recommendation_id']}/validate",
+                        {"site_id": s_id, "scenario_id": scenario},
+                        method="POST",
+                    )
+                for hours in (12, 24, 36, 48):
+                    capture(
+                        "/bms/control-lab",
+                        {"site_id": s_id, "hours": hours, "scenario_id": scenario},
+                    )
+        for f_id in all_facilities:
+            capture("/ems/data-quality", {"facility_id": f_id})
+            for scenario in ems_scenarios:
+                capture("/ems/insights", {"facility_id": f_id, "scenario_id": scenario})
+                capture("/link/peak-to-building", {"facility_id": f_id, "scenario_id": scenario})
         for scenario in ems_scenarios:
             # The EMS landing page asks for risk across the whole portfolio,
             # with no facility and no cursor. A different call shape is a
             # different file; missing it showed up as an error panel, which is
             # what e2e/snapshot.spec.ts now fails on.
             capture("/ems/risk", {"scenario_id": scenario})
-            capture("/ems/insights", {"facility_id": facility, "scenario_id": scenario})
-            capture("/link/peak-to-building", {"facility_id": facility, "scenario_id": scenario})
             capture(
                 "/link/simulate-hvac-action",
                 {"facility_id": facility, "scenario_id": scenario, "hours": 24},
@@ -220,57 +235,60 @@ def main() -> int:
         # step it would be 58% of the entire snapshot, the same chart written
         # out 74 times. So the invariant part is written once per scenario and
         # the cursor files carry only the KPIs, which the client merges.
-        for scenario in bms_scenarios:
-            body = capture("/bms/overview", {"site_id": site, "scenario_id": scenario})
-            if body:
-                base = {k: v for k, v in body.items() if k != "kpis"}
-                text = json.dumps(base, separators=(",", ":"), default=str)
-                key = slug("/bms/overview__base", {"site_id": site, "scenario_id": scenario})
-                (out / f"{key}.json").write_text(text)
-                index["entries"][key] = len(text)
-                total_bytes += len(text)
+        for s_id in all_sites:
+            for scenario in bms_scenarios:
+                body = capture("/bms/overview", {"site_id": s_id, "scenario_id": scenario})
+                if body:
+                    base = {k: v for k, v in body.items() if k != "kpis"}
+                    text = json.dumps(base, separators=(",", ":"), default=str)
+                    key = slug("/bms/overview__base", {"site_id": s_id, "scenario_id": scenario})
+                    (out / f"{key}.json").write_text(text)
+                    index["entries"][key] = len(text)
+                    total_bytes += len(text)
 
         for i, at in enumerate(cursors):
-            for scenario in bms_scenarios:
-                if at is None:
-                    capture("/bms/overview", {"site_id": site, "scenario_id": scenario})
-                else:
-                    key = slug(
-                        "/bms/overview", {"site_id": site, "scenario_id": scenario, "at": at}
-                    )
-                    file = out / f"{key}.json"
-                    if not file.exists():
-                        r = client.get(
-                            "/bms/overview",
-                            params={"site_id": site, "scenario_id": scenario, "at": at},
+            for s_id in all_sites:
+                for scenario in bms_scenarios:
+                    if at is None:
+                        capture("/bms/overview", {"site_id": s_id, "scenario_id": scenario})
+                    else:
+                        key = slug(
+                            "/bms/overview", {"site_id": s_id, "scenario_id": scenario, "at": at}
                         )
-                        if r.status_code == 200:
-                            kpis = {
-                                "kpis": _round(r.json()["kpis"]),
-                                "_snapshot": {
-                                    "recorded_at": index["recorded_at"],
-                                    "path": "/bms/overview",
-                                    "live": False,
-                                    "merge_with": "__base",
-                                },
-                            }
-                            text = json.dumps(kpis, separators=(",", ":"), default=str)
-                            file.write_text(text)
-                            index["entries"][key] = len(text)
-                            total_bytes += len(text)
-                capture("/bms/assets", {"site_id": site, "scenario_id": scenario, "at": at})
+                        file = out / f"{key}.json"
+                        if not file.exists():
+                            r = client.get(
+                                "/bms/overview",
+                                params={"site_id": s_id, "scenario_id": scenario, "at": at},
+                            )
+                            if r.status_code == 200:
+                                kpis = {
+                                    "kpis": _round(r.json()["kpis"]),
+                                    "_snapshot": {
+                                        "recorded_at": index["recorded_at"],
+                                        "path": "/bms/overview",
+                                        "live": False,
+                                        "merge_with": "__base",
+                                    },
+                                }
+                                text = json.dumps(kpis, separators=(",", ":"), default=str)
+                                file.write_text(text)
+                                index["entries"][key] = len(text)
+                                total_bytes += len(text)
+                    capture("/bms/assets", {"site_id": s_id, "scenario_id": scenario, "at": at})
             for scenario in ems_scenarios:
                 capture("/ems/portfolio", {"scenario_id": scenario, "at": at})
-                capture(
-                    "/ems/network",
-                    {"facility_id": facility, "scenario_id": scenario, "at": at},
-                )
-                capture("/ems/risk", {"facility_id": facility, "scenario_id": scenario, "at": at})
-                capture(
-                    "/ems/optimise",
-                    {"facility_id": facility, "scenario_id": scenario, "at": at},
-                    method="POST",
-                )
+                for f_id in all_facilities:
+                    capture(
+                        "/ems/network",
+                        {"facility_id": f_id, "scenario_id": scenario, "at": at},
+                    )
+                    capture("/ems/risk", {"facility_id": f_id, "scenario_id": scenario, "at": at})
+                    capture(
+                        "/ems/optimise",
+                        {"facility_id": f_id, "scenario_id": scenario, "at": at},
+                        method="POST",
+                    )
             if i and i % 25 == 0:
                 _log(f"  {i}/{len(cursors)} cursors, {total_bytes / 1e6:.1f} MB so far")
 

@@ -123,7 +123,7 @@ export function ForecastPanel({
               value={
                 ahead.lower !== null && ahead.upper !== null
                   ? `${num(ahead.lower, 1)}–${num(ahead.upper, 1)}`
-                  : '—'
+                  : '-'
               }
               sub={
                 ahead.lower !== null && ahead.upper !== null
@@ -136,7 +136,7 @@ export function ForecastPanel({
               value={
                 currentLoadKw !== null && currentLoadKw !== undefined
                   ? `${num(currentLoadKw, 1)} kW`
-                  : '—'
+                  : '-'
               }
               sub="measured at the cursor"
             />
@@ -189,7 +189,7 @@ export function OpportunityPanel({
           <div className="grid grid-cols-3 gap-x-4 gap-y-3">
             <Stat
               label="HVAC energy"
-              value={energy === null ? '—' : `${signed(energy, 1)}%`}
+              value={energy === null ? '-' : `${signed(energy, 1)}%`}
               sub={`${num(data.ai_control.kpis.energy_kwh, 0)} vs ${num(
                 data.baseline.kpis.energy_kwh,
                 0,
@@ -198,7 +198,7 @@ export function OpportunityPanel({
             />
             <Stat
               label="HVAC peak"
-              value={peak === null ? '—' : `${signed(peak, 1)}%`}
+              value={peak === null ? '-' : `${signed(peak, 1)}%`}
               sub={`${num(data.ai_control.kpis.peak_kw, 1)} vs ${num(
                 data.baseline.kpis.peak_kw,
                 1,
@@ -207,7 +207,7 @@ export function OpportunityPanel({
             />
             <Stat
               label="Comfort cost"
-              value={comfort === null ? '—' : `${signed(comfort, 2)} K·h`}
+              value={comfort === null ? '-' : `${signed(comfort, 2)} K·h`}
               sub={`${num(data.ai_control.kpis.comfort_violation_steps, 0)} steps outside the band`}
               tone={comfort !== null && comfort > 0.5 ? 'text-status-warning' : undefined}
             />

@@ -89,7 +89,7 @@ jobs:
           b = json.load(open('/tmp/v.json'))
           print(f"- recorded /interview/verify ready: **{b['ready']}** ({len(b['checks'])} checks)")
           for c in b['checks']:
-              print(f"  - {'PASS' if c['passed'] else 'FAIL'} `{c['check']}` — {c['detail']}")
+              print(f"  - {'PASS' if c['passed'] else 'FAIL'} `{c['check']}`, {c['detail']}")
           sys.exit(0 if b['ready'] else 1)
           PY
 
@@ -130,7 +130,7 @@ jobs:
             ts=""
             for i in 1 2 3; do ts="$ts $(curl -s -o /dev/null -w '%{time_total}' --max-time 60 "$WEB$p")"; done
             med=$(python3 -c "import statistics; print(f'{statistics.median([float(x) for x in '''$ts'''.split()])*1000:.0f}')")
-            echo "- \`$p\` — ${med} ms" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "- \`$p\`, ${med} ms" | tee -a "$GITHUB_STEP_SUMMARY"
           done
 
   e2e:
@@ -203,7 +203,7 @@ jobs:
           b = json.load(open('/tmp/v.json'))
           print(f"- /interview/verify ready: **{b['ready']}** ({len(b['checks'])} checks)")
           for c in b['checks']:
-              print(f"  - {'PASS' if c['passed'] else 'FAIL'} `{c['check']}` — {c['detail']}")
+              print(f"  - {'PASS' if c['passed'] else 'FAIL'} `{c['check']}`, {c['detail']}")
           sys.exit(0 if b['ready'] else 1)
           PY
 
@@ -252,7 +252,7 @@ jobs:
               ts="$ts $(curl -s -o /dev/null -w '%{time_total}' --max-time 240 "$API$p")"
             done
             med=$(python3 -c "import statistics; print(f'{statistics.median([float(x) for x in '''$ts'''.split()])*1000:.0f}')")
-            echo "- \`$p\` — ${med} ms" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "- \`$p\`, ${med} ms" | tee -a "$GITHUB_STEP_SUMMARY"
           done
           post=$(curl -s -o /dev/null -X POST -w '%{time_total}' --max-time 240 "$API/ems/optimise?scenario_id=ems_ev_surge")
-          echo "- \`POST /ems/optimise\` — $(python3 -c "print(f'{float($post)*1000:.0f}')") ms" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "- \`POST /ems/optimise\`, $(python3 -c "print(f'{float($post)*1000:.0f}')") ms" | tee -a "$GITHUB_STEP_SUMMARY"

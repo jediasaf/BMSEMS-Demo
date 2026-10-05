@@ -14,9 +14,9 @@ is re-derived by `make check`, `make audit`, `make snapshot`, `make demo` and
 |---|---|
 | Branch | `claude/zen-ptolemy-5hf381` |
 | Commit | `81d7088` |
-| Hosted demo | https://ecotwin-ai-zeta.vercel.app — **not yet serving this build**, see item 1 under Open items |
+| Hosted demo | https://ecotwin-ai-zeta.vercel.app, **not yet serving this build**, see item 1 under Open items |
 | What ships | a **recording**: 1389 files, 10.3 MB, taken 2026-09-20T11:23Z |
-| Live mode | `make demo` — FastAPI plus the whole science stack, every answer solved on request |
+| Live mode | `make demo`, FastAPI plus the whole science stack, every answer solved on request |
 | Dataset | Power Laws: Forecasting Energy Consumption, 1.03 M records |
 | Replay window | 2017-08-24 → 2017-08-27, 15-minute steps |
 
@@ -36,7 +36,7 @@ response to `apps/web/public/snapshot/`. The frontend reads those files when
 built with `NEXT_PUBLIC_SNAPSHOT=1`.
 
 Nothing is fabricated by recording. Every figure was produced by the engine
-named in its provenance, on a real run. Only the delivery changed — and the
+named in its provenance, on a real run. Only the delivery changed, and the
 product says which mode it is in: a `Recorded` chip with the date in the status
 bar, a line on the About page, and a `_snapshot` marker on every payload.
 
@@ -44,7 +44,7 @@ Why: the backend needs ~550 MB of RAM and a filesystem, which is a container,
 which is a paid instance. The free tier it was on stopped the machine after
 five minutes, and a demo that answers the first click with a timeout is not a
 demo. Recording removes the server from the critical path entirely. The
-container path still exists — `Dockerfile`, `fly.toml`, `docs/deployment.md` —
+container path still exists, `Dockerfile`, `fly.toml`, `docs/deployment.md` -
 and is the mode to run in front of anyone who asks "is it actually
 computing?".
 
@@ -87,7 +87,7 @@ single command to run before showing the product to anyone.
 
 Two of these are gates that can say no, which is the point of them: the zone
 simulator may reject a setpoint proposal, and the second pandapower solve may
-reject a dispatch. Both have unit tests that prove they reject — a gate that
+reject a dispatch. Both have unit tests that prove they reject, a gate that
 has never failed in a test is decoration.
 
 ## Measured performance
@@ -104,7 +104,7 @@ locally; on Vercel the same files come off a CDN:
 | `POST /ems/optimise` (recorded) | 1 ms |
 | `/bms/control-lab` (recorded) | 1 ms |
 | Whole recording | 1389 files, 10.3 MB |
-| Cold start | none — there is no server to start |
+| Cold start | none, there is no server to start |
 
 There is no slow first click, because there is nothing to wake. What this
 buys is the reason to accept a replay at all; what it costs is stated on
@@ -112,7 +112,7 @@ screen.
 
 ### The live backend
 
-Measured 2026-09-19 against the container deployment, from a GitHub runner —
+Measured 2026-09-19 against the container deployment, from a GitHub runner -
 the network an interviewer would have been on, not the loopback. That host is
 no longer running (see **Open items**); the numbers stand as a record of what
 the compute path costs over a real network:
@@ -132,10 +132,10 @@ Most of each figure above is transatlantic round trip to ams.
 
 A second run of the same battery, taken while the free tier stopped the
 machine part-way through, measured `/interview/verify` at **23.0 s** and the
-Control Lab at **9.9 s** — the same code, paying cold starts. That gap is why
+Control Lab at **9.9 s**, the same code, paying cold starts. That gap is why
 the hosted demo is a recording.
 
-The same endpoints, warm, against the local production build — this is what
+The same endpoints, warm, against the local production build, this is what
 `make demo` gives you, and what the recording was made from:
 
 | Endpoint | |
@@ -188,7 +188,7 @@ and collapsed it.
 **Why it mattered.** That capacity is the cap the EMS optimiser is held to and
 the denominator of every transformer-loading percentage on screen. A wrong
 one makes the flagship EMS claim wrong, in the direction of *understating* the
-optimiser — or, worse, of showing a dispatch as accepted against a cap that is
+optimiser, or, worse, of showing a dispatch as accepted against a cap that is
 not the transformer's.
 
 **Fix.** The model is serialised with a reentrant lock, held for a whole
@@ -208,7 +208,7 @@ background warm-up, so it was regenerated after the fix and re-verified.
 |---|---|
 | Secrets in the tree or in git history | none (scanned for token, key and credential patterns) |
 | `.env*`, `.vercel/`, credentials | gitignored; only `.env.example` is tracked, and it holds no secret |
-| Secrets in `NEXT_PUBLIC_*` | none — the only such variable is `NEXT_PUBLIC_SNAPSHOT=1` |
+| Secrets in `NEXT_PUBLIC_*` | none, the only such variable is `NEXT_PUBLIC_SNAPSHOT=1` |
 | Browser source maps in production | none emitted |
 | Cross-origin requests | none: the hosted build fetches only same-origin files. The API's own CORS is still a closed allowlist with `allow_credentials=False`, tested so that unknown and look-alike origins get no grant |
 | Error responses | no stack traces, no filesystem paths; unhandled errors return an opaque id and are logged server-side |
@@ -219,7 +219,7 @@ background warm-up, so it was regenerated after the fix and re-verified.
 ## Open items
 
 1. **This build is not published yet.** The Vercel URL above still serves the
-   previous build, which calls a backend that is no longer running — so the
+   previous build, which calls a backend that is no longer running, so the
    public demo is currently broken and this commit is the fix. Publishing it
    needs one thing that cannot be done from here: either a valid Vercel token,
    or the Vercel GitHub integration installed on the repository (Root
@@ -246,7 +246,7 @@ background warm-up, so it was regenerated after the fix and re-verified.
    cannot override that.
 
    The wake path was worth fixing before abandoning it, and the fix stands in
-   the code: a woken machine originally took **94 s** to bind — none of it
+   the code: a woken machine originally took **94 s** to bind, none of it
    our code, all of it CPU-throttled imports of the ~483 MB scientific stack
    read cold on a shared vCPU. Moving the cache warm-up behind the lifespan
    yield and deferring the service-layer imports into the handlers took

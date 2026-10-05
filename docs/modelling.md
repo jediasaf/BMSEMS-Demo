@@ -47,7 +47,7 @@ replaying, so the 10 days are budgeted:
 |<------ 5 days: feature lookback ------>|<-- 3 days: replay -->|  (+2 slack)
 ```
 
-An earlier build used a weekly lag — the single strongest feature by gain — and
+An earlier build used a weekly lag, the single strongest feature by gain, and
 then had no window where six sites were simultaneously complete. The 5-day cap
 is a data constraint made explicit, not a modelling preference.
 
@@ -61,10 +61,10 @@ answer different questions.
 |<--- 60% fit --->|<-- 20% calibrate -->|<---- 20% backtest ------->|<---- live ------->|
 ```
 
-- **fit** — trains the boosters.
-- **calibrate** — early stopping *and* the conformal offset. Never trains.
-- **backtest** — model quality. Large enough for the numbers to mean something.
-- **live** — the window the demo replays, held out entirely by the cutoff.
+- **fit**, trains the boosters.
+- **calibrate**, early stopping *and* the conformal offset. Never trains.
+- **backtest**, model quality. Large enough for the numbers to mean something.
+- **live**, the window the demo replays, held out entirely by the cutoff.
   Small, so it is reported as evidence rather than as a performance claim.
 
 ### The baseline is the strongest naive candidate
@@ -84,7 +84,7 @@ easiest way to make these numbers meaningless.
 | 269 | 12 314 | 8.08 | 36.7% | 0.724 | **+27.0%** | 82.2% | 24.6% | 88.1% |
 | 284 | 5 329 | 72.95 | 22.4% | 0.619 | **+37.2%** | 82.7% | 20.9% | 84.8% |
 
-All six beat their baseline. Site 227 — the BMS lead building — beats it by only
+All six beat their baseline. Site 227, the BMS lead building, beats it by only
 3.4%, which is stated rather than hidden; its absolute accuracy (7.5% WAPE,
 R² 0.891) is the best in the portfolio.
 
@@ -128,13 +128,13 @@ score      = 0.6745 · (residual − centre) / MAD
 anomalous  = |score| > 3.5, sustained for ≥ 3 intervals, and material
 ```
 
-**Median/MAD, not mean/σ** — a handful of genuine faults must not inflate the
+**Median/MAD, not mean/σ**, a handful of genuine faults must not inflate the
 band used to detect them.
 
-**Materiality floor** — ≥ 2 kW *and* ≥ 8% of expected. A 0.2 kW miss on a quiet
+**Materiality floor**, ≥ 2 kW *and* ≥ 8% of expected. A 0.2 kW miss on a quiet
 night is statistically enormous and operationally meaningless.
 
-**Sustain requirement** — three intervals. A single sample is telemetry far more
+**Sustain requirement**, three intervals. A single sample is telemetry far more
 often than it is plant.
 
 ### The baseline is calibrated on history, not a trailing window
@@ -145,7 +145,7 @@ ever flagged**: the injection spanned the whole replay window, so the rolling
 baseline absorbed it and the fault became the new normal.
 
 The baseline is now fitted on a reference period that **ends where the period
-under test begins**, and conditioned on hour of day — a building's forecast
+under test begins**, and conditioned on hour of day, a building's forecast
 error at 03:00 and at 14:00 are not the same random variable. It is then held
 fixed. There is a regression test for exactly this failure
 (`test_reference_baseline_does_not_absorb_a_window_long_fault`).
@@ -160,7 +160,7 @@ decides what an operator is told.
 Drift is judged on the **six hours leading into** a finding, not on the finding
 itself, and requires the bias to have grown by ≥ 1.5 MAD across that lead-in.
 Without that scale test, ordinary residual autocorrelation reads as drift and
-every finding gets the label — which is what happened before the gate was added.
+every finding gets the label, which is what happened before the gate was added.
 
 Findings say **"possible causes"** and never assert one.
 
@@ -172,7 +172,7 @@ A trained model is not automatically the thing served:
 if model.metrics.backtest.skill_vs_baseline_pct > MIN_SKILL_PCT:   # 1%
     serve the model
 else:
-    serve the seasonal-naive reference it failed to beat — and say so
+    serve the seasonal-naive reference it failed to beat, and say so
 ```
 
 Serving a model that lost to persistence would make every downstream anomaly and
@@ -202,8 +202,8 @@ result** so a reviewer can argue with the physics rather than the conclusion.
 A proportional controller leaves a steady-state offset that swamps the very
 experiment the Control Lab exists to run: with one, raising the setpoint from
 23 °C to 24 °C changed energy by **+0.2%**. The plant now computes the heat flow
-that lands the air node on the nearer setpoint within installed capacity — the
-EnergyPlus `IdealLoadsAirSystem` formulation — and the same change gives a
+that lands the air node on the nearer setpoint within installed capacity, the
+EnergyPlus `IdealLoadsAirSystem` formulation, and the same change gives a
 credible **−10.8% over 0.6 K**, about −13% per K.
 
 ### Heating and cooling setpoints are scheduled separately
@@ -217,8 +217,8 @@ come from the comfort band; the deadband is now a *minimum separation*.
 
 The conditioned area is scaled until the simulator's baseline HVAC power matches
 the HVAC share implied by the site's own metered weather sensitivity. One free
-parameter with a physical meaning — the conditioned area the measured load
-implies — rather than a fudge factor on the answer. Without it, the thermal and
+parameter with a physical meaning, the conditioned area the measured load
+implies, rather than a fudge factor on the answer. Without it, the thermal and
 electrical models describe different buildings and the cross-module impact
 figure is meaningless. For site 227: 862 m² conditioned of 1 142 m² published.
 
@@ -227,7 +227,7 @@ figure is meaningless. For site 227: 862 m² conditioned of 1 142 m² published.
 - **No solar irradiance** in the source, so solar gain is a clipped daylight
   sinusoid. Stated in the result's assumptions.
 - **No zone-level telemetry**, so the thermal model is single-zone and cannot
-  be validated against measured zone temperature — only against whole-site
+  be validated against measured zone temperature, only against whole-site
   electrical demand.
 - **Weather is the recorded observation**, standing in for a vendor forecast.
   In production the feature would be a forecast with its own error; the model

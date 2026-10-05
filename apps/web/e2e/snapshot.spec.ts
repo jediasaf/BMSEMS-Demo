@@ -12,6 +12,50 @@ import { test, expect, type ConsoleMessage } from '@playwright/test';
  * in rather than failing everywhere else.
  */
 test.describe('static recording', () => {
+  /**
+   * The replay cursor has to land on the same hour the clock shows, from any
+   * timezone.
+   *
+   * The recorded timestamps carry no offset, so they are parsed in the
+   * viewer's local frame. Writing them back with toISOString() converted them
+   * to UTC, which shifted every request by the viewer's offset: a 404 at the
+   * edges of the replay window, and -- far worse -- correct-looking data from
+   * the wrong hour in the middle of it. It passed on a UTC machine and failed
+   * at UTC+8, so this runs somewhere that is not UTC.
+   */
+  test('the replay cursor is right from a non-UTC timezone', async ({ browser }) => {
+    test.skip(process.env.E2E_SNAPSHOT !== '1', 'needs a NEXT_PUBLIC_SNAPSHOT=1 build');
+
+    const context = await browser.newContext({
+      timezoneId: 'Asia/Singapore',
+      viewport: { width: 1600, height: 1000 },
+    });
+    const page = await context.newPage();
+    const missing = new Set<string>();
+    page.on('response', (r) => {
+      if (r.status() === 404) missing.add(new URL(r.url()).pathname);
+    });
+
+    await page.goto('/ems');
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+    await expect(page.getByText(/Panel unavailable/i)).toHaveCount(0);
+
+    // Walk the cursor across the window, including the first hours, which is
+    // where the shift pushed requests off the start of the recording.
+    const slider = page.getByRole('slider', { name: /Replay position/i }).first();
+    for (const value of ['0', '29', '96', '200']) {
+      await slider.fill(value);
+      await page.waitForTimeout(900);
+      await expect(page.getByText(/Panel unavailable/i)).toHaveCount(0);
+    }
+
+    expect(
+      [...missing],
+      `recorded files requested and not found:\n${[...missing].join('\n')}`,
+    ).toEqual([]);
+    await context.close();
+  });
+
   test('drives the whole demo with no backend', async ({ page }) => {
     test.skip(process.env.E2E_SNAPSHOT !== '1', 'needs a NEXT_PUBLIC_SNAPSHOT=1 build');
 

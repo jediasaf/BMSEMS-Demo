@@ -6,7 +6,7 @@ module so the distinction stays structural, not just a comment: everything in
 
 The class only ever reports ``SimulationEngine.BOPTEST``. If the instance is
 unreachable, ``available()`` returns False and the Control Lab falls back to the
-in-process RC engine — which is then labelled as the RC engine, never as this.
+in-process RC engine, which is then labelled as the RC engine, never as this.
 
 Local Docker mode starts an instance:
 

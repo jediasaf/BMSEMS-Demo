@@ -37,19 +37,19 @@ test.describe('interview demo path', () => {
     await page.goto('/bms');
     await expect(page.getByRole('heading', { name: 'Building Operator' })).toBeVisible();
 
-    // 1 — the guided demo opens.
+    // 1, the guided demo opens.
     await page
       .getByRole('button', { name: /Start demo/i })
       .first()
       .click();
     await expect(page.getByText(/step 1 of 12/i)).toBeVisible();
 
-    // 2 — the injected scenario is applied and labelled as injected.
+    // 2, the injected scenario is applied and labelled as injected.
     await nextStep(page);
     await expect(page.getByText(/step 2 of 12/i)).toBeVisible();
     await expect(page.getByText(/injected scenario/i).first()).toBeVisible();
 
-    // 3 — an anomaly exists, with observed, expected and possible causes.
+    // 3, an anomaly exists, with observed, expected and possible causes.
     await nextStep(page);
     await expect(page).toHaveURL(/\/bms\/operations/);
     await expect(page.getByText(/insight feed/i)).toBeVisible();
@@ -58,14 +58,14 @@ test.describe('interview demo path', () => {
     await expect(page.getByText(/possible causes/i).first()).toBeVisible();
     await expect(page.getByText(/not a diagnosis/i).first()).toBeVisible();
 
-    // 4 — a recommendation, which claims no saving before simulation.
+    // 4, a recommendation, which claims no saving before simulation.
     await nextStep(page);
     await expect(page.getByText(/Recommendation/i).first()).toBeVisible();
     // The claim, not the sentence that used to carry it: nothing is asserted
     // about savings until the simulator has run both cases.
     await expect(page.getByText(/not claimed until simulated/i)).toBeVisible();
 
-    // 5 — the Control Lab: before/after, and the simulator's verdict.
+    // 5, the Control Lab: before/after, and the simulator's verdict.
     await nextStep(page);
     await expect(page).toHaveURL(/\/bms\/control-lab/);
     await expect(page.getByText(/simulation mode/i).first()).toBeVisible();
@@ -75,24 +75,24 @@ test.describe('interview demo path', () => {
     await expect(page.getByText(/HVAC energy/i).first()).toBeVisible();
     await expect(page.getByText(/Comfort violation/i).first()).toBeVisible();
 
-    // 6 — EMS portfolio.
+    // 6, EMS portfolio.
     await nextStep(page);
     await expect(page).toHaveURL(/\/ems$/);
     await expect(page.getByRole('heading', { name: /Power Operator/i })).toBeVisible();
     await expect(page.getByText(/Facility performance/i)).toBeVisible();
 
-    // 7 — the EV surge is applied.
+    // 7, the EV surge is applied.
     await nextStep(page);
     await expect(page).toHaveURL(/\/ems\/scenario-lab/);
     await expect(page.getByText(/EV charging surge/i).first()).toBeVisible();
 
-    // 8 — the network shows the overload.
+    // 8, the network shows the overload.
     await nextStep(page);
     await expect(page).toHaveURL(/\/ems\/network/);
     await expect(page.getByText(/overload risk/i).first()).toBeVisible();
     await expect(page.getByText(/single line diagram/i)).toBeVisible();
 
-    // 9 — run the optimiser from the Scenario Lab.
+    // 9, run the optimiser from the Scenario Lab.
     await nextStep(page);
     await expect(page).toHaveURL(/\/ems\/scenario-lab/);
     await page
@@ -102,7 +102,7 @@ test.describe('interview demo path', () => {
     await expect(page.getByText(/Flexible-load dispatch/i)).toBeVisible({ timeout: 90_000 });
     await expect(page.getByText(/Constraint satisfied/i)).toBeVisible();
 
-    // 10 — verified by an independent load flow, back under the limit, and
+    // 10, verified by an independent load flow, back under the limit, and
     // the post-action network gate says so rather than the solver.
     await nextStep(page);
     await expect(page.getByText(/Verified by load flow/i)).toBeVisible();
@@ -116,7 +116,7 @@ test.describe('interview demo path', () => {
     await expect(page.getByText(/EV energy is conserved, not shed/i)).toBeVisible();
     await expect(page.getByText(/second pandapower solve/i).first()).toBeVisible();
 
-    // 11 — provenance.
+    // 11, provenance.
     await nextStep(page);
     await expect(page).toHaveURL(/\/bms$/);
     await page
@@ -126,7 +126,7 @@ test.describe('interview demo path', () => {
     await expect(page.getByRole('dialog', { name: /Data provenance/i })).toBeVisible();
     await page.keyboard.press('Escape');
 
-    // 12 — the architecture drawer closes the demo.
+    // 12, the architecture drawer closes the demo.
     await nextStep(page);
     await expect(page.getByRole('dialog', { name: /Architecture/i })).toBeVisible();
     await expect(page.getByText(/Provenance vocabulary/i)).toBeVisible();

@@ -19,8 +19,8 @@ flexible load.
 
 |                                        |                                                                   |
 | -------------------------------------- | ----------------------------------------------------------------- |
-| **EcoTwin BMS** — Building Operator | Measured → Detect → Predict → Recommend → Simulate → Compare      |
-| **EcoTwin EMS** — Power Operator    | Measured → Forecast → Detect Risk → Optimise → Simulate → Resolve |
+| **EcoTwin BMS**, Building Operator | Measured → Detect → Predict → Recommend → Simulate → Compare      |
+| **EcoTwin EMS**, Power Operator    | Measured → Forecast → Detect Risk → Optimise → Simulate → Resolve |
 
 ---
 
@@ -52,7 +52,7 @@ A mislabelled number fails at construction rather than reaching a chart.
 ### EcoTwin BMS
 
 - **Historical replay** of 15-minute metered demand with published weather.
-- **Day-ahead forecast** (LightGBM) with a **conformalised** 80% interval —
+- **Day-ahead forecast** (LightGBM) with a **conformalised** 80% interval -
   calibration lifts empirical coverage from 55% to 83% on the worst site.
 - **Residual anomaly detection** against an hour-of-day baseline calibrated on
   history that ends where the tested window begins, so a window-long fault
@@ -66,7 +66,7 @@ A mislabelled number fails at construction rather than reaching a chart.
 ### EcoTwin EMS
 
 - **Portfolio** of six metered facilities with forecast peaks and risk grading.
-- **pandapower LV network** — six buses, catalogue cable impedances, feeders
+- **pandapower LV network**, six buses, catalogue cable impedances, feeders
   sized with parallel circuits from each one's design share of the rating.
 - **Transformer risk** over a 12-hour forward horizon, against a capacity
   **calibrated by bisection on the load flow** rather than `kVA × pf`.
@@ -90,25 +90,25 @@ simulation.
 
 ### Screenshots
 
-**BMS — Operations.** A seeded hot-day injection, the residual score against
+**BMS, Operations.** A seeded hot-day injection, the residual score against
 its threshold, a finding with its full evidence, and a recommendation that
 claims no saving until the simulator has run.
 
 ![BMS Operations](docs/images/bms-ai-operations.png)
 
-**BMS — Control Lab, mid-demo.** Baseline against AI control, both from the
-same engine over identical inputs, with every model parameter on screen — and
+**BMS, Control Lab, mid-demo.** Baseline against AI control, both from the
+same engine over identical inputs, with every model parameter on screen, and
 the simulator's verdict on the proposal, which it is allowed to reject.
 
 ![Interview mode on the Control Lab](docs/images/interview-mode.png)
 
-**EMS — Scenario Lab.** The flagship: an EV surge past nameplate, a dispatch
+**EMS, Scenario Lab.** The flagship: an EV surge past nameplate, a dispatch
 that defers rather than sheds, verification by a second load flow, and the
 cross-module chain closing power → building → power.
 
 ![EMS Scenario Lab](docs/images/ems-scenario-lab.png)
 
-**EMS — Power Network.** A single-line diagram driven by a real load flow;
+**EMS, Power Network.** A single-line diagram driven by a real load flow;
 feeder width follows its share of demand.
 
 ![EMS Power Network](docs/images/ems-network.png)
@@ -130,7 +130,7 @@ feeder width follows its share of demand.
 ## Data
 
 **Source:** [Power Laws: Forecasting Energy Consumption](https://www.drivendata.org/competitions/51/electricity-prediction-machine-learning/)
-— Schneider Electric / DrivenData public competition data. 267 anonymised
+- Schneider Electric / DrivenData public competition data. 267 anonymised
 sites, 15-minute meters, floor areas, day-off and holiday calendars, and
 nearest-station outdoor temperature.
 
@@ -183,19 +183,19 @@ Full diagrams in [`docs/architecture.md`](docs/architecture.md).
 
 |                     |                                                                                                                                             |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend            | https://ecotwin-ai-zeta.vercel.app — Vercel, static                                                                                          |
-| Backend             | **none** — the hosted demo is a recording of a real run, served as files                                                                      |
+| Frontend            | https://ecotwin-ai-zeta.vercel.app, Vercel, static                                                                                          |
+| Backend             | **none**, the hosted demo is a recording of a real run, served as files                                                                      |
 | Says so             | a `RECORDED` chip with the date in the status bar, a line on the About page, a `_snapshot` marker on every payload                            |
 | BMS zone simulation  | EcoTwin RC engine, labelled `ECOTWIN-RC-1.0` on every result, never as BOPTEST                                                                |
 | EMS network          | pandapower, labelled `SIMULATED` with the engine named                                                                                       |
 
 Every figure in the recording was produced by the engine named in its
-provenance, on a real run — including the unflattering ones: the network gate
+provenance, on a real run, including the unflattering ones: the network gate
 still rejects 18 of the 54 over-nameplate replay positions. Only the delivery
 changed. `make demo` runs the same code live.
 
 A build with no API base and no recording shows an explicit **Not
-configured** state rather than falling back to `localhost` — a production
+configured** state rather than falling back to `localhost`, a production
 build that did would point every visitor's page at their own machine and look
 healthy while nothing worked.
 
@@ -246,7 +246,7 @@ measurement.
 
 ### Hosting it without a backend
 
-The demo is deterministic, so it can be recorded and served as files — which
+The demo is deterministic, so it can be recorded and served as files, which
 is what the public deployment does:
 
 ```bash
@@ -256,7 +256,7 @@ make static     # record, then build the frontend that serves it
 
 The hosted build is a **replay** and says so: a `Recorded` chip in the status
 bar, a line on the About page, a `_snapshot` marker on every payload. Nothing
-is fabricated — every figure came from the engines named in its provenance on
+is fabricated, every figure came from the engines named in its provenance on
 a real run. Only the delivery changed. Run `make demo` to watch the same
 numbers being solved live.
 
@@ -284,7 +284,7 @@ rather than restating the implementation:
   saving is claimed for it;
 - a dispatch that leaves the transformer over nameplate, a bus outside
   EN 50160, or EV energy shed rather than deferred, is rejected by the
-  **post-action load flow** — each of those rejections has its own test;
+  **post-action load flow**, each of those rejections has its own test;
 - a malformed identifier is a 422 before any handler runs, an unknown one is a
   404, and an unhandled error returns an id rather than a stack trace;
 - CORS answers the production origin and localhost, and gives a look-alike
@@ -297,9 +297,9 @@ rather than restating the implementation:
 
 Press **Start demo** in the sidebar. Twelve steps, each owning its route and
 its scenario, so a stray click cannot knock the walkthrough off course; Back
-and Next are symmetric, and **Reset demo** restores the whole product —
+and Next are symmetric, and **Reset demo** restores the whole product -
 route, replay cursor, both scenarios, every selection, and every computed
-result — to its opening position.
+result, to its opening position.
 
 [`docs/interview_demo.md`](docs/interview_demo.md) is the 5-minute script:
 what to click, what to say, the technical point of each screen, and the
@@ -311,10 +311,10 @@ The demo is not a claim, it is a check:
 curl -s localhost:8000/interview/verify | jq .ready
 ```
 
-That runs the eight claims the walkthrough makes — an insight appears, an
+That runs the eight claims the walkthrough makes, an insight appears, an
 action is proposed, the simulator accepts it, the baseline day stays quiet,
 the EV surge passes nameplate, the optimiser brings it back, the load flow
-agrees, the baseline network has no violation — against real computation.
+agrees, the baseline network has no violation, against real computation.
 `tests/test_interview.py` asserts it, so a model change that quietly makes the
 demo boring fails CI rather than an interview.
 
@@ -336,7 +336,7 @@ Dual setpoints now come from the comfort band.
 
 **The optimiser charged cars that had not arrived.** The dispatch chart showed
 EV energy being recovered hours _before_ any was curtailed. Energy balance does
-not imply causality. Added a cumulative constraint — and that immediately
+not imply causality. Added a cumulative constraint, and that immediately
 exposed a second bug, an 8-hour horizon ending before the charging session did,
 which made a feasible problem report as infeasible.
 
@@ -392,7 +392,7 @@ apps/
   api/        FastAPI: routers, services, schemas
   web/        Next.js: app, components, features, lib
 core/
-  adapters/   building/ and power/ — the only source-aware layer
+  adapters/   building/ and power/, the only source-aware layer
   models/     features, forecasting, anomaly detection
   optimisation/  bms.py, ems.py, validation.py
   provenance/ closed vocabulary + source registry
@@ -408,16 +408,16 @@ docs/         architecture · data provenance · modelling · deployment · demo
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) — diagrams, layering, measured latency
-- [Data provenance](docs/data_provenance.md) — sources, the unit problem, what
+- [Architecture](docs/architecture.md), diagrams, layering, measured latency
+- [Data provenance](docs/data_provenance.md), sources, the unit problem, what
   the data cannot support
-- [Modelling](docs/modelling.md) — features, leakage, evaluation, conformal
+- [Modelling](docs/modelling.md), features, leakage, evaluation, conformal
   intervals, the thermal model
-- [Deployment](docs/deployment.md) — both targets, configuration, operations
-- [Interview demo](docs/interview_demo.md) — the 5-minute script
-- [Technical questions](docs/interview_questions.md) — why LightGBM, why
+- [Deployment](docs/deployment.md), both targets, configuration, operations
+- [Interview demo](docs/interview_demo.md), the 5-minute script
+- [Technical questions](docs/interview_questions.md), why LightGBM, why
   BOPTEST, why pandapower, how EBO and PME integration would work, and what
   each choice cost
-- [Release readiness](docs/RELEASE_READINESS.md) — what was verified, the
+- [Release readiness](docs/RELEASE_READINESS.md), what was verified, the
   measured numbers, the security posture and what is still open
-- [Schema report](docs/schema_report.md) — generated from the raw files
+- [Schema report](docs/schema_report.md), generated from the raw files

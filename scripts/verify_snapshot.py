@@ -27,7 +27,7 @@ def main() -> int:
     root = REPO_ROOT / args.dir
 
     if not root.exists():
-        print(f"FAIL  no snapshot at {args.dir} — run scripts/build_static_snapshot.py")
+        print(f"FAIL  no snapshot at {args.dir}, run scripts/build_static_snapshot.py")
         return 1
 
     index = json.loads((root / "index.json").read_text())
@@ -48,7 +48,7 @@ def main() -> int:
     if verify is not None:
         for check in verify.get("checks", []):
             if not check["passed"]:
-                failures.append(f"recorded check failed: {check['check']} — {check['detail']}")
+                failures.append(f"recorded check failed: {check['check']}, {check['detail']}")
         if not verify.get("ready"):
             failures.append("recorded /interview/verify says ready=false")
         else:
@@ -106,7 +106,7 @@ def main() -> int:
             f"{rejected} rejected by the gate"
         )
         if not rejected:
-            print("  (note: the gate never refused — worth checking it still can)")
+            print("  (note: the gate never refused, worth checking it still can)")
 
     # The Control Lab claim is about the 24-hour horizon the demo runs.
     lab_file = next(iter(sorted(root.glob("bms_control-lab__hours-24__*bms_hot_day*.json"))), None)

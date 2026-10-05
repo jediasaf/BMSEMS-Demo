@@ -11,9 +11,9 @@ import type { AssetNode } from '@/lib/types';
  * Building view for **real-data mode**.
  *
  * The source publishes no floor plan and no zone telemetry, so this does not
- * pretend to be one. It shows the hierarchy that can be justified — a building
+ * pretend to be one. It shows the hierarchy that can be justified, a building
  * with a measured meter, floors and zones whose load is allocated pro rata by
- * published floor area — and marks every generated node as DERIVED.
+ * published floor area, and marks every generated node as DERIVED.
  *
  * Zone tiles carrying temperature and occupancy belong in the Control Lab,
  * where a simulator actually produces them.
@@ -51,7 +51,7 @@ export function BuildingView({
             {/* The one node backed by a measurement. Everything below it is an
                 allocation, and the contrast is the point of this panel. */}
             {/* The tile is one big target, but the provenance badge is its own
-                control — so the badge sits beside the target rather than
+                control, so the badge sits beside the target rather than
                 inside it. A button inside a button is not a thing. */}
             <div
               className={cn(
@@ -117,7 +117,7 @@ export function BuildingView({
  * A floor, and its zones only in as much detail as they differ.
  *
  * With no zone telemetry in the source, every zone on a floor is the same
- * pro-rata share of the same meter — so three tiles reading 26.8 kW, 381 m²,
+ * pro-rata share of the same meter, so three tiles reading 26.8 kW, 381 m²,
  * 33% were one fact printed three times, and the panel's largest block was
  * its least informative. When the zones are indistinguishable the split is
  * stated once and they collapse to chips, which stay clickable because the

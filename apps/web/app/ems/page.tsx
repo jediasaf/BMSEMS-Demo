@@ -168,7 +168,7 @@ export default function EmsPortfolioPage() {
                         </td>
                         <td className="tabular text-right font-mono">
                           {facility.expected_demand_kw === null
-                            ? '—'
+                            ? '-'
                             : `${num(facility.expected_demand_kw)} kW`}
                         </td>
                         <td className="tabular text-right font-mono">
@@ -243,7 +243,7 @@ export default function EmsPortfolioPage() {
               <li>
                 <span className="text-ink-200">Expected</span> comes from the per-facility
                 forecaster, or from a seasonal-naive reference when that model failed its own
-                quality gate — the row is marked <span className="text-status-warning">naive</span>{' '}
+                quality gate. The row is marked <span className="text-status-warning">naive</span>{' '}
                 when it does.
               </li>
               <li>

@@ -143,7 +143,7 @@ export default function AiOperationsPage() {
           </div>
 
           <div className="grid min-h-0 flex-1 gap-2.5 xl:grid-cols-[0.85fr_1.25fr_1fr]">
-            {/* LEFT — chronological feed */}
+            {/* LEFT, chronological feed */}
             <Panel
               title="Insight feed"
               subtitle={insights.data ? plural(insights.data.length, 'finding') : undefined}
@@ -175,7 +175,7 @@ export default function AiOperationsPage() {
               ))}
             </Panel>
 
-            {/* CENTRE — selected finding + residual trace */}
+            {/* CENTRE, selected finding + residual trace */}
             <div className="flex min-h-0 min-w-0 flex-col gap-2.5">
               <Panel
                 title="Residual deviation"
@@ -226,7 +226,7 @@ export default function AiOperationsPage() {
               </Panel>
             </div>
 
-            {/* RIGHT — proposed action */}
+            {/* RIGHT, proposed action */}
             <div className="flex min-h-0 min-w-0 flex-col gap-2.5 overflow-y-auto">
               {recommendations.error && (
                 <ErrorNote message={recommendations.error} onRetry={recommendations.reload} />

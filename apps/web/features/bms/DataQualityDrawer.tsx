@@ -42,7 +42,7 @@ function Drawer({
       >
         <div className="flex items-center justify-between border-b border-base-600 pb-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-200">
-            Data quality — asset {assetId}
+            Data quality, asset {assetId}
           </h2>
           <button
             type="button"
@@ -83,7 +83,7 @@ function Drawer({
               <Stat label="Flatline runs" value={num(data.report.flatline_runs, 0)} />
               <Stat
                 label="Last timestamp"
-                value={data.report.last_timestamp ? fullTimestamp(data.report.last_timestamp) : '—'}
+                value={data.report.last_timestamp ? fullTimestamp(data.report.last_timestamp) : '-'}
                 wide
               />
               <Stat label="Timezone" value={data.report.timezone} wide />

@@ -168,11 +168,11 @@ def status(settings: Settings = Depends(get_settings)) -> SystemStatus:
     # The reasoning behind each lives in the provenance popover and the docs.
     notes: list[str] = []
     if not real:
-        notes.append("Sample fixture data — synthetic, not measured.")
+        notes.append("Sample fixture data, synthetic, not measured.")
     if engine.engine is not SimulationEngine.BOPTEST:
         notes.append("Zone simulation: EcoTwin RC engine (BOPTEST unreachable).")
     if selection.get("unit_hypothesis", {}).get("publisher_states_unit") is False:
-        notes.append("kW series are DERIVED — source publishes no energy unit.")
+        notes.append("kW series are DERIVED, source publishes no energy unit.")
 
     return SystemStatus(
         data_label="Schneider public dataset" if real else "SAMPLE FIXTURE",

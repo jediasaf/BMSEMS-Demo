@@ -87,7 +87,7 @@ export function DispatchSummary({
             />
             <Stat
               label="Transformer"
-              value={after === null ? '—' : `${num(after, 1)}%`}
+              value={after === null ? '-' : `${num(after, 1)}%`}
               sub={
                 before === null
                   ? 'load flow did not converge'

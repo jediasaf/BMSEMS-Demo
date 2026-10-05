@@ -35,7 +35,7 @@ export function ProvenanceBadge({
   provenance: Provenance;
   size?: 'xs' | 'sm';
   showLabel?: boolean;
-  /** Which edge the popover hangs from — 'right' for a badge near the right
+  /** Which edge the popover hangs from, 'right' for a badge near the right
    *  edge of a narrow tile, where a left-anchored panel would run off it. */
   align?: 'left' | 'right';
   className?: string;

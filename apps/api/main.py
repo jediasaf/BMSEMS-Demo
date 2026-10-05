@@ -142,7 +142,7 @@ def root() -> dict[str, object]:
         "name": "EcoTwin AI",
         "subtitle": "AI Building & Power Operations Platform",
         "version": settings.version,
-        "modules": ["EcoTwin BMS — AI Building Operator", "EcoTwin EMS — AI Power Operator"],
+        "modules": ["EcoTwin BMS, AI Building Operator", "EcoTwin EMS, AI Power Operator"],
         "disclaimer": (
             "Not an official Schneider Electric product. EcoStruxure-ready "
             "architecture, designed for future integration with EcoStruxure "

@@ -17,7 +17,7 @@ export interface ComparisonRow {
 
 /**
  * Baseline vs intervention. Both columns always come from the same engine run
- * over the same inputs — that is the only way the delta means anything.
+ * over the same inputs, that is the only way the delta means anything.
  */
 export function BeforeAfterPanel({
   rows,

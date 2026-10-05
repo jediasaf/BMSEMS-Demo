@@ -21,7 +21,7 @@ who opened the source would find it. The status bar says `ARCHIVE 2017` and
 the data-source panel names the replayed window next to the full span.
 
 What is *not* old is the modelling. The forecaster is trained only on data
-before the window opens — backtest MAE 3.99 kW, R² 0.891 on site 227 — so
+before the window opens, backtest MAE 3.99 kW, R² 0.891 on site 227, so
 every prediction on screen is genuinely out of sample. The age of the archive
 changes nothing about whether the method works; it only means I am
 demonstrating on public data rather than on a customer's.
@@ -50,7 +50,7 @@ simulation, the CVXPY solves and two pandapower load flows, all on request.
 Warm, the overview is 114 ms and the Control Lab 492 ms.
 
 The numbers are the same either way, because the recording was taken from the
-live system — and `scripts/verify_snapshot.py` re-checks that the recording
+live system, and `scripts/verify_snapshot.py` re-checks that the recording
 still agrees with what the demo claims, so a stale recording fails a command
 rather than an audience.
 
@@ -58,8 +58,8 @@ Why record at all: the backend needs ~550 MB of RAM and a filesystem, which
 means a container, which means a paid instance. The free tier it was on
 stopped the machine after five minutes, and a demo whose first click times
 out is not a demo. Recording removes the server from the critical path. The
-container path still exists — `Dockerfile`, `fly.toml`, `docs/deployment.md`
-— and is what I would run for anyone who wants to watch it compute.
+container path still exists, `Dockerfile`, `fly.toml`, `docs/deployment.md`
+- and is what I would run for anyone who wants to watch it compute.
 
 ---
 
@@ -69,7 +69,7 @@ Because the data does not justify anything larger, and I can defend every
 decision it makes.
 
 Each site has a few years of 15-minute demand with a weather series and a
-calendar. That is a tabular problem with strong calendar and lag structure —
+calendar. That is a tabular problem with strong calendar and lag structure -
 exactly where gradient boosting is hard to beat. An LSTM or a temporal fusion
 transformer would need far more data per site to justify its parameter count,
 would take orders of magnitude longer to train across 267 sites, and would
@@ -91,8 +91,8 @@ the obvious next step, and it is where I would spend the next week.
 
 Because a residual is explainable and a learned anomaly score is not.
 
-The detector scores `measured − expected` as a robust z — `0.6745·(r − centre)
-/ MAD` — against an hour-of-day baseline. When it fires, I can put observed,
+The detector scores `measured − expected` as a robust z, `0.6745·(r − centre)
+/ MAD`, against an hour-of-day baseline. When it fires, I can put observed,
 expected, the deviation, the threshold, how long it was sustained and how that
 compares to the asset's normal forecast miss on screen. An operator can agree
 or disagree with each of those. An isolation forest gives a number between 0
@@ -105,7 +105,7 @@ does not become an alert.
 
 **The bug worth mentioning:** the baseline was originally a trailing rolling
 window. A fault lasting the whole replay window slowly became the new normal
-and the detector reported nothing — the scenarios produced zero insights. It
+and the detector reported nothing, the scenarios produced zero insights. It
 is now calibrated on a reference period that *ends where the tested window
 begins*, and there is a regression test named after the failure.
 
@@ -128,7 +128,7 @@ test case, here is the control signal, run it yourself".
 In this deployment BOPTEST is not reachable, so an in-process 2R2C model with
 an ideal-load plant runs the case instead. That is stated in the system bar
 and on the Control Lab, and every result carries the engine that produced it
-in provenance — `SimulationResult.engine` is not optional, and a value cannot
+in provenance, `SimulationResult.engine` is not optional, and a value cannot
 be tagged SIMULATED without naming an engine. An RC result is never labelled
 BOPTEST. The engine is behind a `BuildingSimulationEngine` interface, so
 pointing `BOPTEST_URL` at a reachable instance switches it with no other
@@ -157,7 +157,7 @@ checked against the EN 50160 band; and an independent second solve to verify
 the optimiser's answer rather than trusting its own estimate.
 
 It also changed a number I had wrong. Transformer capacity was `kVA × pf`,
-which gave 147 kW for a unit that actually reached 100% loading at 144.9 kW —
+which gave 147 kW for a unit that actually reached 100% loading at 144.9 kW -
 the difference is the losses and the voltage drop. Capacity is now found by
 **bisection on the load flow**: increase demand until the solver reports
 100.0%.
@@ -191,14 +191,14 @@ CVXPY buys three things that matter more than raw performance here:
 * **Infeasible means infeasible.** When the plant genuinely cannot hold the
   band, the program says so instead of returning the nearest thing that looks
   fine. That is why unmet cooling is an explicit priced variable rather than a
-  silent relaxation — the result reports how much cooling it could not deliver.
+  silent relaxation, the result reports how much cooling it could not deliver.
 
 Both solve in milliseconds on ECOS/OSQP, which is incidental. The reason to
 use a modelling layer is that the model is the thing being reviewed.
 
 **What I gave up:** the true zone model is nonlinear (COP moves with outdoor
 air, and the plant saturates). The optimiser plans against a linearisation and
-is therefore sometimes wrong — which is exactly why its proposal is re-run
+is therefore sometimes wrong, which is exactly why its proposal is re-run
 through the nonlinear simulator, and why that simulator is allowed to reject
 it. The EMS answer gets the same treatment from a second load flow.
 
@@ -210,8 +210,8 @@ Because I do not have a customer environment, and inventing one would be the
 least defensible thing in the project.
 
 What I did instead is make the source a boundary. `core/adapters/` is the only
-code that knows a source's field names, units or quirks; everything above it —
-forecaster, detector, optimiser, simulator, provenance — works on a common
+code that knows a source's field names, units or quirks; everything above it -
+forecaster, detector, optimiser, simulator, provenance, works on a common
 internal schema. Swapping the Power Laws adapter for an EBO adapter is one
 class implementing `BuildingSourceAdapter`, and nothing downstream changes.
 
@@ -226,16 +226,16 @@ product" on the About page and in the API root response.
 EcoStruxure Building Operation exposes BACnet/IP and a REST API over its
 object model. The adapter would:
 
-1. **Discover** — walk the object hierarchy to build the asset tree, instead
+1. **Discover**, walk the object hierarchy to build the asset tree, instead
    of the tree this prototype synthesises from floor area. Real zones, real
    AHUs, real points.
-2. **Read** — subscribe to trend logs for the points the models need: zone
+2. **Read**, subscribe to trend logs for the points the models need: zone
    temperature, setpoints, supply air, valve positions, meters. Present-value
    polling for the live cursor.
-3. **Map** — translate EBO object types to the internal schema, and attach a
+3. **Map**, translate EBO object types to the internal schema, and attach a
    `Provenance` naming the EBO server, object id and trend interval as the
    source. Everything measured becomes genuinely MEASURED for the first time.
-4. **Write, eventually** — EBO can accept a setpoint write at a priority
+4. **Write, eventually**, EBO can accept a setpoint write at a priority
    level. I would not enable it without the three things this prototype
    already has plus two it does not: the point allowlist and range limits it
    has, the simulator's veto it has, plus an operator confirmation step and a
@@ -255,7 +255,7 @@ an ODATA layer. Simpler than EBO, because it is a measurement archive rather
 than a control system.
 
 The adapter would query the measurement tables for per-meter real power,
-current and voltage, and — this is the important part — replace two things
+current and voltage, and, this is the important part, replace two things
 this prototype has to derive. Transformer nameplates would come from the
 asset register instead of being sized from observed peaks, and feeder-level
 demand would be measured instead of disaggregated. The pandapower model would
@@ -268,7 +268,7 @@ then be validated against measured voltages rather than only solved.
 The demo is 6 sites. The published dataset is 267. A real estate is thousands.
 
 - **Storage**: Parquet files are right for a fixed archive and wrong for
-  ingestion. The first change is TimescaleDB or ClickHouse — hypertables on
+  ingestion. The first change is TimescaleDB or ClickHouse, hypertables on
   `(asset_id, timestamp)`, continuous aggregates for the rollups the portfolio
   view recomputes on every request.
 - **Training**: per-site models are embarrassingly parallel; 267 sites took
@@ -299,7 +299,7 @@ Four layers, and the third one is the one I would talk about.
    rate limit. A proposal outside any of them is refused with the reason.
 3. **The simulator's veto.** The optimiser plans against a linear model. The
    proposal is re-run through the full nonlinear simulator and scored against
-   the baseline on energy, peak and comfort — and **rejected** if it does not
+   the baseline on energy, peak and comfort, and **rejected** if it does not
    improve on doing nothing. This is not hypothetical: the first version of
    the optimiser proposed overnight pre-cooling that came back +58% on peak,
    and the gate is what turns that from a shipped regression into a rejected
@@ -309,7 +309,7 @@ Four layers, and the third one is the one I would talk about.
    proposal is reported in K·h next to the saving.
 
 For a real deployment I would add operator confirmation, a time-bounded revert
-window, and a kill switch that relinquishes every override — none of which
+window, and a kill switch that relinquishes every override, none of which
 this prototype needs, because it cannot write.
 
 ---
@@ -321,7 +321,7 @@ from a stated model, and I show the model.
 
 - Both cases run through the **same engine** with identical weather and
   occupancy. The only difference is the setpoint trajectory.
-- Every model parameter is on screen — all twenty-one of them, on purpose.
+- Every model parameter is on screen, all twenty-one of them, on purpose.
 - The zone model is calibrated against this site's own metered weather
   sensitivity: conditioned area is scaled so simulated baseline HVAC power
   matches the HVAC share estimated from the meter. That is stated, with the
@@ -332,7 +332,7 @@ from a stated model, and I show the model.
   its numbers greyed and marked "not claimed as a saving".
 
 What would make it real is measurement and verification against an IPMVP
-option — a baseline model, a reporting period, and adjusted comparison. That
+option, a baseline model, a reporting period, and adjusted comparison. That
 needs the intervention to actually happen, which needs the actuation path this
 prototype deliberately does not have.
 
@@ -343,7 +343,7 @@ prototype deliberately does not have.
 Three mechanisms, and the first one is structural rather than procedural.
 
 1. **A lag floor in the feature builder.** No feature may use data newer than
-   96 steps — 24 hours — before the target. This is enforced where features
+   96 steps, 24 hours, before the target. This is enforced where features
    are constructed, not by remembering to be careful. Rolling statistics are
    computed on already-lagged series.
 2. **Chronological splits.** Fit, calibrate, backtest and live are contiguous
@@ -351,7 +351,7 @@ Three mechanisms, and the first one is structural rather than procedural.
 3. **A training cutoff at the demo window.** Models are trained strictly on
    data before the replayed window, so the replay is genuinely out of sample.
    I added this after realising the first models had been trained on the
-   window the demo replays — the forecast looked excellent for the wrong
+   window the demo replays, the forecast looked excellent for the wrong
    reason.
 
 The prediction intervals are conformalised (Romano et al., 2019) on a
@@ -366,7 +366,7 @@ reports it rather than smoothing it over.
 Because the optimiser and the plant do not solve the same problem.
 
 The optimiser needs a convex model to give a certifiable global optimum in
-milliseconds. That model is an approximation — here, a two-node linear zone
+milliseconds. That model is an approximation, here, a two-node linear zone
 with a capacity box and a per-step COP price. The real plant saturates, the
 COP moves continuously, and the controller is an ideal-load loop, not a power
 schedule.
@@ -374,7 +374,7 @@ schedule.
 So the optimiser proposes and the simulator judges. Concretely: my first
 optimiser modelled the air node alone. Air capacitance gives a 0.8-hour time
 constant; the structure gives 11 hours. A single-node model believes overnight
-pre-cooling is cheap and effective, so it proposed it — and the nonlinear
+pre-cooling is cheap and effective, so it proposed it, and the nonlinear
 simulator reported **−0.4% energy and +57.7% peak**, because the zone drifted
 and the plant recovered into the hottest, worst-COP part of the afternoon.
 
@@ -395,7 +395,7 @@ field, units, processing and assumptions. Two of the rules are Pydantic
 validators:
 
 - A value cannot be tagged **MEASURED** unless its registered source is a real
-  measurement. The source registry is closed — citing an unregistered key
+  measurement. The source registry is closed, citing an unregistered key
   raises, which caught a typo of mine during this work.
 - A value cannot be tagged **SIMULATED** without naming the engine that
   produced it.
@@ -406,13 +406,13 @@ That covers mislabelling but not omission, so there is also
 `scripts/audit_provenance.py`: it walks every served payload against a
 manifest of the metrics that matter and fails on a missing badge, an
 unexpected category, or a path that no longer resolves. It runs in CI. When I
-wrote it, it found three real gaps — including the Building View drawing a
+wrote it, it found three real gaps, including the Building View drawing a
 hardcoded MEASURED pill over a number whose own KPI badge said DERIVED.
 
 The one worth understanding is **DERIVED versus MEASURED**. The site meter is
 a measurement. The kW figure shown for it is not: the publisher never states a
-unit for the energy counter, so kW is a hypothesis — Wh per 15-minute interval
-— that I validated by checking power density lands in a plausible 3–120 W/m²
+unit for the energy counter, so kW is a hypothesis, Wh per 15-minute interval
+- that I validated by checking power density lands in a plausible 3–120 W/m²
 band, excluding the sites that failed rather than rescaling them. Every kW
 series in the product is therefore DERIVED, and the popover says exactly that.
 
@@ -427,7 +427,7 @@ always reports which one it is in:
 
 | State | When | What the UI says |
 |---|---|---|
-| Live BOPTEST | `ECOTWIN_BOPTEST_URL` is set and reachable — local Docker mode | `Live BOPTEST engine` |
+| Live BOPTEST | `ECOTWIN_BOPTEST_URL` is set and reachable, local Docker mode | `Live BOPTEST engine` |
 | Live RC engine | The hosted deployment, which has no BOPTEST container | `EcoTwin RC engine` |
 | Simulation replay | A live solve failed and a recording for *that same scenario* exists | `SIMULATION REPLAY`, with the original engine named |
 
@@ -437,14 +437,14 @@ never labelled BOPTEST. `SimulationResult.engine` carries the engine that
 actually ran and provenance repeats it, so there is no path by which an RC
 result can present itself as a Modelica one.
 
-The third state exists because the two expensive paths — the zone simulation
-and the flexible-load optimisation — are the ones most likely to fail in a
+The third state exists because the two expensive paths, the zone simulation
+and the flexible-load optimisation, are the ones most likely to fail in a
 hosted deployment and the ones an audience is most likely to be looking at
 when they do. When that happens the API serves a recording produced earlier by
 the *same code path*, and it is relabelled before it is served: provenance
 becomes `SIMULATION REPLAY`, the payload carries `served_from: "demo_cache"`,
 and a banner appears. The cache key includes the scenario, so a hot-day
-request can never be answered with a normal-day recording — a miss is a miss
+request can never be answered with a normal-day recording, a miss is a miss
 and the error stands.
 
 So the honest summary is: nothing in the public demo is a cached BOPTEST run,

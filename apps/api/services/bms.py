@@ -332,7 +332,7 @@ class BmsService:
                 label="Expected load",
                 value=round(expected_now, 1) if np.isfinite(expected_now) else None,
                 unit="kW",
-                display=f"{expected_now:,.1f} kW" if np.isfinite(expected_now) else "—",
+                display=f"{expected_now:,.1f} kW" if np.isfinite(expected_now) else "-",
                 status=Severity.INFO,
                 provenance=ctx.expected.provenance,
                 hint=ctx.expected.gate_reason,
@@ -1111,7 +1111,7 @@ class BmsService:
                         provenance=derived(
                             "ecotwin_rc",
                             field=None,
-                            units="—",
+                            units="-",
                             processing=(
                                 "not yet estimated: run the proposal in the Control Lab "
                                 "to obtain simulated energy, peak and comfort effects"

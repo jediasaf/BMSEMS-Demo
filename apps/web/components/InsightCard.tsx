@@ -153,7 +153,7 @@ export function InsightDetail({ insight }: { insight: Insight }) {
         <div className="label mb-1 flex items-center gap-1.5">
           <AlertTriangle className="h-3 w-3 text-status-warning" />
           Possible causes
-          <span className="normal-case tracking-normal text-ink-600">— not a diagnosis</span>
+          <span className="normal-case tracking-normal text-ink-600">not a diagnosis</span>
         </div>
         <ul className="space-y-0.5">
           {insight.possible_causes.map((cause) => (
